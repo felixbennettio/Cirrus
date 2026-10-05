@@ -130,6 +130,34 @@ base64 -w0 release.jks   # 把输出填进 ANDROID_KEYSTORE_BASE64
 
 本地构建时，用 `--dart-define=CIRRUS_OAUTH_CLIENT_ID=... --dart-define=CIRRUS_OAUTH_SCOPES="..."` 传入。没有配置时，"使用 Cloudflare 账户登录"按钮不可用，用户也可以在"使用自己的 OAuth 客户端"中填写自己创建的私有客户端。
 
+### Cirrus Pro（应用内购买）
+
+应用商店版本提供一次性买断的 **Cirrus Pro**（不是订阅）：
+
+- **免费功能**：域名管理全部功能，包括 DNS、SSL/TLS、安全与 WAF、规则、缓存、域名设置、7 天以内的分析，以及 API 控制台的只读请求。
+- **Pro 解锁**：
+  - Workers、Pages、Workers AI；
+  - KV、R2、D1 等存储服务；
+  - Zero Trust；
+  - 账户管理（成员、API Token、审计日志等）；
+  - GraphQL 查询；
+  - API 控制台写请求；
+  - 30 天分析；
+  - 保存多套凭据。
+- 免费和 Pro 的划分集中定义在 `lib/features/pro/pro_features.dart`。
+
+| 项目 | 设置 |
+|---|---|
+| 商品 ID | `cirrus_pro_lifetime`（App Store 和 Google Play 都使用这个 ID） |
+| App Store Connect | 类型选"非消耗型"，价格 US$39.99 / ¥198；与 iOS、macOS 共用一个 App 记录（Bundle ID `io.felixbennett.cirrus`，通用购买） |
+| Google Play Console | 一次性商品，价格 US$39.99；Google Play 在中国大陆不可用 |
+
+- **实现**：使用 `in_app_purchase`（iOS/macOS 上是 StoreKit 2，Android 上是 Play Billing）。应用启动时会静默恢复已购项目，购买完成后在本机记住，离线也能用。设置页和付费墙都提供"恢复购买"。
+- **什么时候生效**：只有在构建时设置 `--dart-define=CIRRUS_STORE=appstore`（iOS/macOS）或 `play`（Android）才会启用 Pro。CI 中对应的是 `build.yml` 的 `store_build: true`。GitHub Releases 和 Windows/Linux 版本不设置，所有功能直接可用。
+- **测试**：
+  - Apple：在 App Store Connect 添加沙盒测试员，用 TestFlight 或开发版本购买。
+  - Google：在 Play Console 中添加许可测试人员，并把应用上传到内部测试轨道。
+
 ### 架构
 
 ```
@@ -158,5 +186,7 @@ Cirrus is a fast, native client for the Cloudflare API on **Linux, Windows, macO
 **Install:** grab a build from [Releases](../../releases). Desktop and iOS builds are unsigned; see the table in the Chinese section above for per-platform notes. Android release signing uses the `ANDROID_*` repository secrets described above.
 
 **Sign-in:** "Sign in with Cloudflare" uses Cloudflare OAuth (authorization code + PKCE, no client secret): pick the account in the browser and approve; tokens refresh automatically and the grant is revoked when the credential is removed. To enable it, create an OAuth client under *Manage Account → OAuth clients* with grant types `authorization_code` + `refresh_token`, token auth method `none`, redirect URLs `http://127.0.0.1/oauth/callback` and `io.felixbennett.cirrus:/oauth/callback`, then set the repository variables `CIRRUS_OAUTH_CLIENT_ID` and `CIRRUS_OAUTH_SCOPES` (space-separated scope IDs). API tokens and the Global API Key still work.
+
+**Cirrus Pro:** store builds (`--dart-define=CIRRUS_STORE=appstore|play`, or `store_build: true` in `build.yml`) sell a one-time, non-consumable `cirrus_pro_lifetime` (US$39.99 / ¥198) through StoreKit 2 and Play Billing. Zone management stays free. Workers, Pages, AI, storage, Zero Trust, account administration, GraphQL, console writes, 30-day analytics and multiple credentials need Pro. Purchases are restored silently on launch. Builds without a store flag (GitHub Releases, Windows, Linux) have everything unlocked.
 
 **Build:** `flutter pub get && flutter run`. Regenerate the API catalog with `dart run tool/build_catalog.dart`. Push a `v*` tag to build all platforms and publish a release.
