@@ -70,3 +70,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // AppCompat themes keep the biometric prompt (local_auth) working on Android 8 and below.
+    implementation("androidx.appcompat:appcompat:1.7.1")
+}
