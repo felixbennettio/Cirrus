@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../auth/credential.dart';
+import '../auth/oauth.dart';
 import 'cf_exception.dart';
 
 const cirrusVersion = '1.0.0';
@@ -88,9 +89,19 @@ class RequestRecord {
   final String? error;
 }
 
+/// Supplies bearer tokens for OAuth profiles (see `OAuthSession`).
+abstract interface class AccessTokenSource {
+  /// The last token handed out, if any.
+  String? get currentToken;
+
+  /// A valid access token. Pass the token the API just [rejected] to force a
+  /// refresh (unless another request already replaced it).
+  Future<String> accessToken({String? rejected});
+}
+
 /// Thin, typed wrapper around the Cloudflare REST + GraphQL API.
 class CfClient {
-  CfClient(this.profile, {Dio? dio, this.baseUrl = cfApiBase}) : _dio = dio ?? Dio() {
+  CfClient(this.profile, {Dio? dio, this.baseUrl = cfApiBase, this.tokens}) : _dio = dio ?? Dio() {
     _dio.options
       ..connectTimeout = const Duration(seconds: 20)
       ..receiveTimeout = const Duration(seconds: 90)
@@ -102,6 +113,9 @@ class CfClient {
   final Profile profile;
   final String baseUrl;
   final Dio _dio;
+
+  /// Token source for [AuthKind.oauth] profiles.
+  final AccessTokenSource? tokens;
 
   /// Recent requests, newest first.
   final ValueNotifier<List<RequestRecord>> requestLog = ValueNotifier(const []);
@@ -124,9 +138,34 @@ class CfClient {
     return uri.replace(queryParameters: merged);
   }
 
-  Map<String, String> _headers(String path, Map<String, String>? extra, bool originCa) {
-    final useOriginCa = originCa || path.startsWith('/certificates');
-    return {...profile.authHeaders(originCa: useOriginCa), ...?extra};
+  bool _usesOriginCaKey(String path, bool originCa) =>
+      (originCa || path.startsWith('/certificates')) && (profile.originCaKey?.isNotEmpty ?? false);
+
+  /// OAuth profiles send a bearer token, except where an Origin CA key applies.
+  bool _usesBearer(String path, bool originCa) => profile.kind == AuthKind.oauth && !_usesOriginCaKey(path, originCa);
+
+  Map<String, String> _headers(String path, Map<String, String>? extra, bool originCa, {String? bearer}) {
+    final auth = _usesBearer(path, originCa)
+        ? {'Authorization': 'Bearer ${bearer ?? tokens?.currentToken ?? ''}'}
+        : profile.authHeaders(originCa: originCa || path.startsWith('/certificates'));
+    return {...auth, ...?extra};
+  }
+
+  Future<String> _bearer(String method, String path, String? rejected) async {
+    final source = tokens;
+    if (source == null) {
+      throw CfApiException(method: method, path: path, statusCode: 401, cause: 'No OAuth session for this credential.');
+    }
+    try {
+      return await source.accessToken(rejected: rejected);
+    } on OAuthException catch (e) {
+      throw CfApiException(
+        method: method,
+        path: path,
+        statusCode: e.needsReauth ? 401 : null,
+        cause: e.needsReauth ? 'The Cloudflare sign-in has expired. Sign in again. ($e)' : e,
+      );
+    }
   }
 
   void _log(RequestRecord r) {
@@ -149,9 +188,14 @@ class CfClient {
   }) async {
     final uri = resolve(path, query);
     final isIdempotent = method == 'GET' || method == 'HEAD';
+    final useBearer = _usesBearer(path, originCa);
+    String? bearer;
+    String? rejected;
+    var reauthenticated = false;
     var attempt = 0;
     while (true) {
       attempt++;
+      if (useBearer) bearer = await _bearer(method, path, rejected);
       final sw = Stopwatch()..start();
       try {
         final res = await _dio.requestUri<dynamic>(
@@ -162,7 +206,7 @@ class CfClient {
           onReceiveProgress: onReceiveProgress,
           options: Options(
             method: method,
-            headers: _headers(path, headers, originCa),
+            headers: _headers(path, headers, originCa, bearer: bearer),
             contentType:
                 contentType ??
                 (data is FormData
@@ -186,6 +230,12 @@ class CfClient {
           ),
         );
         final status = res.statusCode ?? 0;
+        // An expired or revoked access token: refresh once and retry.
+        if (status == 401 && useBearer && !reauthenticated) {
+          reauthenticated = true;
+          rejected = bearer;
+          continue;
+        }
         final retryable = status == 429 || (isIdempotent && status >= 500);
         if (retryable && attempt <= 3) {
           await Future<void>.delayed(_retryDelay(res, attempt));

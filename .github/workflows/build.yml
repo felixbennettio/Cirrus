@@ -42,6 +42,16 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: OAuth client
+        # Public client ID and scopes from repository variables; empty values
+        # build without the "Sign in with Cloudflare" client.
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES"
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes}' > dart_defines.json
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
@@ -71,7 +81,7 @@ jobs:
           fi
       - name: Build APKs and App Bundle
         run: |
-          ARGS="--release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}"
+          ARGS="--release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json"
           flutter build apk $ARGS --split-per-abi
           flutter build apk $ARGS
           flutter build appbundle $ARGS
@@ -107,10 +117,20 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: OAuth client
+        # Public client ID and scopes from repository variables; empty values
+        # build without the "Sign in with Cloudflare" client.
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES"
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes}' > dart_defines.json
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
-      - run: flutter build linux --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}
+      - run: flutter build linux --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json
       - run: scripts/package_linux.sh ${{ inputs.version }} dist
       - uses: actions/upload-artifact@v7
         with:
@@ -130,11 +150,21 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: OAuth client
+        # Public client ID and scopes from repository variables; empty values
+        # build without the "Sign in with Cloudflare" client.
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES"
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes}' > dart_defines.json
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         shell: bash
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
-      - run: flutter build windows --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}
+      - run: flutter build windows --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json
       - name: Bundle the MSVC runtime
         shell: pwsh
         run: |
@@ -173,10 +203,20 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: OAuth client
+        # Public client ID and scopes from repository variables; empty values
+        # build without the "Sign in with Cloudflare" client.
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES"
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes}' > dart_defines.json
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
-      - run: flutter build macos --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}
+      - run: flutter build macos --release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json
       - name: Package DMG and zip
         run: |
           V=${{ inputs.version }}
@@ -207,10 +247,20 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: OAuth client
+        # Public client ID and scopes from repository variables; empty values
+        # build without the "Sign in with Cloudflare" client.
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES"
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes}' > dart_defines.json
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
-      - run: flutter build ios --release --no-codesign --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}
+      - run: flutter build ios --release --no-codesign --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json
       - name: Package unsigned IPA
         run: |
           V=${{ inputs.version }}

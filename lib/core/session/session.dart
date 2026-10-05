@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/cf_client.dart';
 import '../auth/credential.dart';
 import '../auth/credential_store.dart';
+import '../auth/oauth.dart';
+import '../auth/oauth_session.dart';
 import '../cache/query_cache.dart';
 import '../catalog/catalog.dart';
 import '../settings/app_settings.dart';
@@ -11,6 +13,13 @@ import '../settings/app_settings.dart';
 typedef Json = Map<String, dynamic>;
 
 final credentialStoreProvider = Provider<CredentialStore>((ref) => CredentialStore());
+
+/// OAuth sessions, one per OAuth profile; kept for the app's lifetime so
+/// token refreshes survive rebuilds of [clientProvider].
+final oauthSessionsProvider = Provider<OAuthSessions>((ref) => OAuthSessions(ref.read(credentialStoreProvider)));
+
+/// The OAuth client built into this binary (null when not configured).
+final oauthConfigProvider = Provider<OAuthConfig?>((ref) => OAuthConfig.builtIn);
 
 /// All saved credential profiles.
 class ProfilesController extends AsyncNotifier<List<Profile>> {
@@ -35,6 +44,11 @@ class ProfilesController extends AsyncNotifier<List<Profile>> {
   }
 
   Future<void> remove(String id) async {
+    final removed = (state.value ?? const <Profile>[]).firstWhereOrNull((e) => e.id == id);
+    if (removed?.kind == AuthKind.oauth) {
+      // Revoke the grant and delete its tokens.
+      await ref.read(oauthSessionsProvider).remove(removed!);
+    }
     final list = [...(state.value ?? const <Profile>[])]..removeWhere((e) => e.id == id);
     await _persist(list);
     QueryCache.instance.clear();
@@ -57,7 +71,7 @@ final activeProfileProvider = Provider<Profile?>((ref) {
 final clientProvider = Provider<CfClient?>((ref) {
   final p = ref.watch(activeProfileProvider);
   if (p == null) return null;
-  return CfClient(p);
+  return CfClient(p, tokens: p.kind == AuthKind.oauth ? ref.read(oauthSessionsProvider).forProfile(p) : null);
 });
 
 /// Cache key prefix so different profiles never share cached data.
