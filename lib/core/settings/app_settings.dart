@@ -79,10 +79,7 @@ class AppSettings {
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
-    themeMode: ThemeMode.values.firstWhere(
-      (m) => m.name == j['themeMode'],
-      orElse: () => ThemeMode.system,
-    ),
+    themeMode: ThemeMode.values.firstWhere((m) => m.name == j['themeMode'], orElse: () => ThemeMode.system),
     localeCode: j['localeCode'] as String?,
     appLock: j['appLock'] == true,
     activeProfileId: j['activeProfileId'] as String?,

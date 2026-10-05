@@ -57,7 +57,11 @@ class WorkerDetailPage extends ConsumerWidget {
                   final client = ref.read(clientProvider)!;
                   final r = await runAction(
                     context,
-                    () => client.send('DELETE', '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(name)}', query: {'force': true}),
+                    () => client.send(
+                      'DELETE',
+                      '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(name)}',
+                      query: {'force': true},
+                    ),
                     success: context.tr('Deleted', '已删除'),
                   );
                   if (r != null && context.mounted) {
@@ -71,7 +75,11 @@ class WorkerDetailPage extends ConsumerWidget {
               ],
             ),
           ],
-          bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in tabs) Tab(text: t.$1)]),
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [for (final t in tabs) Tab(text: t.$1)],
+          ),
           body: TabBarView(children: [for (final t in tabs) t.$2]),
         ),
       ),
@@ -79,7 +87,8 @@ class WorkerDetailPage extends ConsumerWidget {
   }
 }
 
-String _scriptPath(String accountId, String script) => '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(script)}';
+String _scriptPath(String accountId, String script) =>
+    '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(script)}';
 
 // ---------------------------------------------------------------------------
 // Overview
@@ -118,8 +127,17 @@ class _Overview extends ConsumerWidget {
             ResponsiveGrid(
               minItemWidth: 170,
               children: [
-                StatTile(label: context.tr('Requests (24h)', '请求数（24h）'), value: formatCount(req), icon: Icons.swap_vert),
-                StatTile(label: context.tr('Errors (24h)', '错误数（24h）'), value: formatCount(err), icon: Icons.error_outline, sub: req == 0 ? null : '${(err / req * 100).toStringAsFixed(2)}%'),
+                StatTile(
+                  label: context.tr('Requests (24h)', '请求数（24h）'),
+                  value: formatCount(req),
+                  icon: Icons.swap_vert,
+                ),
+                StatTile(
+                  label: context.tr('Errors (24h)', '错误数（24h）'),
+                  value: formatCount(err),
+                  icon: Icons.error_outline,
+                  sub: req == 0 ? null : '${(err / req * 100).toStringAsFixed(2)}%',
+                ),
                 StatTile(label: context.tr('Subrequests', '子请求'), value: formatCount(sr), icon: Icons.call_split),
                 StatTile(label: 'CPU P99', value: '${p99.toStringAsFixed(1)} µs', icon: Icons.memory),
               ],
@@ -133,8 +151,16 @@ class _Overview extends ConsumerWidget {
                     labels: metrics.map((p) => '${p.at.toLocal().hour.toString().padLeft(2, '0')}:00').toList(),
                     format: formatCount,
                     series: [
-                      ChartSeries(name: context.tr('Requests', '请求'), values: metrics.map((p) => p.requests).toList(), color: Theme.of(context).colorScheme.primary),
-                      ChartSeries(name: context.tr('Errors', '错误'), values: metrics.map((p) => p.errors).toList(), color: Colors.red),
+                      ChartSeries(
+                        name: context.tr('Requests', '请求'),
+                        values: metrics.map((p) => p.requests).toList(),
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      ChartSeries(
+                        name: context.tr('Errors', '错误'),
+                        values: metrics.map((p) => p.errors).toList(),
+                        color: Colors.red,
+                      ),
                     ],
                   ),
                 ],
@@ -148,10 +174,19 @@ class _Overview extends ConsumerWidget {
                     title: Text(context.tr('Route on workers.dev', '在 workers.dev 上提供访问')),
                     subtitle: url == null
                         ? null
-                        : InkWell(onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), child: Text(url, style: const TextStyle(decoration: TextDecoration.underline))),
+                        : InkWell(
+                            onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+                            child: Text(url, style: const TextStyle(decoration: TextDecoration.underline)),
+                          ),
                     value: sub['enabled'] == true,
                     onChanged: (v) async {
-                      await runAction(context, () => client.post('${_scriptPath(accountId, script)}/subdomain', data: {'enabled': v, 'previews_enabled': sub['previews_enabled'] ?? v}));
+                      await runAction(
+                        context,
+                        () => client.post(
+                          '${_scriptPath(accountId, script)}/subdomain',
+                          data: {'enabled': v, 'previews_enabled': sub['previews_enabled'] ?? v},
+                        ),
+                      );
                       await h.reload();
                     },
                   ),
@@ -160,7 +195,13 @@ class _Overview extends ConsumerWidget {
                     title: Text(context.tr('Preview URLs', '预览 URL')),
                     value: sub['previews_enabled'] == true,
                     onChanged: (v) async {
-                      await runAction(context, () => client.post('${_scriptPath(accountId, script)}/subdomain', data: {'enabled': sub['enabled'] ?? false, 'previews_enabled': v}));
+                      await runAction(
+                        context,
+                        () => client.post(
+                          '${_scriptPath(accountId, script)}/subdomain',
+                          data: {'enabled': sub['enabled'] ?? false, 'previews_enabled': v},
+                        ),
+                      );
                       await h.reload();
                     },
                   ),
@@ -360,7 +401,21 @@ const _bindingLabels = {
 };
 
 String _bindingTarget(Map b) {
-  for (final k in const ['namespace_id', 'bucket_name', 'id', 'database_id', 'service', 'queue_name', 'index_name', 'class_name', 'dataset', 'certificate_id', 'store_id', 'workflow_name', 'namespace']) {
+  for (final k in const [
+    'namespace_id',
+    'bucket_name',
+    'id',
+    'database_id',
+    'service',
+    'queue_name',
+    'index_name',
+    'class_name',
+    'dataset',
+    'certificate_id',
+    'store_id',
+    'workflow_name',
+    'namespace',
+  ]) {
     if (b[k] != null) return '${b[k]}';
   }
   if (b['type'] == 'plain_text') return '${b['text']}';
@@ -373,7 +428,13 @@ class _SettingsTab extends ConsumerWidget {
 
   final String script;
 
-  Future<void> _editVar(BuildContext context, WidgetRef ref, Map<String, dynamic> settings, QueryHandle h, [Map? existing]) async {
+  Future<void> _editVar(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> settings,
+    QueryHandle h, [
+    Map? existing,
+  ]) async {
     final name = TextEditingController(text: existing?['name'] as String?);
     final value = TextEditingController(text: existing?['text'] as String?);
     final ok = await showDialog<bool>(
@@ -385,9 +446,18 @@ class _SettingsTab extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, enabled: existing == null, decoration: InputDecoration(labelText: ctx.tr('Name', '名称'), border: const OutlineInputBorder())),
+              TextField(
+                controller: name,
+                enabled: existing == null,
+                decoration: InputDecoration(labelText: ctx.tr('Name', '名称'), border: const OutlineInputBorder()),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: value, minLines: 1, maxLines: 6, decoration: InputDecoration(labelText: ctx.tr('Value', '值'), border: const OutlineInputBorder())),
+              TextField(
+                controller: value,
+                minLines: 1,
+                maxLines: 6,
+                decoration: InputDecoration(labelText: ctx.tr('Value', '值'), border: const OutlineInputBorder()),
+              ),
             ],
           ),
         ),
@@ -408,7 +478,11 @@ class _SettingsTab extends ConsumerWidget {
 
   /// Builds a full bindings list for a settings PATCH, keeping every
   /// existing non-variable binding as-is (secrets are inherited).
-  List<Map<String, dynamic>> _rebuildBindings(Map<String, dynamic> settings, {Map<String, dynamic>? replace, String? remove}) {
+  List<Map<String, dynamic>> _rebuildBindings(
+    Map<String, dynamic> settings, {
+    Map<String, dynamic>? replace,
+    String? remove,
+  }) {
     final out = <Map<String, dynamic>>[];
     var replaced = false;
     for (final b in ((settings['bindings'] as List?) ?? const []).cast<Map>()) {
@@ -429,7 +503,12 @@ class _SettingsTab extends ConsumerWidget {
     return out;
   }
 
-  Future<void> _saveBindings(BuildContext context, WidgetRef ref, List<Map<String, dynamic>> bindings, QueryHandle h) async {
+  Future<void> _saveBindings(
+    BuildContext context,
+    WidgetRef ref,
+    List<Map<String, dynamic>> bindings,
+    QueryHandle h,
+  ) async {
     final c = ref.read(clientProvider)!;
     await runAction(
       context,
@@ -465,13 +544,20 @@ class _SettingsTab extends ConsumerWidget {
                 for (final b in vars)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text('${b['name']}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+                    title: Text(
+                      '${b['name']}',
+                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600),
+                    ),
                     subtitle: Text(_bindingTarget(b), maxLines: 2, overflow: TextOverflow.ellipsis),
                     onTap: b['type'] == 'plain_text' ? () => _editVar(context, ref, s, h, b) : null,
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () async {
-                        final ok = await confirm(context, title: context.tr('Remove ${b['name']}?', '移除 ${b['name']}？'), destructive: true);
+                        final ok = await confirm(
+                          context,
+                          title: context.tr('Remove ${b['name']}?', '移除 ${b['name']}？'),
+                          destructive: true,
+                        );
                         if (!ok || !context.mounted) return;
                         await _saveBindings(context, ref, _rebuildBindings(s, remove: b['name'] as String?), h);
                       },
@@ -507,25 +593,47 @@ class _SettingsTab extends ConsumerWidget {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.link),
-                    title: Text('${b['name']}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
-                    subtitle: Text('${_bindingLabels[b['type']]?.of(context) ?? b['type']} · ${_bindingTarget(b)}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(
+                      '${b['name']}',
+                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      '${_bindingLabels[b['type']]?.of(context) ?? b['type']} · ${_bindingTarget(b)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
               ],
             ),
             SectionCard(
               title: context.tr('Runtime', '运行时'),
               children: [
-                InfoRow(context.tr('Compatibility date', '兼容日期'), str(s['compatibility_date']),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit, size: 18),
-                      onPressed: () async {
-                        final v = await promptText(context, title: context.tr('Compatibility date', '兼容日期'), initial: s['compatibility_date'] as String?, hint: 'YYYY-MM-DD');
-                        if (v == null || !context.mounted) return;
-                        await runAction(context, () => patchWorkerSettings(c, accountId, script, {'compatibility_date': v.trim()}), success: context.tr('Saved', '已保存'));
-                        await h.reload();
-                      },
-                    )),
-                InfoRow(context.tr('Compatibility flags', '兼容标志'), ((s['compatibility_flags'] as List?) ?? const []).join(', ').ifEmpty('—')),
+                InfoRow(
+                  context.tr('Compatibility date', '兼容日期'),
+                  str(s['compatibility_date']),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit, size: 18),
+                    onPressed: () async {
+                      final v = await promptText(
+                        context,
+                        title: context.tr('Compatibility date', '兼容日期'),
+                        initial: s['compatibility_date'] as String?,
+                        hint: 'YYYY-MM-DD',
+                      );
+                      if (v == null || !context.mounted) return;
+                      await runAction(
+                        context,
+                        () => patchWorkerSettings(c, accountId, script, {'compatibility_date': v.trim()}),
+                        success: context.tr('Saved', '已保存'),
+                      );
+                      await h.reload();
+                    },
+                  ),
+                ),
+                InfoRow(
+                  context.tr('Compatibility flags', '兼容标志'),
+                  ((s['compatibility_flags'] as List?) ?? const []).join(', ').ifEmpty('—'),
+                ),
                 InfoRow(context.tr('Usage model', '计费模式'), str(s['usage_model'])),
                 InfoRow(context.tr('Placement', '放置'), str((s['placement'] as Map?)?['mode'] ?? s['placement_mode'])),
                 SwitchListTile(
@@ -533,7 +641,12 @@ class _SettingsTab extends ConsumerWidget {
                   title: Text(context.tr('Workers Logs (observability)', 'Workers 日志（可观测性）')),
                   value: (s['observability'] as Map?)?['enabled'] == true,
                   onChanged: (v) async {
-                    await runAction(context, () => patchWorkerSettings(c, accountId, script, {'observability': {'enabled': v}}));
+                    await runAction(
+                      context,
+                      () => patchWorkerSettings(c, accountId, script, {
+                        'observability': {'enabled': v},
+                      }),
+                    );
                     await h.reload();
                   },
                 ),
@@ -595,9 +708,17 @@ class _SecretsTab extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(controller: name, enabled: existing == null, decoration: InputDecoration(labelText: ctx.tr('Name', '名称'), border: const OutlineInputBorder())),
+                    TextField(
+                      controller: name,
+                      enabled: existing == null,
+                      decoration: InputDecoration(labelText: ctx.tr('Name', '名称'), border: const OutlineInputBorder()),
+                    ),
                     const SizedBox(height: 12),
-                    TextField(controller: value, obscureText: true, decoration: InputDecoration(labelText: ctx.tr('Value', '值'), border: const OutlineInputBorder())),
+                    TextField(
+                      controller: value,
+                      obscureText: true,
+                      decoration: InputDecoration(labelText: ctx.tr('Value', '值'), border: const OutlineInputBorder()),
+                    ),
                   ],
                 ),
               ),
@@ -612,7 +733,11 @@ class _SecretsTab extends ConsumerWidget {
           name.dispose();
           value.dispose();
           if (ok != true || n.isEmpty || !context.mounted) return;
-          await runAction(context, () => c.put(base, data: {'name': n, 'text': v, 'type': 'secret_text'}), success: context.tr('Secret saved', '密钥已保存'));
+          await runAction(
+            context,
+            () => c.put(base, data: {'name': n, 'text': v, 'type': 'secret_text'}),
+            success: context.tr('Secret saved', '密钥已保存'),
+          );
           await h.reload();
         }
 
@@ -624,7 +749,11 @@ class _SecretsTab extends ConsumerWidget {
                 children: [
                   Expanded(child: Text(context.tr('Secret values are write-only.', '密钥值只能写入，无法读取。'))),
                   IconButton(icon: const Icon(Icons.refresh), onPressed: h.reload),
-                  FilledButton.tonalIcon(icon: const Icon(Icons.add), label: Text(context.tr('Add', '添加')), onPressed: put),
+                  FilledButton.tonalIcon(
+                    icon: const Icon(Icons.add),
+                    label: Text(context.tr('Add', '添加')),
+                    onPressed: put,
+                  ),
                 ],
               ),
             ),
@@ -640,7 +769,11 @@ class _SecretsTab extends ConsumerWidget {
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () async {
-                          final ok = await confirmDanger(context, title: context.tr('Delete secret?', '删除密钥？'), message: '${s['name']}');
+                          final ok = await confirmDanger(
+                            context,
+                            title: context.tr('Delete secret?', '删除密钥？'),
+                            message: '${s['name']}',
+                          );
                           if (!ok || !context.mounted) return;
                           await runAction(context, () => c.delete('$base/${Uri.encodeComponent(s['name'] as String)}'));
                           await h.reload();
@@ -673,14 +806,22 @@ class _TriggersTab extends ConsumerWidget {
     return ApiQuery<(List<Map<String, dynamic>>, List<Map<String, dynamic>>, List<Map<String, dynamic>>)>(
       cacheKey: 'worker-triggers:$accountId:$script:$zoneId',
       load: (c) async {
-        final domains = await c.list('/accounts/$accountId/workers/domains', query: {'service': script}, paginate: false).catchError((_) => <Map<String, dynamic>>[]);
+        final domains = await c
+            .list('/accounts/$accountId/workers/domains', query: {'service': script}, paginate: false)
+            .catchError((_) => <Map<String, dynamic>>[]);
         final sched = await c.get('${_scriptPath(accountId, script)}/schedules').catchError((_) => null);
-        final schedules = (sched is Map ? (sched['schedules'] as List? ?? const []) : const []).cast<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        final schedules = (sched is Map ? (sched['schedules'] as List? ?? const []) : const [])
+            .cast<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         var routes = <Map<String, dynamic>>[];
         if (zoneId != null) {
-          routes = (await c.list('/zones/$zoneId/workers/routes', paginate: false).catchError((_) => <Map<String, dynamic>>[]))
-              .where((r) => r['script'] == script)
-              .toList();
+          routes =
+              (await c
+                      .list('/zones/$zoneId/workers/routes', paginate: false)
+                      .catchError((_) => <Map<String, dynamic>>[]))
+                  .where((r) => r['script'] == script)
+                  .toList();
         }
         return (domains, schedules, routes);
       },
@@ -698,16 +839,23 @@ class _TriggersTab extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: Text(context.tr('Add', '添加')),
                       onPressed: () async {
-                        final host = await promptText(context, title: context.tr('Custom domain', '自定义域'), hint: 'api.${zone['name']}');
+                        final host = await promptText(
+                          context,
+                          title: context.tr('Custom domain', '自定义域'),
+                          hint: 'api.${zone['name']}',
+                        );
                         if (host == null || host.trim().isEmpty || !context.mounted) return;
                         await runAction(
                           context,
-                          () => c.put('/accounts/$accountId/workers/domains', data: {
-                            'hostname': host.trim(),
-                            'service': script,
-                            'zone_id': zoneId,
-                            'environment': 'production',
-                          }),
+                          () => c.put(
+                            '/accounts/$accountId/workers/domains',
+                            data: {
+                              'hostname': host.trim(),
+                              'service': script,
+                              'zone_id': zoneId,
+                              'environment': 'production',
+                            },
+                          ),
                           success: context.tr('Domain attached', '已绑定域名'),
                         );
                         await h.reload();
@@ -724,7 +872,11 @@ class _TriggersTab extends ConsumerWidget {
                     trailing: IconButton(
                       icon: const Icon(Icons.link_off),
                       onPressed: () async {
-                        final ok = await confirm(context, title: context.tr('Detach ${d['hostname']}?', '解绑 ${d['hostname']}？'), destructive: true);
+                        final ok = await confirm(
+                          context,
+                          title: context.tr('Detach ${d['hostname']}?', '解绑 ${d['hostname']}？'),
+                          destructive: true,
+                        );
                         if (!ok || !context.mounted) return;
                         await runAction(context, () => c.delete('/accounts/$accountId/workers/domains/${d['id']}'));
                         await h.reload();
@@ -741,9 +893,19 @@ class _TriggersTab extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: Text(context.tr('Add', '添加')),
                       onPressed: () async {
-                        final pattern = await promptText(context, title: context.tr('Route pattern', '路由规则'), hint: '${zone?['name']}/api/*');
+                        final pattern = await promptText(
+                          context,
+                          title: context.tr('Route pattern', '路由规则'),
+                          hint: '${zone?['name']}/api/*',
+                        );
                         if (pattern == null || pattern.trim().isEmpty || !context.mounted) return;
-                        await runAction(context, () => c.post('/zones/$zoneId/workers/routes', data: {'pattern': pattern.trim(), 'script': script}));
+                        await runAction(
+                          context,
+                          () => c.post(
+                            '/zones/$zoneId/workers/routes',
+                            data: {'pattern': pattern.trim(), 'script': script},
+                          ),
+                        );
                         await h.reload();
                       },
                     ),
@@ -780,8 +942,17 @@ class _TriggersTab extends ConsumerWidget {
                     confirmLabel: context.tr('Save', '保存'),
                   );
                   if (text == null || !context.mounted) return;
-                  final crons = text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).map((e) => {'cron': e}).toList();
-                  await runAction(context, () => c.put('${_scriptPath(accountId, script)}/schedules', data: crons), success: context.tr('Saved', '已保存'));
+                  final crons = text
+                      .split('\n')
+                      .map((e) => e.trim())
+                      .where((e) => e.isNotEmpty)
+                      .map((e) => {'cron': e})
+                      .toList();
+                  await runAction(
+                    context,
+                    () => c.put('${_scriptPath(accountId, script)}/schedules', data: crons),
+                    success: context.tr('Saved', '已保存'),
+                  );
                   await h.reload();
                 },
               ),
@@ -827,7 +998,9 @@ class _DeploymentsTab extends ConsumerWidget {
       builder: (context, data, h) {
         final (deployments, versions) = data;
         final active = deployments.isEmpty ? null : deployments.first as Map;
-        final activeVersions = ((active?['versions'] as List?) ?? const []).map((e) => (e as Map)['version_id']).toSet();
+        final activeVersions = ((active?['versions'] as List?) ?? const [])
+            .map((e) => (e as Map)['version_id'])
+            .toSet();
         final c = ref.read(clientProvider)!;
         return ContentList(
           onRefresh: h.reload,
@@ -850,34 +1023,45 @@ class _DeploymentsTab extends ConsumerWidget {
                 for (final v in versions.cast<Map>())
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(radius: 16, child: Text('${v['number'] ?? '?'}', style: const TextStyle(fontSize: 12))),
+                    leading: CircleAvatar(
+                      radius: 16,
+                      child: Text('${v['number'] ?? '?'}', style: const TextStyle(fontSize: 12)),
+                    ),
                     title: Text('${v['id']}', style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                    subtitle: Text([
-                      formatDate((v['metadata'] as Map?)?['created_on']),
-                      (v['metadata'] as Map?)?['author_email'],
-                      (v['metadata'] as Map?)?['source'],
-                      (v['annotations'] as Map?)?['workers/message'],
-                    ].whereType<String>().join(' · ')),
+                    subtitle: Text(
+                      [
+                        formatDate((v['metadata'] as Map?)?['created_on']),
+                        (v['metadata'] as Map?)?['author_email'],
+                        (v['metadata'] as Map?)?['source'],
+                        (v['annotations'] as Map?)?['workers/message'],
+                      ].whereType<String>().join(' · '),
+                    ),
                     trailing: activeVersions.contains(v['id'])
                         ? const StatusChip('active', tone: Tone.good)
                         : TextButton(
                             onPressed: () async {
                               final msg = await promptText(
                                 context,
-                                title: context.tr('Deploy version ${v['number'] ?? ''} (100%)', '部署版本 ${v['number'] ?? ''}（100%）'),
+                                title: context.tr(
+                                  'Deploy version ${v['number'] ?? ''} (100%)',
+                                  '部署版本 ${v['number'] ?? ''}（100%）',
+                                ),
                                 label: context.tr('Message (optional)', '说明（可选）'),
                                 confirmLabel: context.tr('Deploy', '部署'),
                               );
                               if (msg == null || !context.mounted) return;
                               await runAction(
                                 context,
-                                () => c.post('${_scriptPath(accountId, script)}/deployments', data: {
-                                  'strategy': 'percentage',
-                                  'versions': [
-                                    {'version_id': v['id'], 'percentage': 100},
-                                  ],
-                                  if (msg.trim().isNotEmpty) 'annotations': {'workers/message': msg.trim()},
-                                }),
+                                () => c.post(
+                                  '${_scriptPath(accountId, script)}/deployments',
+                                  data: {
+                                    'strategy': 'percentage',
+                                    'versions': [
+                                      {'version_id': v['id'], 'percentage': 100},
+                                    ],
+                                    if (msg.trim().isNotEmpty) 'annotations': {'workers/message': msg.trim()},
+                                  },
+                                ),
                                 success: context.tr('Deployed', '已部署'),
                               );
                               await h.reload();
@@ -969,17 +1153,32 @@ class _TailTabState extends ConsumerState<_TailTab> with AutomaticKeepAliveClien
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
           child: Row(
             children: [
-              Expanded(child: SearchField(hint: context.tr('Filter logs', '过滤日志'), onChanged: (v) => setState(() => _filter = v.trim()))),
+              Expanded(
+                child: SearchField(
+                  hint: context.tr('Filter logs', '过滤日志'),
+                  onChanged: (v) => setState(() => _filter = v.trim()),
+                ),
+              ),
               const SizedBox(width: 8),
               if (live)
-                FilledButton.tonalIcon(onPressed: _stop, icon: const Icon(Icons.stop), label: Text(context.tr('Stop', '停止')))
+                FilledButton.tonalIcon(
+                  onPressed: _stop,
+                  icon: const Icon(Icons.stop),
+                  label: Text(context.tr('Stop', '停止')),
+                )
               else
                 FilledButton.icon(
                   onPressed: _connecting ? null : _start,
-                  icon: _connecting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow),
+                  icon: _connecting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.play_arrow),
                   label: Text(context.tr('Start tail', '开始实时日志')),
                 ),
-              IconButton(tooltip: context.tr('Clear', '清空'), icon: const Icon(Icons.clear_all), onPressed: () => setState(_events.clear)),
+              IconButton(
+                tooltip: context.tr('Clear', '清空'),
+                icon: const Icon(Icons.clear_all),
+                onPressed: () => setState(_events.clear),
+              ),
             ],
           ),
         ),
@@ -994,7 +1193,11 @@ class _TailTabState extends ConsumerState<_TailTab> with AutomaticKeepAliveClien
               ],
             ),
           ),
-        if (_error != null) Padding(padding: const EdgeInsets.all(12), child: Text(_error!, style: TextStyle(color: theme.colorScheme.error))),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+          ),
         Expanded(
           child: list.isEmpty
               ? EmptyView(
@@ -1040,7 +1243,8 @@ class _TailEventTile extends StatelessWidget {
                 children: [
                   StatusChip(outcome, tone: outcome == 'ok' ? Tone.good : Tone.bad),
                   const SizedBox(width: 8),
-                  if (res['status'] != null) Text('${res['status']} ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  if (res['status'] != null)
+                    Text('${res['status']} ', style: const TextStyle(fontWeight: FontWeight.w700)),
                   Expanded(
                     child: Text(
                       cron != null ? 'cron $cron' : '${req['method'] ?? ''} ${req['url'] ?? ''}',
@@ -1060,14 +1264,19 @@ class _TailEventTile extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 12,
-                      color: l['level'] == 'error' ? theme.colorScheme.error : (l['level'] == 'warn' ? Colors.orange : null),
+                      color: l['level'] == 'error'
+                          ? theme.colorScheme.error
+                          : (l['level'] == 'warn' ? Colors.orange : null),
                     ),
                   ),
                 ),
               for (final ex in exceptions)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text('⚠ ${ex['name']}: ${ex['message']}', style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: theme.colorScheme.error)),
+                  child: Text(
+                    '⚠ ${ex['name']}: ${ex['message']}',
+                    style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: theme.colorScheme.error),
+                  ),
                 ),
             ],
           ),

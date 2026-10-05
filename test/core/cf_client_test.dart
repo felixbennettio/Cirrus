@@ -7,7 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/fake_api.dart';
 
 const tokenProfile = Profile(id: 't', name: 'Token', kind: AuthKind.apiToken, token: 'tok_1234567890abcdef');
-const keyProfile = Profile(id: 'k', name: 'Key', kind: AuthKind.globalKey, email: 'me@example.com', apiKey: 'globalkey1234567890', originCaKey: 'v1.0-origin-ca-key');
+const keyProfile = Profile(
+  id: 'k',
+  name: 'Key',
+  kind: AuthKind.globalKey,
+  email: 'me@example.com',
+  apiKey: 'globalkey1234567890',
+  originCaKey: 'v1.0-origin-ca-key',
+);
 
 (CfClient, FakeApi) client(FakeHandler handler, {Profile profile = tokenProfile}) {
   final api = FakeApi(handler);
@@ -30,18 +37,30 @@ void main() {
 
     test('throws CfApiException with API errors', () {
       expect(
-        () => CfClient.parseEnvelope(method: 'GET', path: '/zones/x', statusCode: 403, body: FakeApi.fail(9109, 'Unauthorized to access requested resource')),
-        throwsA(isA<CfApiException>()
-            .having((e) => e.statusCode, 'status', 403)
-            .having((e) => e.errors.single.code, 'code', 9109)
-            .having((e) => e.isAuthError, 'auth', true)
-            .having((e) => e.summary, 'summary', contains('Unauthorized'))),
+        () => CfClient.parseEnvelope(
+          method: 'GET',
+          path: '/zones/x',
+          statusCode: 403,
+          body: FakeApi.fail(9109, 'Unauthorized to access requested resource'),
+        ),
+        throwsA(
+          isA<CfApiException>()
+              .having((e) => e.statusCode, 'status', 403)
+              .having((e) => e.errors.single.code, 'code', 9109)
+              .having((e) => e.isAuthError, 'auth', true)
+              .having((e) => e.summary, 'summary', contains('Unauthorized')),
+        ),
       );
     });
 
     test('success:false with HTTP 200 still throws', () {
       expect(
-        () => CfClient.parseEnvelope(method: 'POST', path: '/x', statusCode: 200, body: FakeApi.fail(1004, 'DNS Validation Error')),
+        () => CfClient.parseEnvelope(
+          method: 'POST',
+          path: '/x',
+          statusCode: 200,
+          body: FakeApi.fail(1004, 'DNS Validation Error'),
+        ),
         throwsA(isA<CfApiException>()),
       );
     });
@@ -82,7 +101,16 @@ void main() {
     test('follows page numbers', () async {
       final (c, api) = client((m, u, b) {
         final page = int.parse(u.queryParameters['page'] ?? '1');
-        return (200, FakeApi.ok([{'id': 'p$page'}], info: {'page': page, 'per_page': 1, 'total_pages': 3}), const {});
+        return (
+          200,
+          FakeApi.ok(
+            [
+              {'id': 'p$page'},
+            ],
+            info: {'page': page, 'per_page': 1, 'total_pages': 3},
+          ),
+          const {},
+        );
       });
       final list = await c.list('/zones', perPage: 1);
       expect(list.map((e) => e['id']), ['p1', 'p2', 'p3']);
@@ -93,8 +121,32 @@ void main() {
       final (c, api) = client((m, u, b) {
         final cursor = u.queryParameters['cursor'];
         expect(u.queryParameters.containsKey('page'), isFalse);
-        if (cursor == null) return (200, FakeApi.ok([{'id': 'a'}], info: {'cursors': {'after': 'c2'}}), const {});
-        if (cursor == 'c2') return (200, FakeApi.ok([{'id': 'b'}], info: {'cursors': <String, String>{}}), const {});
+        if (cursor == null) {
+          return (
+            200,
+            FakeApi.ok(
+              [
+                {'id': 'a'},
+              ],
+              info: {
+                'cursors': {'after': 'c2'},
+              },
+            ),
+            const {},
+          );
+        }
+        if (cursor == 'c2') {
+          return (
+            200,
+            FakeApi.ok(
+              [
+                {'id': 'b'},
+              ],
+              info: {'cursors': <String, String>{}},
+            ),
+            const {},
+          );
+        }
         return null;
       });
       final list = await c.list('/accounts/x/rules/lists/y/items', cursorPagination: true);
@@ -103,7 +155,17 @@ void main() {
     });
 
     test('unwraps result.buckets lists', () async {
-      final (c, _) = client((m, u, b) => (200, FakeApi.ok({'buckets': [{'name': 'assets'}]}), const {}));
+      final (c, _) = client(
+        (m, u, b) => (
+          200,
+          FakeApi.ok({
+            'buckets': [
+              {'name': 'assets'},
+            ],
+          }),
+          const {},
+        ),
+      );
       final p = await c.page('/accounts/x/r2/buckets');
       expect(p.items.single, {'name': 'assets'});
     });
@@ -114,7 +176,13 @@ void main() {
     final (c, api) = client((m, u, b) {
       n++;
       if (n == 1) {
-        return (429, FakeApi.fail(10000, 'Rate limited'), const {'retry-after': ['1']});
+        return (
+          429,
+          FakeApi.fail(10000, 'Rate limited'),
+          const {
+            'retry-after': ['1'],
+          },
+        );
       }
       return (200, FakeApi.ok('done'), const <String, List<String>>{});
     });
@@ -123,8 +191,22 @@ void main() {
   });
 
   test('graphql errors are raised', () async {
-    final (c, _) = client((m, u, b) => (200, {'data': null, 'errors': [{'message': 'unknown field'}]}, const {}));
-    expect(() => c.graphql('{ viewer { x } }'), throwsA(isA<CfApiException>().having((e) => e.summary, 's', contains('unknown field'))));
+    final (c, _) = client(
+      (m, u, b) => (
+        200,
+        {
+          'data': null,
+          'errors': [
+            {'message': 'unknown field'},
+          ],
+        },
+        const {},
+      ),
+    );
+    expect(
+      () => c.graphql('{ viewer { x } }'),
+      throwsA(isA<CfApiException>().having((e) => e.summary, 's', contains('unknown field'))),
+    );
   });
 
   test('cURL export masks credentials by default', () {

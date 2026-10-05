@@ -80,7 +80,9 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
     final catalog = ref.watch(catalogProvider);
     return PageScaffold(
       title: context.tr('API console', 'API 控制台'),
-      subtitle: catalog.value == null ? null : context.tr('${catalog.value!.operations.length} endpoints', '${catalog.value!.operations.length} 个接口'),
+      subtitle: catalog.value == null
+          ? null
+          : context.tr('${catalog.value!.operations.length} endpoints', '${catalog.value!.operations.length} 个接口'),
       body: catalog.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorView(error: e),
@@ -97,7 +99,10 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
                     ? EmptyView(
                         icon: Icons.terminal,
                         title: context.tr('Pick an endpoint', '选择一个接口'),
-                        subtitle: context.tr('Every Cloudflare API endpoint is here — search by name, path or product.', '所有 Cloudflare API 接口都在这里——可按名称、路径或产品搜索。'),
+                        subtitle: context.tr(
+                          'Every Cloudflare API endpoint is here — search by name, path or product.',
+                          '所有 Cloudflare API 接口都在这里——可按名称、路径或产品搜索。',
+                        ),
                       )
                     : OperationRunner(key: ValueKey(op.id), op: op, catalog: cat),
               ),
@@ -116,7 +121,12 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
       selected: op.id == _opId,
       leading: MethodBadge(op.method, small: true),
       title: Text(op.summary.isEmpty ? op.path : op.summary, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(trailingText ?? op.path, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+      subtitle: Text(
+        trailingText ?? op.path,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+      ),
       trailing: op.deprecated ? const Icon(Icons.warning_amber, size: 16) : null,
       onTap: () => _select(context, op),
     );
@@ -133,7 +143,8 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
           : ListView(
               children: [
                 for (final h in history)
-                  if (cat.byId(h.opId) case final op?) opTile(op, trailingText: '${h.status} · ${formatRelative(h.at, zh: context.isZh)} · ${h.url}'),
+                  if (cat.byId(h.opId) case final op?)
+                    opTile(op, trailingText: '${h.status} · ${formatRelative(h.at, zh: context.isZh)} · ${h.url}'),
               ],
             );
     } else if (_q.length >= 2) {
@@ -148,7 +159,10 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
           return ExpansionTile(
             dense: true,
             title: Text(e.key, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(context.tr('${e.value.length} endpoints', '${e.value.length} 个接口'), style: const TextStyle(fontSize: 11)),
+            subtitle: Text(
+              context.tr('${e.value.length} endpoints', '${e.value.length} 个接口'),
+              style: const TextStyle(fontSize: 11),
+            ),
             children: [for (final op in e.value) opTile(op)],
           );
         },
@@ -170,9 +184,21 @@ class _ConsolePageState extends ConsumerState<ConsolePage> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: SegmentedButton<int>(
             segments: [
-              ButtonSegment(value: 0, label: Text(context.tr('Browse', '浏览')), icon: const Icon(Icons.account_tree_outlined, size: 16)),
-              ButtonSegment(value: 1, label: Text(context.tr('Starred', '收藏')), icon: const Icon(Icons.star_outline, size: 16)),
-              ButtonSegment(value: 2, label: Text(context.tr('History', '历史')), icon: const Icon(Icons.history, size: 16)),
+              ButtonSegment(
+                value: 0,
+                label: Text(context.tr('Browse', '浏览')),
+                icon: const Icon(Icons.account_tree_outlined, size: 16),
+              ),
+              ButtonSegment(
+                value: 1,
+                label: Text(context.tr('Starred', '收藏')),
+                icon: const Icon(Icons.star_outline, size: 16),
+              ),
+              ButtonSegment(
+                value: 2,
+                label: Text(context.tr('History', '历史')),
+                icon: const Icon(Icons.history, size: 16),
+              ),
             ],
             selected: {_tab},
             showSelectedIcon: false,
@@ -202,14 +228,21 @@ class ConsoleOperationPage extends ConsumerWidget {
       body: catalog.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorView(error: e),
-        data: (cat) => op == null ? EmptyView(icon: Icons.help_outline, title: opId) : OperationRunner(op: op, catalog: cat),
+        data: (cat) =>
+            op == null ? EmptyView(icon: Icons.help_outline, title: opId) : OperationRunner(op: op, catalog: cat),
       ),
     );
   }
 }
 
 class _Response {
-  _Response({required this.status, required this.headers, required this.bytes, required this.duration, required this.contentType});
+  _Response({
+    required this.status,
+    required this.headers,
+    required this.bytes,
+    required this.duration,
+    required this.contentType,
+  });
 
   final int status;
   final Map<String, List<String>> headers;
@@ -299,9 +332,16 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
   }
 
   Future<void> _send() async {
-    final missing = op.params.where((p) => p.required && _params['${p.location}:${p.name}']!.text.trim().isEmpty).map((p) => p.name).toList();
+    final missing = op.params
+        .where((p) => p.required && _params['${p.location}:${p.name}']!.text.trim().isEmpty)
+        .map((p) => p.name)
+        .toList();
     if (missing.isNotEmpty) {
-      showToast(context, context.tr('Missing required: ${missing.join(', ')}', '缺少必填参数：${missing.join('、')}'), error: true);
+      showToast(
+        context,
+        context.tr('Missing required: ${missing.join(', ')}', '缺少必填参数：${missing.join('、')}'),
+        error: true,
+      );
       return;
     }
     Object? data;
@@ -352,7 +392,14 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
         final bytes = _rawFile?.bytes ?? Uint8List.fromList(utf8.encode(_body.text));
         headers['Content-Length'] = '${bytes.length}';
       }
-      final r = await c.raw(op.method, _path(), query: _query(), data: data, contentType: contentType, headers: headers);
+      final r = await c.raw(
+        op.method,
+        _path(),
+        query: _query(),
+        data: data,
+        contentType: contentType,
+        headers: headers,
+      );
       final resp = _Response(
         status: r.statusCode,
         headers: r.headers,
@@ -360,7 +407,9 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
         duration: r.duration,
         contentType: r.header('content-type') ?? '',
       );
-      ref.read(consoleHistoryProvider.notifier).add(ConsoleHistoryEntry(op.id, op.method, _path(), r.statusCode, DateTime.now()));
+      ref
+          .read(consoleHistoryProvider.notifier)
+          .add(ConsoleHistoryEntry(op.id, op.method, _path(), r.statusCode, DateTime.now()));
       setState(() => _response = resp);
     } catch (e) {
       setState(() => _error = e);
@@ -377,7 +426,13 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
       return DropdownButtonFormField<String>(
         initialValue: ctl.text.isEmpty ? null : ctl.text,
         isExpanded: true,
-        decoration: InputDecoration(labelText: label, helperText: p.description, helperMaxLines: 2, border: const OutlineInputBorder(), isDense: true),
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: p.description,
+          helperMaxLines: 2,
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
         items: [
           const DropdownMenuItem(value: '', child: Text('—')),
           for (final v in enumValues) DropdownMenuItem(value: '$v', child: Text('$v')),
@@ -456,7 +511,14 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
                     final j = _jsonBody();
                     if (j is Map<String, dynamic>) initial = j;
                   } catch (_) {}
-                  final r = await showSchemaEditor(context, title: op.summary, catalog: widget.catalog, schema: body.schema, initial: initial, submitLabel: context.tr('Apply', '应用'));
+                  final r = await showSchemaEditor(
+                    context,
+                    title: op.summary,
+                    catalog: widget.catalog,
+                    schema: body.schema,
+                    initial: initial,
+                    submitLabel: context.tr('Apply', '应用'),
+                  );
                   if (r != null) _body.text = prettyJson(r);
                 },
               ),
@@ -488,7 +550,10 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
         SizedBox(
           height: 260,
           child: DecoratedBox(
-            decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CodeEditorField(controller: _body, language: body.isJson ? 'json' : languageFor(body.contentType)),
@@ -514,7 +579,12 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
           children: [
             MethodBadge(op.method),
             const SizedBox(width: 10),
-            Expanded(child: SelectableText(op.path, style: const TextStyle(fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600))),
+            Expanded(
+              child: SelectableText(
+                op.path,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
             IconButton(
               tooltip: starred ? context.tr('Unstar', '取消收藏') : context.tr('Star', '收藏'),
               icon: Icon(starred ? Icons.star : Icons.star_border, color: starred ? Colors.amber : null),
@@ -534,10 +604,17 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
           runSpacing: 6,
           children: [
             Chip(label: Text(op.group), visualDensity: VisualDensity.compact),
-            if (op.deprecated) Chip(avatar: const Icon(Icons.warning_amber, size: 16), label: Text(context.tr('Deprecated', '已弃用')), visualDensity: VisualDensity.compact),
+            if (op.deprecated)
+              Chip(
+                avatar: const Icon(Icons.warning_amber, size: 16),
+                label: Text(context.tr('Deprecated', '已弃用')),
+                visualDensity: VisualDensity.compact,
+              ),
             if (op.availability != null) Chip(label: Text(op.availability!), visualDensity: VisualDensity.compact),
-            for (final p in op.permissions) Chip(avatar: const Icon(Icons.key, size: 14), label: Text(p), visualDensity: VisualDensity.compact),
-            if (op.plans.isNotEmpty && op.plans.length < 4) Chip(label: Text(op.plans.join(' / ')), visualDensity: VisualDensity.compact),
+            for (final p in op.permissions)
+              Chip(avatar: const Icon(Icons.key, size: 14), label: Text(p), visualDensity: VisualDensity.compact),
+            if (op.plans.isNotEmpty && op.plans.length < 4)
+              Chip(label: Text(op.plans.join(' / ')), visualDensity: VisualDensity.compact),
           ],
         ),
         const SizedBox(height: 16),
@@ -549,15 +626,25 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
         if (queryParams.isNotEmpty)
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: Text(context.tr('Query parameters (${queryParams.length})', '查询参数（${queryParams.length}）'), style: theme.textTheme.titleSmall),
+            title: Text(
+              context.tr('Query parameters (${queryParams.length})', '查询参数（${queryParams.length}）'),
+              style: theme.textTheme.titleSmall,
+            ),
             initiallyExpanded: queryParams.any((p) => p.required),
-            children: [for (final p in queryParams) Padding(padding: const EdgeInsets.only(bottom: 8), child: _paramField(p))],
+            children: [
+              for (final p in queryParams) Padding(padding: const EdgeInsets.only(bottom: 8), child: _paramField(p)),
+            ],
           ),
         if (headerParams.isNotEmpty)
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: Text(context.tr('Headers (${headerParams.length})', '请求头（${headerParams.length}）'), style: theme.textTheme.titleSmall),
-            children: [for (final p in headerParams) Padding(padding: const EdgeInsets.only(bottom: 8), child: _paramField(p))],
+            title: Text(
+              context.tr('Headers (${headerParams.length})', '请求头（${headerParams.length}）'),
+              style: theme.textTheme.titleSmall,
+            ),
+            children: [
+              for (final p in headerParams) Padding(padding: const EdgeInsets.only(bottom: 8), child: _paramField(p)),
+            ],
           ),
         if (op.body != null) ...[
           const SizedBox(height: 8),
@@ -570,7 +657,9 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
           children: [
             FilledButton.icon(
               onPressed: _sending ? null : _send,
-              icon: _sending ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.send),
+              icon: _sending
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.send),
               label: Text(context.tr('Send', '发送')),
             ),
             const SizedBox(width: 8),
@@ -606,7 +695,9 @@ class _ResponseView extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = response;
     final ok = r.status >= 200 && r.status < 300;
-    final json = r.contentType.contains('json') || r.bytes.isNotEmpty && (r.bytes.first == 123 || r.bytes.first == 91) ? r.json : null;
+    final json = r.contentType.contains('json') || r.bytes.isNotEmpty && (r.bytes.first == 123 || r.bytes.first == 91)
+        ? r.json
+        : null;
     final isImage = r.contentType.startsWith('image/');
     return Card(
       margin: EdgeInsets.zero,
@@ -621,16 +712,25 @@ class _ResponseView extends StatelessWidget {
                 children: [
                   StatusChip('${r.status}', tone: ok ? Tone.good : Tone.bad),
                   const SizedBox(width: 8),
-                  Text('${r.duration.inMilliseconds} ms · ${formatBytes(r.bytes.length)} · ${r.contentType}', style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    '${r.duration.inMilliseconds} ms · ${formatBytes(r.bytes.length)} · ${r.contentType}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const Spacer(),
                   IconButton(
                     tooltip: context.tr('Save response', '保存响应'),
                     icon: const Icon(Icons.save_alt, size: 20),
-                    onPressed: () => saveBytes(context, fileName: '$name.${json != null ? 'json' : 'bin'}', bytes: r.bytes),
+                    onPressed: () =>
+                        saveBytes(context, fileName: '$name.${json != null ? 'json' : 'bin'}', bytes: r.bytes),
                   ),
                 ],
               ),
-              TabBar(tabs: [Tab(text: context.tr('Body', '响应体')), Tab(text: context.tr('Headers', '响应头'))]),
+              TabBar(
+                tabs: [
+                  Tab(text: context.tr('Body', '响应体')),
+                  Tab(text: context.tr('Headers', '响应头')),
+                ],
+              ),
               SizedBox(
                 height: 480,
                 child: TabBarView(
@@ -641,12 +741,13 @@ class _ResponseView extends StatelessWidget {
                           ? Image.memory(r.bytes, fit: BoxFit.contain)
                           : json != null
                           ? JsonViewer(json)
-                          : CodeView(text: utf8.decode(r.bytes, allowMalformed: true), language: languageFor(r.contentType)),
+                          : CodeView(
+                              text: utf8.decode(r.bytes, allowMalformed: true),
+                              language: languageFor(r.contentType),
+                            ),
                     ),
                     ListView(
-                      children: [
-                        for (final e in r.headers.entries) InfoRow(e.key, e.value.join(', '), mono: true),
-                      ],
+                      children: [for (final e in r.headers.entries) InfoRow(e.key, e.value.join(', '), mono: true)],
                     ),
                   ],
                 ),

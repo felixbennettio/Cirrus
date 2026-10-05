@@ -75,9 +75,7 @@ class SettingsPage extends ConsumerWidget {
                   trailing: PopupMenuButton<String>(
                     onSelected: (v) async {
                       if (v == 'edit') {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => AddProfilePage(editing: p)),
-                        );
+                        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AddProfilePage(editing: p)));
                       } else if (v == 'delete') {
                         final ok = await confirmDanger(
                           context,
@@ -112,9 +110,21 @@ class SettingsPage extends ConsumerWidget {
               const SizedBox(height: 8),
               SegmentedButton<ThemeMode>(
                 segments: [
-                  ButtonSegment(value: ThemeMode.system, label: Text(context.tr('System', '跟随系统')), icon: const Icon(Icons.brightness_auto)),
-                  ButtonSegment(value: ThemeMode.light, label: Text(context.tr('Light', '浅色')), icon: const Icon(Icons.light_mode)),
-                  ButtonSegment(value: ThemeMode.dark, label: Text(context.tr('Dark', '深色')), icon: const Icon(Icons.dark_mode)),
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text(context.tr('System', '跟随系统')),
+                    icon: const Icon(Icons.brightness_auto),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text(context.tr('Light', '浅色')),
+                    icon: const Icon(Icons.light_mode),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text(context.tr('Dark', '深色')),
+                    icon: const Icon(Icons.dark_mode),
+                  ),
                 ],
                 selected: {settings.themeMode},
                 onSelectionChanged: (s) => ctl.setThemeMode(s.first),
@@ -302,7 +312,9 @@ class _AboutCard extends StatelessWidget {
               child: Image.asset('assets/branding/cirrus_256.png', width: 40, height: 40),
             ),
             title: const Text('Cirrus'),
-            subtitle: Text('${context.tr('Version', '版本')} ${snap.data?.version ?? '…'} (${snap.data?.buildNumber ?? ''})'),
+            subtitle: Text(
+              '${context.tr('Version', '版本')} ${snap.data?.version ?? '…'} (${snap.data?.buildNumber ?? ''})',
+            ),
           ),
         ),
         Text(
@@ -317,11 +329,13 @@ class _AboutCard extends StatelessWidget {
           spacing: 8,
           children: [
             TextButton(
-              onPressed: () => launchUrl(Uri.parse('https://developers.cloudflare.com/api/'), mode: LaunchMode.externalApplication),
+              onPressed: () =>
+                  launchUrl(Uri.parse('https://developers.cloudflare.com/api/'), mode: LaunchMode.externalApplication),
               child: Text(context.tr('API documentation', 'API 文档')),
             ),
             TextButton(
-              onPressed: () => launchUrl(Uri.parse('https://www.cloudflarestatus.com/'), mode: LaunchMode.externalApplication),
+              onPressed: () =>
+                  launchUrl(Uri.parse('https://www.cloudflarestatus.com/'), mode: LaunchMode.externalApplication),
               child: Text(context.tr('Cloudflare status', 'Cloudflare 服务状态')),
             ),
             TextButton(

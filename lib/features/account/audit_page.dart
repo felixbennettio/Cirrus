@@ -43,7 +43,12 @@ class _AuditLogPageState extends ConsumerState<AuditLogPage> {
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
                   child: Row(
                     children: [
-                      Expanded(child: SearchField(hint: context.tr('Filter by actor, action, resource', '按操作者、动作、资源过滤'), onChanged: (v) => setState(() => _q = v.trim()))),
+                      Expanded(
+                        child: SearchField(
+                          hint: context.tr('Filter by actor, action, resource', '按操作者、动作、资源过滤'),
+                          onChanged: (v) => setState(() => _q = v.trim()),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       DropdownButton<int>(
                         value: _days,
@@ -74,8 +79,15 @@ class _AuditLogPageState extends ConsumerState<AuditLogPage> {
                             final ok = action['result'] != false;
                             return ListTile(
                               dense: true,
-                              leading: Icon(ok ? Icons.check_circle_outline : Icons.error_outline, color: ok ? Colors.green : Theme.of(context).colorScheme.error),
-                              title: Text('${action['type'] ?? ''} · ${resource['type'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              leading: Icon(
+                                ok ? Icons.check_circle_outline : Icons.error_outline,
+                                color: ok ? Colors.green : Theme.of(context).colorScheme.error,
+                              ),
+                              title: Text(
+                                '${action['type'] ?? ''} · ${resource['type'] ?? ''}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               subtitle: Text(
                                 '${actor['email'] ?? actor['type'] ?? ''} · ${actor['ip'] ?? ''} · ${formatDate(l['when'])}',
                                 maxLines: 1,

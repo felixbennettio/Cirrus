@@ -7,13 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 /// A parameter of an [ApiOperation].
 class ApiParam {
-  const ApiParam({
-    required this.name,
-    required this.location,
-    required this.required,
-    this.schema,
-    this.description,
-  });
+  const ApiParam({required this.name, required this.location, required this.required, this.schema, this.description});
 
   factory ApiParam.fromJson(Map<String, dynamic> j) => ApiParam(
     name: j['n'] as String,
@@ -34,12 +28,7 @@ class ApiParam {
 
 /// Request body description of an [ApiOperation].
 class ApiBody {
-  const ApiBody({
-    required this.contentType,
-    this.alternatives = const [],
-    this.required = false,
-    this.schema,
-  });
+  const ApiBody({required this.contentType, this.alternatives = const [], this.required = false, this.schema});
 
   factory ApiBody.fromJson(Map<String, dynamic> j) => ApiBody(
     contentType: j['ct'] as String,
@@ -91,10 +80,7 @@ class ApiOperation {
     deprecated: j['dep'] == true,
     availability: j['av'] as String?,
     auth: (j['auth'] as List?)?.cast<String>() ?? const [],
-    params: [
-      for (final p in (j['params'] as List? ?? const []))
-        ApiParam.fromJson(p as Map<String, dynamic>),
-    ],
+    params: [for (final p in (j['params'] as List? ?? const [])) ApiParam.fromJson(p as Map<String, dynamic>)],
     body: j['body'] == null ? null : ApiBody.fromJson(j['body'] as Map<String, dynamic>),
   );
 
@@ -136,9 +122,8 @@ class ApiOperation {
   bool matches(String method, String concretePath) =>
       method.toUpperCase() == this.method && _matcher.hasMatch(concretePath.split('?').first);
 
-  late final String _haystack =
-      '${method.toLowerCase()} $path $summary $group ${tag ?? ''} ${methodName ?? ''} $id'
-          .toLowerCase();
+  late final String _haystack = '${method.toLowerCase()} $path $summary $group ${tag ?? ''} ${methodName ?? ''} $id'
+      .toLowerCase();
 
   /// Scores how well this operation matches all [terms] (0 = no match).
   int score(List<String> terms) {
@@ -156,17 +141,10 @@ class ApiOperation {
 
 /// The bundled (or refreshed) index of every Cloudflare API endpoint.
 class ApiCatalog {
-  ApiCatalog({
-    required this.operations,
-    required this.schemas,
-    this.generated,
-    this.apiVersion,
-  });
+  ApiCatalog({required this.operations, required this.schemas, this.generated, this.apiVersion});
 
   factory ApiCatalog.fromJson(Map<String, dynamic> json) => ApiCatalog(
-    operations: [
-      for (final o in json['ops'] as List) ApiOperation.fromJson(o as Map<String, dynamic>),
-    ],
+    operations: [for (final o in json['ops'] as List) ApiOperation.fromJson(o as Map<String, dynamic>)],
     schemas: Map<String, dynamic>.from(json['schemas'] as Map? ?? const {}),
     generated: DateTime.tryParse(json['generated'] as String? ?? ''),
     apiVersion: json['apiVersion'] as String?,

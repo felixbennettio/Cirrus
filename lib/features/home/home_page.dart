@@ -83,8 +83,12 @@ class HomePage extends ConsumerWidget {
                 ),
               );
             },
-            loading: () => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-            error: (e, _) => ErrorView(error: e, compact: true, onRetry: () => ref.read(zonesProvider.notifier).refresh()),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) =>
+                ErrorView(error: e, compact: true, onRetry: () => ref.read(zonesProvider.notifier).refresh()),
           ),
           SectionCard(
             title: context.tr('Quick access', '快捷入口'),
@@ -107,7 +111,12 @@ class HomePage extends ConsumerWidget {
                             children: [
                               Icon(q.icon, color: theme.colorScheme.primary),
                               const SizedBox(height: 6),
-                              Text(q.label.of(context), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(
+                                q.label.of(context),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ],
                           ),
                         ),
@@ -122,25 +131,26 @@ class HomePage extends ConsumerWidget {
             title: context.tr('Domains', '域名'),
             trailing: TextButton(onPressed: () => context.go('/domains'), child: Text(context.tr('Manage', '管理'))),
             children: [
-              ...(zones.value ?? const []).take(12).map(
-                (z) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.public),
-                  title: Text(z['name'] as String),
-                  subtitle: Text('${(z['plan'] as Map?)?['name'] ?? ''}'),
-                  trailing: StatusChip(
-                    z['paused'] == true ? 'paused' : (z['status'] as String? ?? ''),
-                    tone: z['paused'] == true ? Tone.warn : StatusChip.toneFor(z['status'] as String?),
+              ...(zones.value ?? const [])
+                  .take(12)
+                  .map(
+                    (z) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.public),
+                      title: Text(z['name'] as String),
+                      subtitle: Text('${(z['plan'] as Map?)?['name'] ?? ''}'),
+                      trailing: StatusChip(
+                        z['paused'] == true ? 'paused' : (z['status'] as String? ?? ''),
+                        tone: z['paused'] == true ? Tone.warn : StatusChip.toneFor(z['status'] as String?),
+                      ),
+                      onTap: () {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setActiveZone(ref.read(currentAccountIdProvider) ?? '-', z['id'] as String);
+                        context.go('/zone');
+                      },
+                    ),
                   ),
-                  onTap: () {
-                    ref.read(settingsProvider.notifier).setActiveZone(
-                      ref.read(currentAccountIdProvider) ?? '-',
-                      z['id'] as String,
-                    );
-                    context.go('/zone');
-                  },
-                ),
-              ),
               if ((zones.value ?? const []).isEmpty && !zones.isLoading)
                 Padding(
                   padding: const EdgeInsets.all(12),

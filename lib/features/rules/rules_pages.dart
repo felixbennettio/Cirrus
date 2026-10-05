@@ -84,7 +84,11 @@ class SecurityPage extends StatelessWidget {
       length: tabs.length,
       child: PageScaffold(
         title: context.tr('Security & WAF', '安全与 WAF'),
-        bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in tabs) Tab(text: t.$1)]),
+        bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [for (final t in tabs) Tab(text: t.$1)],
+        ),
         body: TabBarView(children: [for (final t in tabs) t.$2]),
       ),
     );
@@ -104,13 +108,19 @@ class RulesPage extends StatelessWidget {
       (documentById['managed_headers']!.title.of(context), DocumentView(spec: documentById['managed_headers']!)),
       (documentById['url_normalization']!.title.of(context), DocumentView(spec: documentById['url_normalization']!)),
     ];
-    final initial = initialPhase == null ? 0 : transformPhases.indexWhere((p) => p.phase == initialPhase).clamp(0, tabs.length - 1);
+    final initial = initialPhase == null
+        ? 0
+        : transformPhases.indexWhere((p) => p.phase == initialPhase).clamp(0, tabs.length - 1);
     return DefaultTabController(
       length: tabs.length,
       initialIndex: initial,
       child: PageScaffold(
         title: context.tr('Rules', '规则'),
-        bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in tabs) Tab(text: t.$1)]),
+        bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [for (final t in tabs) Tab(text: t.$1)],
+        ),
         body: TabBarView(children: [for (final t in tabs) t.$2]),
       ),
     );
@@ -125,7 +135,8 @@ class _ZonePhase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ZoneRequired(
-      builder: (context, zoneId, _) => RulesetPhaseView(key: ValueKey('$zoneId:${meta.phase}'), meta: meta, basePath: '/zones/$zoneId'),
+      builder: (context, zoneId, _) =>
+          RulesetPhaseView(key: ValueKey('$zoneId:${meta.phase}'), meta: meta, basePath: '/zones/$zoneId'),
     );
   }
 }
@@ -156,11 +167,14 @@ query SecurityEvents($zoneTag: string, $since: Time, $until: Time) {
 
 Future<List<Map<String, dynamic>>> _loadEvents(CfClient c, String zoneId, int hours) async {
   final now = DateTime.now().toUtc();
-  final data = await c.graphql(_eventsQuery, variables: {
-    'zoneTag': zoneId,
-    'since': now.subtract(Duration(hours: hours)).toIso8601String(),
-    'until': now.toIso8601String(),
-  });
+  final data = await c.graphql(
+    _eventsQuery,
+    variables: {
+      'zoneTag': zoneId,
+      'since': now.subtract(Duration(hours: hours)).toIso8601String(),
+      'until': now.toIso8601String(),
+    },
+  );
   final zones = (data['viewer'] as Map?)?['zones'] as List? ?? const [];
   if (zones.isEmpty) return const [];
   return ((zones.first as Map)['firewallEventsAdaptive'] as List? ?? const [])
@@ -222,7 +236,10 @@ class _SecurityEventsState extends State<_SecurityEvents> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Wrap(
                     spacing: 6,
-                    children: [for (final e in byAction.entries) Chip(label: Text('${e.key}: ${e.value}'), visualDensity: VisualDensity.compact)],
+                    children: [
+                      for (final e in byAction.entries)
+                        Chip(label: Text('${e.key}: ${e.value}'), visualDensity: VisualDensity.compact),
+                    ],
                   ),
                 ),
               Expanded(

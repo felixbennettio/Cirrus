@@ -37,7 +37,11 @@ class D1DatabasesPage extends ConsumerWidget {
               onPressed: () async {
                 final name = await promptText(context, title: context.tr('Database name', '数据库名称'), hint: 'prod-db');
                 if (name == null || name.trim().isEmpty || !context.mounted) return;
-                await runAction(context, () => c.post(_dbs(accountId), data: {'name': name.trim()}), success: context.tr('Created', '已创建'));
+                await runAction(
+                  context,
+                  () => c.post(_dbs(accountId), data: {'name': name.trim()}),
+                  success: context.tr('Created', '已创建'),
+                );
                 await h.reload();
               },
             ),
@@ -53,12 +57,15 @@ class D1DatabasesPage extends ConsumerWidget {
                       return ListTile(
                         leading: const CircleAvatar(child: Icon(Icons.storage)),
                         title: Text('${d['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text([
-                          if (d['num_tables'] != null) context.tr('${d['num_tables']} tables', '${d['num_tables']} 张表'),
-                          if (d['file_size'] != null) formatBytes(d['file_size'] as num),
-                          if (d['version'] != null) '${d['version']}',
-                          formatDate(d['created_at'], withTime: false),
-                        ].join(' · ')),
+                        subtitle: Text(
+                          [
+                            if (d['num_tables'] != null)
+                              context.tr('${d['num_tables']} tables', '${d['num_tables']} 张表'),
+                            if (d['file_size'] != null) formatBytes(d['file_size'] as num),
+                            if (d['version'] != null) '${d['version']}',
+                            formatDate(d['created_at'], withTime: false),
+                          ].join(' · '),
+                        ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) async {
                             if (v == 'copy') {
@@ -71,7 +78,11 @@ class D1DatabasesPage extends ConsumerWidget {
                                 typeToConfirm: d['name'] as String?,
                               );
                               if (!ok || !context.mounted) return;
-                              await runAction(context, () => c.delete('${_dbs(accountId)}/$id'), success: context.tr('Deleted', '已删除'));
+                              await runAction(
+                                context,
+                                () => c.delete('${_dbs(accountId)}/$id'),
+                                success: context.tr('Deleted', '已删除'),
+                              );
                               await h.reload();
                             }
                           },
@@ -141,7 +152,9 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
         _QueryResult(
           sql: sql,
           columns: (((s['results'] as Map?)?['columns'] as List?) ?? const []).map((e) => '$e').toList(),
-          rows: (((s['results'] as Map?)?['rows'] as List?) ?? const []).map((r) => (r as List).cast<Object?>()).toList(),
+          rows: (((s['results'] as Map?)?['rows'] as List?) ?? const [])
+              .map((r) => (r as List).cast<Object?>())
+              .toList(),
           meta: Map<String, dynamic>.from(s['meta'] as Map? ?? const {}),
         ),
     ];
@@ -149,7 +162,9 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
 
   Future<void> _loadTables() async {
     try {
-      final r = await _exec("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name;");
+      final r = await _exec(
+        "SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name;",
+      );
       if (!mounted) return;
       setState(() => _tables = r.isEmpty ? [] : r.first.rows.map((e) => '${e.first}').toList());
     } catch (_) {}
@@ -216,11 +231,19 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
           ),
         if (_history.isNotEmpty) ...[
           const Divider(),
-          ListTile(dense: true, title: Text(context.tr('History', '历史'), style: const TextStyle(fontWeight: FontWeight.w700))),
+          ListTile(
+            dense: true,
+            title: Text(context.tr('History', '历史'), style: const TextStyle(fontWeight: FontWeight.w700)),
+          ),
           for (final h in _history)
             ListTile(
               dense: true,
-              title: Text(h, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+              title: Text(
+                h,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+              ),
               onTap: () => _sql.text = h,
             ),
         ],
@@ -243,7 +266,10 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
             border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: ClipRRect(borderRadius: BorderRadius.circular(8), child: CodeEditorField(controller: _sql, language: 'sql')),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CodeEditorField(controller: _sql, language: 'sql'),
+          ),
         ),
       ),
     );
@@ -279,7 +305,10 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
           IconButton(
             tooltip: context.tr('Tables', '表'),
             icon: const Icon(Icons.table_view),
-            onPressed: () => showModalBottomSheet<void>(context: context, builder: (_) => SizedBox(height: 420, child: _tablesPanel(context))),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => SizedBox(height: 420, child: _tablesPanel(context)),
+            ),
           ),
         IconButton(
           tooltip: context.tr('Database info', '数据库信息'),
@@ -305,7 +334,10 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text(context.tr('Ctrl/⌘ + Enter to run', 'Ctrl/⌘ + Enter 执行'), style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        context.tr('Ctrl/⌘ + Enter to run', 'Ctrl/⌘ + Enter 执行'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                       const Spacer(),
                       FilledButton.icon(
                         onPressed: _running ? null : _run,

@@ -47,10 +47,7 @@ Future<T?> runAction<T>(
         canPop: false,
         child: Center(
           child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            ),
+            child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()),
           ),
         ),
       ),
@@ -81,10 +78,7 @@ Future<bool> confirm(
       title: Text(title),
       content: message == null ? null : SingleChildScrollView(child: Text(message)),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text(ctx.tr('Cancel', '取消')),
-        ),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Cancel', '取消'))),
         FilledButton(
           style: destructive
               ? FilledButton.styleFrom(
@@ -153,15 +147,9 @@ Future<bool> confirmDanger(
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(ctx.tr('Cancel', '取消')),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Cancel', '取消'))),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: scheme.error,
-                foregroundColor: scheme.onError,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: scheme.error, foregroundColor: scheme.onError),
               onPressed: ok ? () => Navigator.pop(ctx, true) : null,
               child: Text(confirmLabel ?? ctx.tr('Delete', '删除')),
             ),
@@ -198,19 +186,12 @@ Future<String?> promptText(
           minLines: multiline ? 4 : 1,
           maxLines: multiline ? 14 : 1,
           style: monospace ? const TextStyle(fontFamily: 'monospace', fontSize: 13) : null,
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: hint,
-            border: const OutlineInputBorder(),
-          ),
+          decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder()),
           onSubmitted: multiline ? null : (v) => Navigator.pop(ctx, v),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(ctx.tr('Cancel', '取消')),
-        ),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.tr('Cancel', '取消'))),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, controller.text),
           child: Text(confirmLabel ?? ctx.tr('OK', '确定')),
@@ -248,13 +229,7 @@ Future<void> showSecretDialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                note ??
-                    ctx.tr(
-                      'Copy these values now. They will not be shown again.',
-                      '请立即复制这些值，之后将不会再次显示。',
-                    ),
-              ),
+              Text(note ?? ctx.tr('Copy these values now. They will not be shown again.', '请立即复制这些值，之后将不会再次显示。')),
               const SizedBox(height: 12),
               for (final e in values.entries) ...[
                 Text(e.key, style: Theme.of(ctx).textTheme.labelMedium),
@@ -269,15 +244,9 @@ Future<void> showSecretDialog(
                   child: Row(
                     children: [
                       Expanded(
-                        child: SelectableText(
-                          e.value,
-                          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-                        ),
+                        child: SelectableText(e.value, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.copy, size: 18),
-                        onPressed: () => copyText(ctx, e.value),
-                      ),
+                      IconButton(icon: const Icon(Icons.copy, size: 18), onPressed: () => copyText(ctx, e.value)),
                     ],
                   ),
                 ),
@@ -287,12 +256,7 @@ Future<void> showSecretDialog(
           ),
         ),
       ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(ctx.tr('Done', '完成')),
-        ),
-      ],
+      actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.tr('Done', '完成')))],
     ),
   );
 }

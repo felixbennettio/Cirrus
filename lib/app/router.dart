@@ -54,23 +54,23 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(path: '/welcome', builder: (_, _) => const AddProfilePage(firstRun: true)),
-      GoRoute(
-        path: '/profiles/add',
-        parentNavigatorKey: _rootKey,
-        builder: (_, _) => const AddProfilePage(),
-      ),
+      GoRoute(path: '/profiles/add', parentNavigatorKey: _rootKey, builder: (_, _) => const AddProfilePage()),
       ShellRoute(
         navigatorKey: _shellKey,
         builder: (context, state, child) => AppShell(location: state.matchedLocation, child: child),
         routes: [
-          GoRoute(path: '/', pageBuilder: (_, _) => const NoTransitionPage(child: HomePage())),
+          GoRoute(
+            path: '/',
+            pageBuilder: (_, _) => const NoTransitionPage(child: HomePage()),
+          ),
           GoRoute(
             path: '/domains',
-            pageBuilder: (_, s) => NoTransitionPage(
-              child: DomainsPage(openAdd: s.uri.queryParameters['add'] == '1'),
-            ),
+            pageBuilder: (_, s) => NoTransitionPage(child: DomainsPage(openAdd: s.uri.queryParameters['add'] == '1')),
           ),
-          GoRoute(path: '/settings', pageBuilder: (_, _) => const NoTransitionPage(child: SettingsPage())),
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (_, _) => const NoTransitionPage(child: SettingsPage()),
+          ),
           GoRoute(
             path: '/r/:spec',
             pageBuilder: (context, s) {
@@ -102,7 +102,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               final d = documentById[s.pathParameters['id']];
               return NoTransitionPage(
                 key: s.pageKey,
-                child: d == null ? EmptyView(icon: Icons.help_outline, title: s.pathParameters['id'] ?? '') : DocumentPage(spec: d),
+                child: d == null
+                    ? EmptyView(icon: Icons.help_outline, title: s.pathParameters['id'] ?? '')
+                    : DocumentPage(spec: d),
               );
             },
           ),

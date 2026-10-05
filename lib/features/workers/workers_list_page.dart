@@ -89,7 +89,10 @@ class _WorkersListPageState extends ConsumerState<WorkersListPage> {
           final results = await Future.wait([
             c.list('/accounts/$accountId/workers/scripts', paginate: false),
             fetchWorkersSummary(c, accountId).catchError((_) => <String, (double, double)>{}),
-            c.get('/accounts/$accountId/workers/subdomain').then((v) => (v as Map?)?['subdomain'] as String?).catchError((_) => null),
+            c
+                .get('/accounts/$accountId/workers/subdomain')
+                .then((v) => (v as Map?)?['subdomain'] as String?)
+                .catchError((_) => null),
           ]);
           return (
             results[0] as List<Map<String, dynamic>>,
@@ -134,19 +137,30 @@ class _WorkersListPageState extends ConsumerState<WorkersListPage> {
                               return ListTile(
                                 leading: const CircleAvatar(child: Icon(Icons.bolt)),
                                 title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                subtitle: Text([
-                                  '${context.tr('modified', '修改于')} ${formatRelative(s['modified_on'], zh: context.isZh)}',
-                                  ?handlers,
-                                ].join(' · ')),
+                                subtitle: Text(
+                                  [
+                                    '${context.tr('modified', '修改于')} ${formatRelative(s['modified_on'], zh: context.isZh)}',
+                                    ?handlers,
+                                  ].join(' · '),
+                                ),
                                 trailing: m == null
                                     ? null
                                     : Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Text('${formatCount(m.$1)} req', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                          Text(
+                                            '${formatCount(m.$1)} req',
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
                                           if (m.$2 > 0)
-                                            Text('${formatCount(m.$2)} err', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                                            Text(
+                                              '${formatCount(m.$2)} err',
+                                              style: TextStyle(
+                                                color: Theme.of(context).colorScheme.error,
+                                                fontSize: 12,
+                                              ),
+                                            ),
                                         ],
                                       ),
                                 onTap: () => context.push('/workers/${Uri.encodeComponent(name)}'),

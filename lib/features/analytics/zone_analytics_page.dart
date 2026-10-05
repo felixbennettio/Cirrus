@@ -71,10 +71,27 @@ class ZoneTrafficView extends StatelessWidget {
               icon: Icons.cached,
               sub: formatCount(traffic.cachedRequests),
             ),
-            StatTile(label: context.tr('Bandwidth', '带宽'), value: formatBytes(traffic.bytes), icon: Icons.data_usage, sub: '${context.tr('cached', '缓存')} ${formatBytes(traffic.cachedBytes)}'),
-            StatTile(label: context.tr('Unique visitors', '独立访客'), value: formatCount(traffic.uniques), icon: Icons.people_outline),
-            StatTile(label: context.tr('Page views', '页面浏览'), value: formatCount(traffic.pageViews), icon: Icons.visibility_outlined),
-            StatTile(label: context.tr('Threats', '威胁'), value: formatCount(traffic.threats), icon: Icons.gpp_maybe_outlined),
+            StatTile(
+              label: context.tr('Bandwidth', '带宽'),
+              value: formatBytes(traffic.bytes),
+              icon: Icons.data_usage,
+              sub: '${context.tr('cached', '缓存')} ${formatBytes(traffic.cachedBytes)}',
+            ),
+            StatTile(
+              label: context.tr('Unique visitors', '独立访客'),
+              value: formatCount(traffic.uniques),
+              icon: Icons.people_outline,
+            ),
+            StatTile(
+              label: context.tr('Page views', '页面浏览'),
+              value: formatCount(traffic.pageViews),
+              icon: Icons.visibility_outlined,
+            ),
+            StatTile(
+              label: context.tr('Threats', '威胁'),
+              value: formatCount(traffic.threats),
+              icon: Icons.gpp_maybe_outlined,
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -88,8 +105,16 @@ class ZoneTrafficView extends StatelessWidget {
                 labels: labels,
                 format: (v) => formatCount(v),
                 series: [
-                  ChartSeries(name: context.tr('Total', '总计'), values: traffic.points.map((p) => p.requests).toList(), color: scheme.primary),
-                  ChartSeries(name: context.tr('Cached', '已缓存'), values: traffic.points.map((p) => p.cachedRequests).toList(), color: Colors.teal),
+                  ChartSeries(
+                    name: context.tr('Total', '总计'),
+                    values: traffic.points.map((p) => p.requests).toList(),
+                    color: scheme.primary,
+                  ),
+                  ChartSeries(
+                    name: context.tr('Cached', '已缓存'),
+                    values: traffic.points.map((p) => p.cachedRequests).toList(),
+                    color: Colors.teal,
+                  ),
                 ],
               ),
             ],
@@ -101,8 +126,16 @@ class ZoneTrafficView extends StatelessWidget {
                 labels: labels,
                 format: (v) => formatBytes(v, decimals: 0),
                 series: [
-                  ChartSeries(name: context.tr('Total', '总计'), values: traffic.points.map((p) => p.bytes).toList(), color: Colors.indigo),
-                  ChartSeries(name: context.tr('Cached', '已缓存'), values: traffic.points.map((p) => p.cachedBytes).toList(), color: Colors.teal),
+                  ChartSeries(
+                    name: context.tr('Total', '总计'),
+                    values: traffic.points.map((p) => p.bytes).toList(),
+                    color: Colors.indigo,
+                  ),
+                  ChartSeries(
+                    name: context.tr('Cached', '已缓存'),
+                    values: traffic.points.map((p) => p.cachedBytes).toList(),
+                    color: Colors.teal,
+                  ),
                 ],
               ),
             ],
@@ -120,7 +153,11 @@ class ZoneTrafficView extends StatelessWidget {
               if (c.maxWidth < 760) return Column(children: [status, countries]);
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Expanded(child: status), const SizedBox(width: 12), Expanded(child: countries)],
+                children: [
+                  Expanded(child: status),
+                  const SizedBox(width: 12),
+                  Expanded(child: countries),
+                ],
               );
             },
           ),

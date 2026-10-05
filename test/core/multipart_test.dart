@@ -12,7 +12,8 @@ void main() {
   });
 
   test('parses Workers module parts', () {
-    const body = '--XYZ\r\n'
+    const body =
+        '--XYZ\r\n'
         'Content-Disposition: form-data; name="worker.js"; filename="worker.js"\r\n'
         'Content-Type: application/javascript+module\r\n'
         '\r\n'
@@ -36,7 +37,9 @@ void main() {
   test('keeps binary content intact', () {
     final bytes = [0, 1, 2, 13, 10, 255];
     final body = <int>[
-      ...utf8.encode('--b\r\nContent-Disposition: form-data; name="m.wasm"; filename="m.wasm"\r\nContent-Type: application/wasm\r\n\r\n'),
+      ...utf8.encode(
+        '--b\r\nContent-Disposition: form-data; name="m.wasm"; filename="m.wasm"\r\nContent-Type: application/wasm\r\n\r\n',
+      ),
       ...bytes,
       ...utf8.encode('\r\n--b--'),
     ];

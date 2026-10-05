@@ -40,7 +40,11 @@ class FakeApi implements HttpClientAdapter {
   };
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     Object? body = options.data;
     if (body is String) {
       try {
@@ -48,7 +52,9 @@ class FakeApi implements HttpClientAdapter {
       } catch (_) {}
     }
     calls.add(FakeCall(options.method, options.uri, Map<String, dynamic>.from(options.headers), body));
-    final r = handler(options.method, options.uri, body) ?? (404, fail(7003, 'No route for ${options.method} ${options.uri.path}'), const <String, List<String>>{});
+    final r =
+        handler(options.method, options.uri, body) ??
+        (404, fail(7003, 'No route for ${options.method} ${options.uri.path}'), const <String, List<String>>{});
     final (status, data, headers) = r;
     final bytes = data is Uint8List ? data : utf8.encode(data is String ? data : jsonEncode(data));
     return ResponseBody.fromBytes(

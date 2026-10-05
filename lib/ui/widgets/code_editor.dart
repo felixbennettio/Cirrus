@@ -144,10 +144,6 @@ class _CodeViewState extends State<CodeView> {
   }
 
   @override
-  Widget build(BuildContext context) => CodeEditorField(
-    controller: _controller,
-    language: widget.language,
-    readOnly: true,
-    wordWrap: widget.wordWrap,
-  );
+  Widget build(BuildContext context) =>
+      CodeEditorField(controller: _controller, language: widget.language, readOnly: true, wordWrap: widget.wordWrap);
 }

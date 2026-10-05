@@ -56,7 +56,8 @@ const _fields = '''
         uniq { uniques }
 ''';
 
-const zoneDailyQuery = '''
+const zoneDailyQuery =
+    '''
 query ZoneDaily(\$zoneTag: string, \$since: Date, \$until: Date) {
   viewer {
     zones(filter: { zoneTag: \$zoneTag }) {
@@ -68,7 +69,8 @@ $_fields
   }
 }''';
 
-const zoneHourlyQuery = '''
+const zoneHourlyQuery =
+    '''
 query ZoneHourly(\$zoneTag: string, \$since: Time, \$until: Time) {
   viewer {
     zones(filter: { zoneTag: \$zoneTag }) {
@@ -89,18 +91,24 @@ Future<ZoneTraffic> fetchZoneTraffic(CfClient c, String zoneId, {int days = 7, i
   final Map<String, dynamic> data;
   if (hourly) {
     final until = DateTime.utc(now.year, now.month, now.day, now.hour).add(const Duration(hours: 1));
-    data = await c.graphql(zoneHourlyQuery, variables: {
-      'zoneTag': zoneId,
-      'since': until.subtract(Duration(hours: hours)).toIso8601String(),
-      'until': until.toIso8601String(),
-    });
+    data = await c.graphql(
+      zoneHourlyQuery,
+      variables: {
+        'zoneTag': zoneId,
+        'since': until.subtract(Duration(hours: hours)).toIso8601String(),
+        'until': until.toIso8601String(),
+      },
+    );
   } else {
     final fmt = DateFormat('yyyy-MM-dd');
-    data = await c.graphql(zoneDailyQuery, variables: {
-      'zoneTag': zoneId,
-      'since': fmt.format(now.subtract(Duration(days: days - 1))),
-      'until': fmt.format(now),
-    });
+    data = await c.graphql(
+      zoneDailyQuery,
+      variables: {
+        'zoneTag': zoneId,
+        'since': fmt.format(now.subtract(Duration(days: days - 1))),
+        'until': fmt.format(now),
+      },
+    );
   }
   final zones = (data['viewer'] as Map?)?['zones'] as List? ?? const [];
   final groups = zones.isEmpty
@@ -118,16 +126,18 @@ Future<ZoneTraffic> fetchZoneTraffic(CfClient c, String zoneId, {int days = 7, i
     if (dt != null) {
       label = hourly ? DateFormat('HH:mm').format(dt.toLocal()) : DateFormat('MM-dd').format(dt);
     }
-    points.add(TrafficPoint(
-      label: label,
-      requests: _d(sum['requests']),
-      cachedRequests: _d(sum['cachedRequests']),
-      bytes: _d(sum['bytes']),
-      cachedBytes: _d(sum['cachedBytes']),
-      threats: _d(sum['threats']),
-      pageViews: _d(sum['pageViews']),
-      uniques: _d((g['uniq'] as Map?)?['uniques']),
-    ));
+    points.add(
+      TrafficPoint(
+        label: label,
+        requests: _d(sum['requests']),
+        cachedRequests: _d(sum['cachedRequests']),
+        bytes: _d(sum['bytes']),
+        cachedBytes: _d(sum['cachedBytes']),
+        threats: _d(sum['threats']),
+        pageViews: _d(sum['pageViews']),
+        uniques: _d((g['uniq'] as Map?)?['uniques']),
+      ),
+    );
     for (final s in (sum['responseStatusMap'] as List? ?? const []).cast<Map>()) {
       final k = '${s['edgeResponseStatus']}';
       status[k] = (status[k] ?? 0) + _d(s['requests']);

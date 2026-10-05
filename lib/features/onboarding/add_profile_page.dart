@@ -132,10 +132,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            context.tr(
-              'A fast, native client for the Cloudflare API.',
-              '快速、原生的 Cloudflare API 客户端。',
-            ),
+            context.tr('A fast, native client for the Cloudflare API.', '快速、原生的 Cloudflare API 客户端。'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
@@ -143,7 +140,11 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
         ],
         SegmentedButton<AuthKind>(
           segments: [
-            ButtonSegment(value: AuthKind.apiToken, label: const Text('API Token'), icon: const Icon(Icons.vpn_key_outlined)),
+            ButtonSegment(
+              value: AuthKind.apiToken,
+              label: const Text('API Token'),
+              icon: const Icon(Icons.vpn_key_outlined),
+            ),
             ButtonSegment(value: AuthKind.globalKey, label: const Text('Global API Key'), icon: const Icon(Icons.key)),
           ],
           selected: {_kind},
@@ -194,7 +195,10 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
-            decoration: InputDecoration(labelText: context.tr('Account e-mail', '账户邮箱'), border: const OutlineInputBorder()),
+            decoration: InputDecoration(
+              labelText: context.tr('Account e-mail', '账户邮箱'),
+              border: const OutlineInputBorder(),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -243,10 +247,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
                 style: const TextStyle(fontFamily: 'monospace'),
                 decoration: InputDecoration(
                   labelText: context.tr('Origin CA Key (optional)', 'Origin CA Key（可选）'),
-                  helperText: context.tr(
-                    'Used only for Origin CA certificate endpoints.',
-                    '仅用于 Origin CA 证书相关接口。',
-                  ),
+                  helperText: context.tr('Used only for Origin CA certificate endpoints.', '仅用于 Origin CA 证书相关接口。'),
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -257,10 +258,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.errorContainer, borderRadius: BorderRadius.circular(8)),
             child: Text(_error!, style: TextStyle(color: theme.colorScheme.onErrorContainer)),
           ),
         ],

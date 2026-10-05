@@ -23,13 +23,20 @@ Future<void> saveBytes(
     }
   } catch (_) {
     await SharePlus.instance.share(
-      ShareParams(files: [XFile.fromData(bytes, name: fileName, mimeType: mimeType)], fileNameOverrides: [fileName]),
+      ShareParams(
+        files: [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
+        fileNameOverrides: [fileName],
+      ),
     );
   }
 }
 
-Future<void> saveText(BuildContext context, {required String fileName, required String text, String mimeType = 'text/plain'}) =>
-    saveBytes(context, fileName: fileName, bytes: Uint8List.fromList(utf8.encode(text)), mimeType: mimeType);
+Future<void> saveText(
+  BuildContext context, {
+  required String fileName,
+  required String text,
+  String mimeType = 'text/plain',
+}) => saveBytes(context, fileName: fileName, bytes: Uint8List.fromList(utf8.encode(text)), mimeType: mimeType);
 
 /// A picked file's name and contents.
 class PickedFile {

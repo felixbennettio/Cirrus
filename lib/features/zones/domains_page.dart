@@ -165,7 +165,11 @@ class _ZoneTile extends ConsumerWidget {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'pause',
-                child: Text(paused ? context.tr('Resume Cloudflare', '恢复 Cloudflare') : context.tr('Pause Cloudflare', '暂停 Cloudflare')),
+                child: Text(
+                  paused
+                      ? context.tr('Resume Cloudflare', '恢复 Cloudflare')
+                      : context.tr('Pause Cloudflare', '暂停 Cloudflare'),
+                ),
               ),
               if (status == 'pending')
                 PopupMenuItem(value: 'check', child: Text(context.tr('Re-check nameservers', '重新检查名称服务器'))),
@@ -245,12 +249,16 @@ Future<void> addZone(BuildContext context, WidgetRef ref) async {
   final client = ref.read(clientProvider)!;
   final res = await runAction(
     context,
-    () => client.send('POST', '/zones', data: {
-      'name': domain,
-      'account': {'id': accountId},
-      'type': type,
-      'jump_start': jumpStart,
-    }),
+    () => client.send(
+      'POST',
+      '/zones',
+      data: {
+        'name': domain,
+        'account': {'id': accountId},
+        'type': type,
+        'jump_start': jumpStart,
+      },
+    ),
     success: context.tr('Domain added', '域名已添加'),
   );
   if (res == null || !context.mounted) return;
@@ -261,10 +269,7 @@ Future<void> addZone(BuildContext context, WidgetRef ref) async {
     await showSecretDialog(
       context,
       title: context.tr('Update your nameservers', '请修改名称服务器'),
-      note: context.tr(
-        'At your registrar, replace the nameservers of $domain with:',
-        '请在域名注册商处将 $domain 的名称服务器改为：',
-      ),
+      note: context.tr('At your registrar, replace the nameservers of $domain with:', '请在域名注册商处将 $domain 的名称服务器改为：'),
       values: {for (var i = 0; i < ns.length; i++) 'NS ${i + 1}': ns[i]},
     );
   }

@@ -88,10 +88,12 @@ class _Overview extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 6),
-                  Text(context.tr(
-                    'Point the domain to the Cloudflare nameservers below at your registrar, then re-check.',
-                    '请在域名注册商处把名称服务器改为下面的 Cloudflare 名称服务器，然后重新检查。',
-                  )),
+                  Text(
+                    context.tr(
+                      'Point the domain to the Cloudflare nameservers below at your registrar, then re-check.',
+                      '请在域名注册商处把名称服务器改为下面的 Cloudflare 名称服务器，然后重新检查。',
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   FilledButton.tonal(
                     onPressed: () => runAction(
@@ -113,7 +115,8 @@ class _Overview extends ConsumerWidget {
             InfoRow(context.tr('Setup', '接入方式'), str(z['type'])),
             InfoRow('Zone ID', id, copy: true, mono: true),
             InfoRow(context.tr('Account ID', '账户 ID'), str((z['account'] as Map?)?['id']), copy: true, mono: true),
-            for (var i = 0; i < ns.length; i++) InfoRow('${context.tr('Nameserver', '名称服务器')} ${i + 1}', ns[i], copy: true, mono: true),
+            for (var i = 0; i < ns.length; i++)
+              InfoRow('${context.tr('Nameserver', '名称服务器')} ${i + 1}', ns[i], copy: true, mono: true),
             if (originalNs.isNotEmpty) InfoRow(context.tr('Original nameservers', '原名称服务器'), originalNs.join(', ')),
             if (z['original_registrar'] != null) InfoRow(context.tr('Registrar', '注册商'), str(z['original_registrar'])),
             InfoRow(context.tr('Created', '创建时间'), formatDate(z['created_on'])),
@@ -129,12 +132,18 @@ class _Overview extends ConsumerWidget {
               title: Text(context.tr('Development mode', '开发模式')),
               subtitle: Text(
                 devOn && devRemaining is num && devRemaining > 0
-                    ? context.tr('Cache bypassed · ${(devRemaining / 60).ceil()} min left', '已绕过缓存 · 剩余 ${(devRemaining / 60).ceil()} 分钟')
+                    ? context.tr(
+                        'Cache bypassed · ${(devRemaining / 60).ceil()} min left',
+                        '已绕过缓存 · 剩余 ${(devRemaining / 60).ceil()} 分钟',
+                      )
                     : context.tr('Temporarily bypass the cache for 3 hours', '临时绕过缓存 3 小时'),
               ),
               value: devOn,
               onChanged: (v) async {
-                await runAction(context, () => client.patch('/zones/$id/settings/development_mode', data: {'value': v ? 'on' : 'off'}));
+                await runAction(
+                  context,
+                  () => client.patch('/zones/$id/settings/development_mode', data: {'value': v ? 'on' : 'off'}),
+                );
                 await onReload();
               },
             ),
@@ -145,7 +154,13 @@ class _Overview extends ConsumerWidget {
               subtitle: Text(context.tr('Challenge every visitor with a JS check', '对所有访客启用 JS 质询')),
               value: underAttack,
               onChanged: (v) async {
-                await runAction(context, () => client.patch('/zones/$id/settings/security_level', data: {'value': v ? 'under_attack' : 'medium'}));
+                await runAction(
+                  context,
+                  () => client.patch(
+                    '/zones/$id/settings/security_level',
+                    data: {'value': v ? 'under_attack' : 'medium'},
+                  ),
+                );
                 await onReload();
               },
             ),
@@ -160,7 +175,10 @@ class _Overview extends ConsumerWidget {
                     !await confirm(
                       context,
                       title: context.tr('Pause Cloudflare?', '暂停 Cloudflare？'),
-                      message: context.tr('Your origin IPs will be exposed and protections disabled.', '源站 IP 将暴露，所有防护将失效。'),
+                      message: context.tr(
+                        'Your origin IPs will be exposed and protections disabled.',
+                        '源站 IP 将暴露，所有防护将失效。',
+                      ),
                       destructive: true,
                     )) {
                   return;
@@ -194,8 +212,16 @@ class _Overview extends ConsumerWidget {
                     );
                   },
                 ),
-                OutlinedButton.icon(onPressed: () => context.go('/zone/dns'), icon: const Icon(Icons.dns_outlined), label: const Text('DNS')),
-                OutlinedButton.icon(onPressed: () => context.go('/zone/ssl'), icon: const Icon(Icons.lock_outline), label: const Text('SSL/TLS')),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/zone/dns'),
+                  icon: const Icon(Icons.dns_outlined),
+                  label: const Text('DNS'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/zone/ssl'),
+                  icon: const Icon(Icons.lock_outline),
+                  label: const Text('SSL/TLS'),
+                ),
                 OutlinedButton.icon(
                   onPressed: () => context.go('/zone/analytics'),
                   icon: const Icon(Icons.bar_chart),
@@ -246,7 +272,11 @@ class _MiniTraffic extends StatelessWidget {
                     labels: t.points.map((p) => p.label).toList(),
                     format: formatCount,
                     series: [
-                      ChartSeries(name: context.tr('Requests', '请求'), values: t.points.map((p) => p.requests).toList(), color: scheme.primary),
+                      ChartSeries(
+                        name: context.tr('Requests', '请求'),
+                        values: t.points.map((p) => p.requests).toList(),
+                        color: scheme.primary,
+                      ),
                     ],
                   ),
                 ),

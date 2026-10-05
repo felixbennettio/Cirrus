@@ -15,7 +15,8 @@ import 'credential.dart';
 /// [usingFallback] is set so the UI can warn about it.
 class CredentialStore {
   CredentialStore({FlutterSecureStorage? storage})
-    : _storage = storage ??
+    : _storage =
+          storage ??
           const FlutterSecureStorage(
             // Unsigned macOS builds cannot use the data-protection keychain
             // (errSecMissingEntitlement); the login keychain works everywhere.
@@ -56,10 +57,7 @@ class CredentialStore {
     }
     try {
       final list = jsonDecode(raw) as List;
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(Profile.fromJson)
-          .toList();
+      return list.whereType<Map<String, dynamic>>().map(Profile.fromJson).toList();
     } catch (e) {
       debugPrint('Corrupt profile store: $e');
       return [];

@@ -198,7 +198,10 @@ class _VariantPickerState extends State<_VariantPicker> {
           ),
           items: [
             for (var i = 0; i < widget.variants.length; i++)
-              DropdownMenuItem(value: i, child: Text(_label(i), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(
+                value: i,
+                child: Text(_label(i), overflow: TextOverflow.ellipsis),
+              ),
           ],
           onChanged: (i) {
             setState(() => _index = i ?? 0);
@@ -295,9 +298,21 @@ class _Field extends StatelessWidget {
           },
         );
       case 'string':
-        final long = (schema['maxLength'] is int && (schema['maxLength'] as int) > 300) ||
-            const ['content', 'script', 'body', 'certificate', 'private_key', 'expression', 'query', 'sql', 'description', 'html', 'value']
-                .contains(name);
+        final long =
+            (schema['maxLength'] is int && (schema['maxLength'] as int) > 300) ||
+            const [
+              'content',
+              'script',
+              'body',
+              'certificate',
+              'private_key',
+              'expression',
+              'query',
+              'sql',
+              'description',
+              'html',
+              'value',
+            ].contains(name);
         return TextFormField(
           initialValue: current?.toString(),
           minLines: long ? 2 : 1,
@@ -644,8 +659,7 @@ class _SchemaEditorDialogState extends State<_SchemaEditorDialog> {
   String? _jsonError;
   int _formGeneration = 0;
 
-  static Map<String, dynamic> _clone(Map<String, dynamic> m) =>
-      jsonDecode(jsonEncode(m)) as Map<String, dynamic>;
+  static Map<String, dynamic> _clone(Map<String, dynamic> m) => jsonDecode(jsonEncode(m)) as Map<String, dynamic>;
 
   @override
   void dispose() {

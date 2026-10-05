@@ -46,9 +46,7 @@ class ProfilesController extends AsyncNotifier<List<Profile>> {
   }
 }
 
-final profilesProvider = AsyncNotifierProvider<ProfilesController, List<Profile>>(
-  ProfilesController.new,
-);
+final profilesProvider = AsyncNotifierProvider<ProfilesController, List<Profile>>(ProfilesController.new);
 
 final activeProfileProvider = Provider<Profile?>((ref) {
   final profiles = ref.watch(profilesProvider).value ?? const <Profile>[];
@@ -83,9 +81,9 @@ class AccountsController extends AsyncNotifier<List<Json>> {
 
   Future<List<Json>> _fetch(CfClient client, String key) async {
     final list = await client.list('/accounts', perPage: 50, maxItems: 1000);
-    list.sort((a, b) => (a['name'] as String? ?? '').toLowerCase().compareTo(
-      (b['name'] as String? ?? '').toLowerCase(),
-    ));
+    list.sort(
+      (a, b) => (a['name'] as String? ?? '').toLowerCase().compareTo((b['name'] as String? ?? '').toLowerCase()),
+    );
     await DiskCache.write(key, list);
     return list;
   }
@@ -104,9 +102,7 @@ class AccountsController extends AsyncNotifier<List<Json>> {
   }
 }
 
-final accountsProvider = AsyncNotifierProvider<AccountsController, List<Json>>(
-  AccountsController.new,
-);
+final accountsProvider = AsyncNotifierProvider<AccountsController, List<Json>>(AccountsController.new);
 
 final currentAccountProvider = Provider<Json?>((ref) {
   final accounts = ref.watch(accountsProvider).value ?? const <Json>[];
@@ -118,9 +114,7 @@ final currentAccountProvider = Provider<Json?>((ref) {
       accounts.first;
 });
 
-final currentAccountIdProvider = Provider<String?>(
-  (ref) => ref.watch(currentAccountProvider)?['id'] as String?,
-);
+final currentAccountIdProvider = Provider<String?>((ref) => ref.watch(currentAccountProvider)?['id'] as String?);
 
 /// Zones of the current account.
 class ZonesController extends AsyncNotifier<List<Json>> {
@@ -174,9 +168,7 @@ final currentZoneProvider = Provider<Json?>((ref) {
   return zones.firstWhereOrNull((z) => z['id'] == id) ?? zones.first;
 });
 
-final currentZoneIdProvider = Provider<String?>(
-  (ref) => ref.watch(currentZoneProvider)?['id'] as String?,
-);
+final currentZoneIdProvider = Provider<String?>((ref) => ref.watch(currentZoneProvider)?['id'] as String?);
 
 /// Context values used to fill `{account_id}` / `{zone_id}` in paths.
 final scopeIdsProvider = Provider<Map<String, String?>>((ref) {

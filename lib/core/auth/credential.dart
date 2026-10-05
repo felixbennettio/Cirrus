@@ -27,10 +27,7 @@ class Profile {
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
     id: json['id'] as String,
     name: json['name'] as String? ?? 'Cloudflare',
-    kind: AuthKind.values.firstWhere(
-      (k) => k.name == json['kind'],
-      orElse: () => AuthKind.apiToken,
-    ),
+    kind: AuthKind.values.firstWhere((k) => k.name == json['kind'], orElse: () => AuthKind.apiToken),
     token: json['token'] as String?,
     email: json['email'] as String?,
     apiKey: json['apiKey'] as String?,
@@ -73,10 +70,7 @@ class Profile {
     }
     return switch (kind) {
       AuthKind.apiToken => {'Authorization': 'Bearer ${token ?? ''}'},
-      AuthKind.globalKey => {
-        'X-Auth-Email': email ?? '',
-        'X-Auth-Key': apiKey ?? '',
-      },
+      AuthKind.globalKey => {'X-Auth-Email': email ?? '', 'X-Auth-Key': apiKey ?? ''},
     };
   }
 

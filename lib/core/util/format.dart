@@ -39,9 +39,7 @@ String formatDate(Object? v, {bool withTime = true}) {
   final d = parseDate(v);
   if (d == null) return v?.toString() ?? '—';
   final local = d.toLocal();
-  return withTime
-      ? DateFormat('yyyy-MM-dd HH:mm').format(local)
-      : DateFormat('yyyy-MM-dd').format(local);
+  return withTime ? DateFormat('yyyy-MM-dd HH:mm').format(local) : DateFormat('yyyy-MM-dd').format(local);
 }
 
 String formatRelative(Object? v, {bool zh = false}) {
@@ -80,7 +78,8 @@ String prettyJson(Object? value) {
 String expandPath(String template, Map<String, String?> ids) {
   return template.replaceAllMapped(RegExp(r'\{([^}]+)\}'), (m) {
     final key = m.group(1)!;
-    final v = ids[key] ??
+    final v =
+        ids[key] ??
         switch (key) {
           'account_identifier' || 'account_tag' => ids['account_id'],
           'zone_identifier' || 'zone_tag' => ids['zone_id'],

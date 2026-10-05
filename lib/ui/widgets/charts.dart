@@ -13,13 +13,7 @@ class ChartSeries {
 
 /// Line/area chart for time series with shared x labels.
 class TimeSeriesChart extends StatelessWidget {
-  const TimeSeriesChart({
-    super.key,
-    required this.labels,
-    required this.series,
-    this.height = 220,
-    this.format,
-  });
+  const TimeSeriesChart({super.key, required this.labels, required this.series, this.height = 220, this.format});
 
   final List<String> labels;
   final List<ChartSeries> series;
@@ -42,7 +36,8 @@ class TimeSeriesChart extends StatelessWidget {
             maxY: maxY <= 0 ? 1 : maxY * 1.15,
             gridData: FlGridData(
               drawVerticalLine: false,
-              getDrawingHorizontalLine: (_) => FlLine(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4), strokeWidth: 1),
+              getDrawingHorizontalLine: (_) =>
+                  FlLine(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4), strokeWidth: 1),
             ),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
@@ -66,7 +61,10 @@ class TimeSeriesChart extends StatelessWidget {
                   getTitlesWidget: (v, meta) {
                     final i = v.toInt();
                     if (i < 0 || i >= labels.length || i % step != 0) return const SizedBox();
-                    return SideTitleWidget(meta: meta, child: Text(labels[i], style: theme.textTheme.labelSmall));
+                    return SideTitleWidget(
+                      meta: meta,
+                      child: Text(labels[i], style: theme.textTheme.labelSmall),
+                    );
                   },
                 ),
               ),
@@ -134,7 +132,10 @@ class TopList extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 72, child: Text(fmt(v), textAlign: TextAlign.right, style: theme.textTheme.bodySmall)),
+                SizedBox(
+                  width: 72,
+                  child: Text(fmt(v), textAlign: TextAlign.right, style: theme.textTheme.bodySmall),
+                ),
               ],
             ),
           ),
