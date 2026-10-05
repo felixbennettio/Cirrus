@@ -1,5 +1,5 @@
 ; Inno Setup script for the Cirrus Windows installer.
-; Built in CI: iscc /DAppVersion=0.1.0 /DSourceDir=<Release dir> /DOutputDir=dist windows\installer\cirrus.iss
+; Built in CI: iscc /DAppVersion=1.0.0 /DSourceDir=<Release dir> /DOutputDir=dist windows\installer\cirrus.iss
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"

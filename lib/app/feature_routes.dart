@@ -26,6 +26,7 @@ import '../features/workers/worker_detail_page.dart';
 import '../features/workers/workers_list_page.dart';
 import '../features/zerotrust/tunnels_pages.dart';
 import '../features/zones/zone_overview_page.dart';
+import '../ui/widgets/async_view.dart';
 
 NoTransitionPage<void> _page(GoRouterState s, Widget child) => NoTransitionPage(key: s.pageKey, child: child);
 
@@ -59,7 +60,15 @@ final featureRoutes = <RouteBase>[
     routes: [
       GoRoute(
         path: ':id',
-        builder: (c, s) => KvBrowserPage(namespaceId: s.pathParameters['id']!, title: s.uri.queryParameters['title']),
+        // The browser reads the account ID as soon as it opens, so wait for it on deep links.
+        builder: (c, s) => AccountRequired(
+          pageTitle: s.uri.queryParameters['title'] ?? 'KV',
+          builder: (_, accountId) => KvBrowserPage(
+            key: ValueKey(accountId),
+            namespaceId: s.pathParameters['id']!,
+            title: s.uri.queryParameters['title'],
+          ),
+        ),
       ),
     ],
   ),
@@ -79,7 +88,14 @@ final featureRoutes = <RouteBase>[
     routes: [
       GoRoute(
         path: ':id',
-        builder: (c, s) => D1ConsolePage(databaseId: s.pathParameters['id']!, name: s.uri.queryParameters['name']),
+        builder: (c, s) => AccountRequired(
+          pageTitle: s.uri.queryParameters['name'] ?? 'D1',
+          builder: (_, accountId) => D1ConsolePage(
+            key: ValueKey(accountId),
+            databaseId: s.pathParameters['id']!,
+            name: s.uri.queryParameters['name'],
+          ),
+        ),
       ),
     ],
   ),
