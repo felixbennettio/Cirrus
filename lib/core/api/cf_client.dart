@@ -8,7 +8,11 @@ import '../auth/credential.dart';
 import 'cf_exception.dart';
 
 const cirrusVersion = '0.1.0';
-const cfApiBase = 'https://api.cloudflare.com/client/v4';
+
+/// Development-only override (`--dart-define=CIRRUS_API_BASE=...`), used to
+/// run the app against a local mock server. Release builds never set it.
+const _apiBaseOverride = String.fromEnvironment('CIRRUS_API_BASE');
+const cfApiBase = _apiBaseOverride == '' ? 'https://api.cloudflare.com/client/v4' : _apiBaseOverride;
 
 /// Parsed Cloudflare v4 envelope (or a raw non-envelope JSON body).
 class CfResponse {
