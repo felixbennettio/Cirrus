@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../auth/credential.dart';
 import 'cf_exception.dart';
 
-const cirrusVersion = '0.1.0';
+const cirrusVersion = '1.0.0';
 
 /// Development-only override (`--dart-define=CIRRUS_API_BASE=...`), used to
 /// run the app against a local mock server. Release builds never set it.
