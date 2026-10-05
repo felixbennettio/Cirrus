@@ -154,6 +154,24 @@ void main() {
       expect(api.calls, hasLength(2));
     });
 
+    test('stops when the server ignores the page parameter', () async {
+      final (c, api) = client(
+        (m, u, b) => (
+          200,
+          FakeApi.ok(
+            [
+              {'id': 'same'},
+            ],
+            info: {'page': 1, 'per_page': 1, 'total_pages': 5},
+          ),
+          const {},
+        ),
+      );
+      final list = await c.list('/x', perPage: 1);
+      expect(list, hasLength(2));
+      expect(api.calls, hasLength(2));
+    });
+
     test('unwraps result.buckets lists', () async {
       final (c, _) = client(
         (m, u, b) => (
