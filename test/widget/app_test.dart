@@ -3,6 +3,7 @@ import 'package:cirrus/app/router.dart';
 import 'package:cirrus/core/api/cf_client.dart';
 import 'package:cirrus/core/auth/credential.dart';
 import 'package:cirrus/core/auth/oauth.dart';
+import 'package:cirrus/core/billing/billing.dart';
 import 'package:cirrus/core/cache/query_cache.dart';
 import 'package:cirrus/core/auth/credential_store.dart';
 import 'package:cirrus/core/session/session.dart';
@@ -11,9 +12,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/fake_api.dart';
+import '../support/fake_store.dart';
 
 class MemoryCredentialStore extends CredentialStore {
   MemoryCredentialStore(this.profiles);
@@ -74,6 +77,7 @@ Future<ProviderContainer> _pumpApp(
   required List<Profile> profiles,
   FakeApi? api,
   OAuthConfig? oauth,
+  FakeStore? store,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -86,6 +90,10 @@ Future<ProviderContainer> _pumpApp(
       sharedPrefsProvider.overrideWithValue(prefs),
       credentialStoreProvider.overrideWithValue(MemoryCredentialStore(profiles)),
       oauthConfigProvider.overrideWithValue(oauth),
+      if (store != null) ...[
+        storeChannelProvider.overrideWithValue(StoreChannel.appStore),
+        storeGatewayProvider.overrideWithValue(store),
+      ],
       clientProvider.overrideWith((ref) {
         final p = ref.watch(activeProfileProvider);
         return p == null ? null : CfClient(p, dio: Dio()..httpClientAdapter = fake);
@@ -135,6 +143,35 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Client ID'), 'my-private-client');
     await tester.pump();
     expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+  });
+
+  testWidgets('store builds show the paywall for Pro sections until unlocked', (tester) async {
+    final store = FakeStore();
+    final container = await _pumpApp(tester, profiles: [_profile], store: store);
+    // Zone management is free.
+    container.read(routerProvider).go('/zone/dns');
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Cirrus Pro'), findsNothing);
+    expect(find.text('PRO'), findsWidgets);
+    // Workers needs Pro.
+    container.read(routerProvider).go('/workers');
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Cirrus Pro'), findsOneWidget);
+    expect(find.text('Unlock for ¥198.00'), findsOneWidget);
+    // Buying unlocks it in place.
+    await tester.tap(find.text('Unlock for ¥198.00'));
+    await tester.pump();
+    expect(store.buys, 1);
+    store.controller.add([store.purchase(PurchaseStatus.purchased)]);
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Cirrus Pro'), findsNothing);
+    expect(find.text('PRO'), findsNothing);
   });
 
   testWidgets('home lists account and zones', (tester) async {
