@@ -401,7 +401,8 @@ class CfClient {
         cursor = p.cursor;
         continue;
       }
-      if (p.totalPages != null && p.page != null && p.page! < p.totalPages!) {
+      // Stop if the server ignored the page parameter (would loop forever).
+      if (p.totalPages != null && p.page != null && p.page == pageNo && p.page! < p.totalPages!) {
         pageNo++;
         continue;
       }
