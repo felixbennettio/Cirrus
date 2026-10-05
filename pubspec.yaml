@@ -54,6 +54,7 @@ dependencies:
   crypto: ^3.0.7
   flutter_localizations:
     sdk: flutter
+  basic_utils: ^5.8.2
 
 dev_dependencies:
   flutter_test:
