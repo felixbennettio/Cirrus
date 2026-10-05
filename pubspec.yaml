@@ -55,6 +55,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   basic_utils: ^5.8.2
+  app_links: ^7.2.1
 
 dev_dependencies:
   flutter_test:
