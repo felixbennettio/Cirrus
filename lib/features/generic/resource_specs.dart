@@ -150,7 +150,6 @@ const gAccount = L10nText('Account', '账户');
 const gMedia = L10nText('Media', '媒体');
 const gTraffic = L10nText('Traffic', '流量');
 
-
 // ---------------------------------------------------------------------------
 // Zone-level collections
 const zoneSpecs = <ResourceSpec>[
@@ -1484,4 +1483,3 @@ final Map<String, ResourceSpec> specById = {
 };
 
 final Map<String, DocumentSpec> documentById = {for (final d in documentSpecs) d.id: d};
-

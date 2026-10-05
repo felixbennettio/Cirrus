@@ -28,9 +28,7 @@ Future<void> main(List<String> args) async {
     }
   }
 
-  final raw = input != null
-      ? await File(input).readAsString()
-      : await _download(openApiSchemaUrl);
+  final raw = input != null ? await File(input).readAsString() : await _download(openApiSchemaUrl);
   final doc = jsonDecode(raw) as Map<String, dynamic>;
   final catalog = buildCatalog(doc);
 
@@ -51,7 +49,7 @@ Future<void> main(List<String> args) async {
 Future<String> _download(String url) async {
   final client = HttpClient()..findProxy = HttpClient.findProxyFromEnvironment;
   try {
-    for (var attempt = 1;; attempt++) {
+    for (var attempt = 1; ; attempt++) {
       try {
         final req = await client.getUrl(Uri.parse(url));
         final res = await req.close();

@@ -199,11 +199,7 @@ Future<bool> _openEdit(
   );
   if (body == null || !context.mounted) return false;
   final client = ref.read(clientProvider)!;
-  final r = await runAction(
-    context,
-    () => client.send(method, path, data: body),
-    success: context.tr('Saved', '已保存'),
-  );
+  final r = await runAction(context, () => client.send(method, path, data: body), success: context.tr('Saved', '已保存'));
   QueryCache.instance.invalidate(spec.listPath.split('{').first);
   return r != null;
 }
@@ -314,18 +310,10 @@ class _ResourceListViewState extends ConsumerState<ResourceListView> {
     final path = fillPath(spec.listPath, ids, parent: widget.parentId);
     return ApiQuery<List<Map<String, dynamic>>>(
       cacheKey: 'list:$path',
-      load: (c) => c.list(
-        path,
-        query: spec.listQuery,
-        perPage: spec.perPage,
-        paginate: spec.paginate,
-        maxItems: 5000,
-      ),
+      load: (c) => c.list(path, query: spec.listQuery, perPage: spec.perPage, paginate: spec.paginate, maxItems: 5000),
       builder: (context, items, handle) {
         final q = _q.toLowerCase();
-        final filtered = q.isEmpty
-            ? items
-            : items.where((i) => i.toString().toLowerCase().contains(q)).toList();
+        final filtered = q.isEmpty ? items : items.where((i) => i.toString().toLowerCase().contains(q)).toList();
         return Column(
           children: [
             if (widget.showToolbar)
@@ -351,7 +339,8 @@ class _ResourceListViewState extends ConsumerState<ResourceListView> {
                       FilledButton.tonalIcon(
                         icon: const Icon(Icons.add),
                         label: Text(context.tr('Create', '新建')),
-                        onPressed: () => _openCreate(context, ref, spec, parent: widget.parentId, onDone: handle.reload),
+                        onPressed: () =>
+                            _openCreate(context, ref, spec, parent: widget.parentId, onDone: handle.reload),
                       ),
                   ],
                 ),
@@ -433,18 +422,26 @@ class _ResourceTile extends ConsumerWidget {
               if (spec.updateMethod != null)
                 PopupMenuItem(value: 'edit', child: _menu(Icons.edit_outlined, context.tr('Edit', '编辑'))),
               for (var i = 0; i < spec.actions.length; i++)
-                PopupMenuItem(value: 'action:$i', child: _menu(spec.actions[i].icon, spec.actions[i].label.of(context))),
+                PopupMenuItem(
+                  value: 'action:$i',
+                  child: _menu(spec.actions[i].icon, spec.actions[i].label.of(context)),
+                ),
               if (spec.canDelete)
                 PopupMenuItem(
                   value: 'delete',
-                  child: _menu(Icons.delete_outline, context.tr('Delete', '删除'), color: Theme.of(context).colorScheme.error),
+                  child: _menu(
+                    Icons.delete_outline,
+                    context.tr('Delete', '删除'),
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
             ],
           ),
         ],
       ),
       onTap: () {
-        if (canOpen && (spec.children.isNotEmpty || spec.itemPath != null || spec.updateMethod != null || spec.canDelete)) {
+        if (canOpen &&
+            (spec.children.isNotEmpty || spec.itemPath != null || spec.updateMethod != null || spec.canDelete)) {
           context.push('/r/${spec.id}/${Uri.encodeComponent(id)}', extra: item);
         } else {
           showJsonDialog(context, item, title: itemTitleOf(spec, item));
@@ -564,13 +561,7 @@ class _ResourceDetailPageState extends ConsumerState<ResourceDetailPage> {
 }
 
 class _DetailOverview extends ConsumerWidget {
-  const _DetailOverview({
-    required this.spec,
-    required this.item,
-    required this.onChanged,
-    this.onEdit,
-    this.onDelete,
-  });
+  const _DetailOverview({required this.spec, required this.item, required this.onChanged, this.onEdit, this.onDelete});
 
   final ResourceSpec spec;
   final Map<String, dynamic> item;
@@ -591,7 +582,11 @@ class _DetailOverview extends ConsumerWidget {
           children: [
             if (status != null) StatusChip(status.$1, tone: status.$2),
             if (onEdit != null)
-              FilledButton.tonalIcon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: Text(context.tr('Edit', '编辑'))),
+              FilledButton.tonalIcon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(context.tr('Edit', '编辑')),
+              ),
             for (final a in spec.actions)
               OutlinedButton.icon(
                 onPressed: () => runItemAction(context, ref, a, item: item, spec: spec, onDone: onChanged),
@@ -740,8 +735,10 @@ class DocumentPage extends StatelessWidget {
   final DocumentSpec spec;
 
   @override
-  Widget build(BuildContext context) =>
-      PageScaffold(title: spec.title.of(context), body: DocumentView(spec: spec));
+  Widget build(BuildContext context) => PageScaffold(
+    title: spec.title.of(context),
+    body: DocumentView(spec: spec),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -765,11 +762,27 @@ class ResourceHubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
-      for (final l in links) _HubCard(icon: l.icon, title: l.title.of(context), subtitle: l.subtitle?.of(context), onTap: () => context.push(l.path)),
+      for (final l in links)
+        _HubCard(
+          icon: l.icon,
+          title: l.title.of(context),
+          subtitle: l.subtitle?.of(context),
+          onTap: () => context.push(l.path),
+        ),
       for (final s in specs)
-        _HubCard(icon: s.icon, title: s.title.of(context), subtitle: s.group.of(context), onTap: () => context.push('/r/${s.id}')),
+        _HubCard(
+          icon: s.icon,
+          title: s.title.of(context),
+          subtitle: s.group.of(context),
+          onTap: () => context.push('/r/${s.id}'),
+        ),
       for (final d in documents)
-        _HubCard(icon: d.icon, title: d.title.of(context), subtitle: d.group.of(context), onTap: () => context.push('/doc/${d.id}')),
+        _HubCard(
+          icon: d.icon,
+          title: d.title.of(context),
+          subtitle: d.group.of(context),
+          onTap: () => context.push('/doc/${d.id}'),
+        ),
     ];
     return PageScaffold(
       title: title,
@@ -817,9 +830,19 @@ class _HubCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     if (subtitle != null)
-                      Text(subtitle!, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
                 ),
               ),

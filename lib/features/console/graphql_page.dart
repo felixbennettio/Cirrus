@@ -19,7 +19,8 @@ class _Template {
 
   final L10nText title;
   final String query;
-  final Map<String, String> variables; // value placeholders: {zone}, {account}, {since}, {until}, {sinceDate}, {untilDate}
+  final Map<String, String>
+  variables; // value placeholders: {zone}, {account}, {since}, {until}, {sinceDate}, {untilDate}
 }
 
 const _templates = [
@@ -201,7 +202,10 @@ class _GraphqlPageState extends ConsumerState<GraphqlPage> {
     Widget box(Widget child, double height) => SizedBox(
       height: height,
       child: DecoratedBox(
-        decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: ClipRRect(borderRadius: BorderRadius.circular(8), child: child),
       ),
     );
@@ -214,8 +218,15 @@ class _GraphqlPageState extends ConsumerState<GraphqlPage> {
               child: DropdownButtonFormField<int>(
                 initialValue: _template,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: context.tr('Template', '模板'), border: const OutlineInputBorder(), isDense: true),
-                items: [for (var i = 0; i < _templates.length; i++) DropdownMenuItem(value: i, child: Text(_templates[i].title.of(context)))],
+                decoration: InputDecoration(
+                  labelText: context.tr('Template', '模板'),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: [
+                  for (var i = 0; i < _templates.length; i++)
+                    DropdownMenuItem(value: i, child: Text(_templates[i].title.of(context))),
+                ],
                 onChanged: (v) {
                   if (v == null) return;
                   setState(() => _template = v);
@@ -227,7 +238,9 @@ class _GraphqlPageState extends ConsumerState<GraphqlPage> {
             const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: _running ? null : _run,
-              icon: _running ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow),
+              icon: _running
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.play_arrow),
               label: Text(context.tr('Run', '执行')),
             ),
           ],
@@ -265,7 +278,13 @@ class _GraphqlPageState extends ConsumerState<GraphqlPage> {
                   Expanded(child: result),
                 ],
               )
-            : ListView(children: [editor, const SizedBox(height: 12), SizedBox(height: 520, child: result)]),
+            : ListView(
+                children: [
+                  editor,
+                  const SizedBox(height: 12),
+                  SizedBox(height: 520, child: result),
+                ],
+              ),
       ),
     );
   }
@@ -279,7 +298,10 @@ class RequestLogPage extends ConsumerWidget {
     final client = ref.watch(clientProvider);
     return PageScaffold(
       title: context.tr('Request log', '请求日志'),
-      subtitle: context.tr('Recent API calls made by Cirrus (no credentials are recorded)', 'Cirrus 最近发出的 API 请求（不记录凭据）'),
+      subtitle: context.tr(
+        'Recent API calls made by Cirrus (no credentials are recorded)',
+        'Cirrus 最近发出的 API 请求（不记录凭据）',
+      ),
       body: client == null
           ? const SizedBox()
           : ValueListenableBuilder(
@@ -295,8 +317,15 @@ class RequestLogPage extends ConsumerWidget {
                         return ListTile(
                           dense: true,
                           leading: MethodBadge(r.method, small: true),
-                          title: Text(r.url.replaceFirst('https://api.cloudflare.com/client/v4', ''), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                          subtitle: Text('${formatDate(r.at.toIso8601String())} · ${r.duration.inMilliseconds} ms${r.error != null ? ' · ${r.error}' : ''}'),
+                          title: Text(
+                            r.url.replaceFirst('https://api.cloudflare.com/client/v4', ''),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                          ),
+                          subtitle: Text(
+                            '${formatDate(r.at.toIso8601String())} · ${r.duration.inMilliseconds} ms${r.error != null ? ' · ${r.error}' : ''}',
+                          ),
                           trailing: StatusChip('${r.statusCode ?? 'ERR'}', tone: ok ? Tone.good : Tone.bad),
                         );
                       },

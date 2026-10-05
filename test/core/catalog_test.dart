@@ -41,8 +41,17 @@ void main() {
   test('resolve merges allOf parts', () {
     final s = catalog.resolve({
       'allOf': [
-        {'properties': {'a': {'type': 'string'}}, 'required': ['a']},
-        {'properties': {'b': {'type': 'integer'}}},
+        {
+          'properties': {
+            'a': {'type': 'string'},
+          },
+          'required': ['a'],
+        },
+        {
+          'properties': {
+            'b': {'type': 'integer'},
+          },
+        },
       ],
     });
     expect((s['properties'] as Map).keys, containsAll(['a', 'b']));
@@ -60,12 +69,22 @@ void main() {
             'summary': 'Create thing',
             'x-api-token-group': ['Thing Write'],
             'parameters': [
-              {'name': 'zone_id', 'in': 'path', 'schema': {'type': 'string'}},
-              {'name': 'X-Auth-Key', 'in': 'header', 'schema': {'type': 'string'}},
+              {
+                'name': 'zone_id',
+                'in': 'path',
+                'schema': {'type': 'string'},
+              },
+              {
+                'name': 'X-Auth-Key',
+                'in': 'header',
+                'schema': {'type': 'string'},
+              },
             ],
             'requestBody': {
               'content': {
-                'application/json': {'schema': {r'$ref': '#/components/schemas/Thing'}},
+                'application/json': {
+                  'schema': {r'$ref': '#/components/schemas/Thing'},
+                },
               },
             },
           },
@@ -73,7 +92,12 @@ void main() {
       },
       'components': {
         'schemas': {
-          'Thing': {'type': 'object', 'properties': {'part': {r'$ref': '#/components/schemas/Part'}}},
+          'Thing': {
+            'type': 'object',
+            'properties': {
+              'part': {r'$ref': '#/components/schemas/Part'},
+            },
+          },
           'Part': {'type': 'string', 'example': 'x'},
           'Unused': {'type': 'string'},
         },

@@ -147,11 +147,31 @@ class _CacheFeatures extends ConsumerWidget {
     final zoneId = ref.watch(currentZoneIdProvider);
     if (zoneId == null) return const SizedBox();
     final features = [
-      ('/zones/$zoneId/argo/tiered_caching', const L10nText('Tiered Cache', '分层缓存'), const L10nText('Use upper-tier data centers to reduce origin load', '使用上层数据中心减少回源')),
-      ('/zones/$zoneId/cache/tiered_cache_smart_topology_enable', const L10nText('Smart Tiered Cache topology', '智能分层缓存拓扑'), const L10nText('Pick the best upper tier automatically', '自动选择最佳上层节点')),
-      ('/zones/$zoneId/cache/cache_reserve', const L10nText('Cache Reserve', '缓存储备'), const L10nText('Persist cache in R2 (paid add-on)', '将缓存持久化到 R2（付费功能）')),
-      ('/zones/$zoneId/cache/regional_tiered_cache', const L10nText('Regional Tiered Cache', '区域分层缓存'), const L10nText('Add a regional tier between lower and upper tiers', '在上下层之间增加区域层')),
-      ('/zones/$zoneId/argo/smart_routing', const L10nText('Argo Smart Routing', 'Argo 智能路由'), const L10nText('Route around congestion (paid)', '绕开网络拥塞（付费）')),
+      (
+        '/zones/$zoneId/argo/tiered_caching',
+        const L10nText('Tiered Cache', '分层缓存'),
+        const L10nText('Use upper-tier data centers to reduce origin load', '使用上层数据中心减少回源'),
+      ),
+      (
+        '/zones/$zoneId/cache/tiered_cache_smart_topology_enable',
+        const L10nText('Smart Tiered Cache topology', '智能分层缓存拓扑'),
+        const L10nText('Pick the best upper tier automatically', '自动选择最佳上层节点'),
+      ),
+      (
+        '/zones/$zoneId/cache/cache_reserve',
+        const L10nText('Cache Reserve', '缓存储备'),
+        const L10nText('Persist cache in R2 (paid add-on)', '将缓存持久化到 R2（付费功能）'),
+      ),
+      (
+        '/zones/$zoneId/cache/regional_tiered_cache',
+        const L10nText('Regional Tiered Cache', '区域分层缓存'),
+        const L10nText('Add a regional tier between lower and upper tiers', '在上下层之间增加区域层'),
+      ),
+      (
+        '/zones/$zoneId/argo/smart_routing',
+        const L10nText('Argo Smart Routing', 'Argo 智能路由'),
+        const L10nText('Route around congestion (paid)', '绕开网络拥塞（付费）'),
+      ),
     ];
     return SectionCard(
       title: context.tr('Cache features', '缓存功能'),
@@ -174,7 +194,11 @@ class _ToggleEndpoint extends ConsumerWidget {
       height: 64,
       child: ApiQuery<Object?>(
         cacheKey: 'toggle:$path',
-        loading: ListTile(contentPadding: EdgeInsets.zero, title: Text(title.of(context)), trailing: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+        loading: ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(title.of(context)),
+          trailing: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
         load: (c) async {
           try {
             return await c.get(path);
@@ -188,14 +212,22 @@ class _ToggleEndpoint extends ConsumerWidget {
           return ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(title.of(context)),
-            subtitle: Text(available ? subtitle.of(context) : context.tr('Not available on this plan / token', '当前套餐或 Token 不可用'), maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              available ? subtitle.of(context) : context.tr('Not available on this plan / token', '当前套餐或 Token 不可用'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: Switch(
               value: value == 'on' || value == true,
               onChanged: !available
                   ? null
                   : (v) async {
                       final client = ref.read(clientProvider)!;
-                      final r = await runAction(context, () => client.send('PATCH', path, data: {'value': v ? 'on' : 'off'}), blocking: false);
+                      final r = await runAction(
+                        context,
+                        () => client.send('PATCH', path, data: {'value': v ? 'on' : 'off'}),
+                        blocking: false,
+                      );
                       if (r != null) h.setData(r.result);
                     },
             ),

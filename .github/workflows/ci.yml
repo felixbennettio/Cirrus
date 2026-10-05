@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    tags-ignore: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      apple:
+        description: Also build macOS and iOS
+        type: boolean
+        default: true
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test tool
+      - run: flutter analyze
+      - run: flutter test
+
+  build:
+    name: Build
+    needs: check
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      version: 0.0.0-ci.${{ github.run_number }}
+      build_number: ${{ github.run_number }}
+      # macOS runners are expensive for private repositories: run the Apple
+      # builds on demand, on pull requests, or when a commit says "[apple]".
+      apple: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.apple) || contains(github.event.head_commit.message, '[apple]') }}

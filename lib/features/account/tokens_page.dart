@@ -21,14 +21,18 @@ class TokensPage extends ConsumerWidget {
       length: accountId == null ? 1 : 2,
       child: PageScaffold(
         title: context.tr('API tokens', 'API Token'),
-        bottom: TabBar(tabs: [
-          Tab(text: context.tr('User tokens', '用户 Token')),
-          if (accountId != null) Tab(text: context.tr('Account tokens', '账户 Token')),
-        ]),
-        body: TabBarView(children: [
-          const _TokenList(base: '/user/tokens', account: false),
-          if (accountId != null) _TokenList(base: '/accounts/$accountId/tokens', account: true),
-        ]),
+        bottom: TabBar(
+          tabs: [
+            Tab(text: context.tr('User tokens', '用户 Token')),
+            if (accountId != null) Tab(text: context.tr('Account tokens', '账户 Token')),
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            const _TokenList(base: '/user/tokens', account: false),
+            if (accountId != null) _TokenList(base: '/accounts/$accountId/tokens', account: true),
+          ],
+        ),
       ),
     );
   }
@@ -86,16 +90,20 @@ class _TokenList extends ConsumerWidget {
                         final t = tokens[i];
                         final perms = <String>{
                           for (final p in ((t['policies'] as List?) ?? const []).cast<Map>())
-                            for (final g in ((p['permission_groups'] as List?) ?? const []).cast<Map>()) '${g['name'] ?? g['id']}',
+                            for (final g in ((p['permission_groups'] as List?) ?? const []).cast<Map>())
+                              '${g['name'] ?? g['id']}',
                         };
                         return ListTile(
                           leading: const Icon(Icons.vpn_key_outlined),
                           title: Text('${t['name']}'),
                           subtitle: Text(
                             [
-                              if (perms.isNotEmpty) perms.take(4).join(', ') + (perms.length > 4 ? ' +${perms.length - 4}' : ''),
-                              if (t['expires_on'] != null) '${context.tr('expires', '过期')} ${formatDate(t['expires_on'], withTime: false)}',
-                              if (t['last_used_on'] != null) '${context.tr('used', '最近使用')} ${formatRelative(t['last_used_on'], zh: context.isZh)}',
+                              if (perms.isNotEmpty)
+                                perms.take(4).join(', ') + (perms.length > 4 ? ' +${perms.length - 4}' : ''),
+                              if (t['expires_on'] != null)
+                                '${context.tr('expires', '过期')} ${formatDate(t['expires_on'], withTime: false)}',
+                              if (t['last_used_on'] != null)
+                                '${context.tr('used', '最近使用')} ${formatRelative(t['last_used_on'], zh: context.isZh)}',
                             ].join(' · '),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -112,32 +120,61 @@ class _TokenList extends ConsumerWidget {
                                       final ok = await confirm(
                                         context,
                                         title: context.tr('Roll token?', '轮换 Token？'),
-                                        message: context.tr('The current value stops working immediately.', '当前值会立即失效。'),
+                                        message: context.tr(
+                                          'The current value stops working immediately.',
+                                          '当前值会立即失效。',
+                                        ),
                                         destructive: true,
                                       );
                                       if (!ok || !context.mounted) return;
-                                      final r = await runAction(context, () => c.put('$base/$id/value', data: const {}));
+                                      final r = await runAction(
+                                        context,
+                                        () => c.put('$base/$id/value', data: const {}),
+                                      );
                                       if (r is String && context.mounted) {
-                                        await showSecretDialog(context, title: context.tr('New token value', '新的 Token 值'), values: {'token': r});
+                                        await showSecretDialog(
+                                          context,
+                                          title: context.tr('New token value', '新的 Token 值'),
+                                          values: {'token': r},
+                                        );
                                       }
                                     case 'toggle':
                                       final body = Map<String, dynamic>.from(t)
-                                        ..removeWhere((k, _) => const {'id', 'issued_on', 'modified_on', 'last_used_on'}.contains(k))
+                                        ..removeWhere(
+                                          (k, _) =>
+                                              const {'id', 'issued_on', 'modified_on', 'last_used_on'}.contains(k),
+                                        )
                                         ..['status'] = t['status'] == 'active' ? 'disabled' : 'active';
                                       await runAction(context, () => c.put('$base/$id', data: body));
                                       await h.reload();
                                     case 'json':
                                       await showJsonDialog(context, t, title: '${t['name']}');
                                     case 'delete':
-                                      final ok = await confirmDanger(context, title: context.tr('Delete token?', '删除 Token？'), message: '${t['name']}', typeToConfirm: t['name'] as String?);
+                                      final ok = await confirmDanger(
+                                        context,
+                                        title: context.tr('Delete token?', '删除 Token？'),
+                                        message: '${t['name']}',
+                                        typeToConfirm: t['name'] as String?,
+                                      );
                                       if (!ok || !context.mounted) return;
-                                      await runAction(context, () => c.delete('$base/$id'), success: context.tr('Deleted', '已删除'));
+                                      await runAction(
+                                        context,
+                                        () => c.delete('$base/$id'),
+                                        success: context.tr('Deleted', '已删除'),
+                                      );
                                       await h.reload();
                                   }
                                 },
                                 itemBuilder: (context) => [
                                   PopupMenuItem(value: 'roll', child: Text(context.tr('Roll value', '轮换值'))),
-                                  PopupMenuItem(value: 'toggle', child: Text(t['status'] == 'active' ? context.tr('Disable', '停用') : context.tr('Enable', '启用'))),
+                                  PopupMenuItem(
+                                    value: 'toggle',
+                                    child: Text(
+                                      t['status'] == 'active'
+                                          ? context.tr('Disable', '停用')
+                                          : context.tr('Enable', '启用'),
+                                    ),
+                                  ),
                                   PopupMenuItem(value: 'json', child: Text(context.tr('Details', '详情'))),
                                   PopupMenuItem(value: 'delete', child: Text(context.tr('Delete', '删除'))),
                                 ],
@@ -233,7 +270,8 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
         'condition': {
           'request_ip': {'in': ips},
         },
-      if (_ttlDays != null) 'expires_on': '${DateTime.now().toUtc().add(Duration(days: _ttlDays!)).toIso8601String().split('.').first}Z',
+      if (_ttlDays != null)
+        'expires_on': '${DateTime.now().toUtc().add(Duration(days: _ttlDays!)).toIso8601String().split('.').first}Z',
     };
     final r = await c.post(widget.base, data: body);
     return r is Map ? Map<String, dynamic>.from(r) : null;
@@ -264,16 +302,28 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                 children: [
                   Text(context.tr('Create API token', '创建 API Token'), style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
-                  TextField(controller: _name, decoration: InputDecoration(labelText: context.tr('Token name', 'Token 名称'), border: const OutlineInputBorder())),
+                  TextField(
+                    controller: _name,
+                    decoration: InputDecoration(
+                      labelText: context.tr('Token name', 'Token 名称'),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           initialValue: _zoneScope,
-                          decoration: InputDecoration(labelText: context.tr('Zone resources', '域名资源'), border: const OutlineInputBorder()),
+                          decoration: InputDecoration(
+                            labelText: context.tr('Zone resources', '域名资源'),
+                            border: const OutlineInputBorder(),
+                          ),
                           items: [
-                            DropdownMenuItem(value: 'all', child: Text(context.tr('All zones in this account', '该账户下所有域名'))),
+                            DropdownMenuItem(
+                              value: 'all',
+                              child: Text(context.tr('All zones in this account', '该账户下所有域名')),
+                            ),
                             DropdownMenuItem(value: 'current', child: Text(context.tr('Current zone only', '仅当前域名'))),
                           ],
                           onChanged: (v) => setState(() => _zoneScope = v ?? 'all'),
@@ -283,7 +333,10 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                       Expanded(
                         child: DropdownButtonFormField<int?>(
                           initialValue: _ttlDays,
-                          decoration: InputDecoration(labelText: context.tr('Expires', '有效期'), border: const OutlineInputBorder()),
+                          decoration: InputDecoration(
+                            labelText: context.tr('Expires', '有效期'),
+                            border: const OutlineInputBorder(),
+                          ),
                           items: [
                             DropdownMenuItem(value: null, child: Text(context.tr('Never', '永不过期'))),
                             const DropdownMenuItem(value: 1, child: Text('1 day')),
@@ -309,9 +362,14 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text(context.tr('Permissions (${_selected.length})', '权限（${_selected.length}）'), style: Theme.of(context).textTheme.titleSmall),
+                      Text(
+                        context.tr('Permissions (${_selected.length})', '权限（${_selected.length}）'),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: SearchField(controller: _search, onChanged: (_) => setState(() {}))),
+                      Expanded(
+                        child: SearchField(controller: _search, onChanged: (_) => setState(() {})),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -328,7 +386,8 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                                   'zone' => context.tr('Zone', '域名'),
                                   _ => context.tr('User', '用户'),
                                 },
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(color: Theme.of(context).colorScheme.primary),
                               ),
                             ),
                             for (final g in byScope[scope]!)
@@ -337,7 +396,9 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                                 contentPadding: EdgeInsets.zero,
                                 value: _selected.contains(g['id']),
                                 title: Text('${g['name']}'),
-                                onChanged: (v) => setState(() => v == true ? _selected.add(g['id'] as String) : _selected.remove(g['id'])),
+                                onChanged: (v) => setState(
+                                  () => v == true ? _selected.add(g['id'] as String) : _selected.remove(g['id']),
+                                ),
                               ),
                           ],
                       ],
@@ -347,7 +408,10 @@ class _CreateTokenDialogState extends ConsumerState<_CreateTokenDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.tr('Cancel', '取消'))),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(context.tr('Cancel', '取消')),
+                      ),
                       const SizedBox(width: 8),
                       FilledButton(
                         onPressed: _selected.isEmpty

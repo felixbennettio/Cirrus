@@ -135,7 +135,12 @@ const transformPhases = <PhaseMeta>[
     icon: Icons.settings_suggest_outlined,
     actions: ['set_config'],
     templates: {
-      'set_config': {'ssl': 'full', 'automatic_https_rewrites': true, 'rocket_loader': false, 'security_level': 'medium'},
+      'set_config': {
+        'ssl': 'full',
+        'automatic_https_rewrites': true,
+        'rocket_loader': false,
+        'security_level': 'medium',
+      },
     },
   ),
   PhaseMeta(

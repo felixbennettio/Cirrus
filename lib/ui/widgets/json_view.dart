@@ -23,7 +23,10 @@ class JsonTreeView extends StatelessWidget {
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
-      child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows)),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows),
+      ),
     );
   }
 }
@@ -53,7 +56,9 @@ class _JsonNodeState extends State<_JsonNode> {
 
     if (v is Map || v is List) {
       final isMap = v is Map;
-      final entries = isMap ? (v).entries.map((e) => MapEntry(e.key.toString(), e.value)).toList() : [for (var i = 0; i < (v as List).length; i++) MapEntry('[$i]', v[i])];
+      final entries = isMap
+          ? (v).entries.map((e) => MapEntry(e.key.toString(), e.value)).toList()
+          : [for (var i = 0; i < (v as List).length; i++) MapEntry('[$i]', v[i])];
       final summary = isMap ? '{${entries.length}}' : '[${entries.length}]';
       return Padding(
         padding: indent,
@@ -70,13 +75,15 @@ class _JsonNodeState extends State<_JsonNode> {
                   children: [
                     Icon(_open ? Icons.expand_more : Icons.chevron_right, size: 16),
                     Text.rich(
-                      TextSpan(children: [
-                        ?nameSpan,
-                        TextSpan(
-                          text: summary,
-                          style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: scheme.outline),
-                        ),
-                      ]),
+                      TextSpan(
+                        children: [
+                          ?nameSpan,
+                          TextSpan(
+                            text: summary,
+                            style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: scheme.outline),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -101,10 +108,15 @@ class _JsonNodeState extends State<_JsonNode> {
       child: GestureDetector(
         onLongPress: () => copyText(context, v is String ? v : text),
         child: SelectableText.rich(
-          TextSpan(children: [
-            ?nameSpan,
-            TextSpan(text: text, style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: color)),
-          ]),
+          TextSpan(
+            children: [
+              ?nameSpan,
+              TextSpan(
+                text: text,
+                style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: color),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -134,8 +146,16 @@ class _JsonViewerState extends State<JsonViewer> {
           children: [
             SegmentedButton<bool>(
               segments: [
-                ButtonSegment(value: false, label: Text(context.tr('Tree', '树形')), icon: const Icon(Icons.account_tree_outlined, size: 16)),
-                ButtonSegment(value: true, label: Text(context.tr('Raw', '原始')), icon: const Icon(Icons.code, size: 16)),
+                ButtonSegment(
+                  value: false,
+                  label: Text(context.tr('Tree', '树形')),
+                  icon: const Icon(Icons.account_tree_outlined, size: 16),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text(context.tr('Raw', '原始')),
+                  icon: const Icon(Icons.code, size: 16),
+                ),
               ],
               selected: {_raw},
               showSelectedIcon: false,

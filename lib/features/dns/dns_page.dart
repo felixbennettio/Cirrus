@@ -22,7 +22,10 @@ class DnsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final zone = ref.watch(currentZoneProvider);
     if (zone == null) {
-      return PageScaffold(title: 'DNS', body: ZoneRequired(builder: (_, _, _) => const SizedBox()));
+      return PageScaffold(
+        title: 'DNS',
+        body: ZoneRequired(builder: (_, _, _) => const SizedBox()),
+      );
     }
     return _DnsView(key: ValueKey(zone['id']), zoneId: zone['id'] as String, zoneName: zone['name'] as String);
   }
@@ -57,7 +60,11 @@ class _DnsViewState extends ConsumerState<_DnsView> {
   Future<void> _add(QueryHandle<List<Map<String, dynamic>>> h) async {
     final body = await showDnsRecordDialog(context, zoneName: widget.zoneName);
     if (body == null || !mounted) return;
-    final r = await runAction(context, () => _client.send('POST', _base, data: body), success: context.tr('Record added', '记录已添加'));
+    final r = await runAction(
+      context,
+      () => _client.send('POST', _base, data: body),
+      success: context.tr('Record added', '记录已添加'),
+    );
     if (r != null) await h.reload();
   }
 
@@ -78,7 +85,8 @@ class _DnsViewState extends ConsumerState<_DnsView> {
       title: recs.length == 1
           ? context.tr('Delete record?', '删除记录？')
           : context.tr('Delete ${recs.length} records?', '删除 ${recs.length} 条记录？'),
-      message: recs.take(8).map((r) => '${r['type']}  ${r['name']}  →  ${r['content'] ?? ''}').join('\n') +
+      message:
+          recs.take(8).map((r) => '${r['type']}  ${r['name']}  →  ${r['content'] ?? ''}').join('\n') +
           (recs.length > 8 ? '\n…' : ''),
     );
     if (!ok || !mounted) return;
@@ -89,9 +97,14 @@ class _DnsViewState extends ConsumerState<_DnsView> {
         // Batch API: up to 200 operations per call is plenty for UI use.
         for (var i = 0; i < recs.length; i += 200) {
           final chunk = recs.sublist(i, i + 200 > recs.length ? recs.length : i + 200);
-          await _client.post('$_base/batch', data: {
-            'deletes': [for (final r in chunk) {'id': r['id']}],
-          });
+          await _client.post(
+            '$_base/batch',
+            data: {
+              'deletes': [
+                for (final r in chunk) {'id': r['id']},
+              ],
+            },
+          );
         }
       }
       return true;
@@ -102,10 +115,16 @@ class _DnsViewState extends ConsumerState<_DnsView> {
     }
   }
 
-  Future<void> _toggleProxy(Map<String, dynamic> rec, QueryHandle<List<Map<String, dynamic>>> h, List<Map<String, dynamic>> all) async {
+  Future<void> _toggleProxy(
+    Map<String, dynamic> rec,
+    QueryHandle<List<Map<String, dynamic>>> h,
+    List<Map<String, dynamic>> all,
+  ) async {
     final v = !(rec['proxied'] == true);
     // Optimistic update.
-    h.setData([for (final r in all) r['id'] == rec['id'] ? {...r, 'proxied': v} : r]);
+    h.setData([
+      for (final r in all) r['id'] == rec['id'] ? {...r, 'proxied': v} : r,
+    ]);
     final r = await runAction(
       context,
       () => _client.send('PATCH', '$_base/${rec['id']}', data: {'proxied': v}),
@@ -182,21 +201,25 @@ class _DnsViewState extends ConsumerState<_DnsView> {
       builder: (context, all, h) {
         final q = _q.toLowerCase();
         final types = {for (final r in all) r['type'] as String}.toList()..sort();
-        final list = all.where((r) {
-          if (_type != 'ALL' && r['type'] != _type) return false;
-          if (_proxied != null && (r['proxied'] == true) != _proxied) return false;
-          if (q.isEmpty) return true;
-          return '${r['name']} ${r['content']} ${r['comment'] ?? ''} ${(r['tags'] as List?)?.join(' ') ?? ''}'.toLowerCase().contains(q);
-        }).toList()
-          ..sort((a, b) {
-            final n = (a['name'] as String).compareTo(b['name'] as String);
-            return n != 0 ? n : (a['type'] as String).compareTo(b['type'] as String);
-          });
+        final list =
+            all.where((r) {
+              if (_type != 'ALL' && r['type'] != _type) return false;
+              if (_proxied != null && (r['proxied'] == true) != _proxied) return false;
+              if (q.isEmpty) return true;
+              return '${r['name']} ${r['content']} ${r['comment'] ?? ''} ${(r['tags'] as List?)?.join(' ') ?? ''}'
+                  .toLowerCase()
+                  .contains(q);
+            }).toList()..sort((a, b) {
+              final n = (a['name'] as String).compareTo(b['name'] as String);
+              return n != 0 ? n : (a['type'] as String).compareTo(b['type'] as String);
+            });
         final selecting = _selected.isNotEmpty;
         return PageScaffold(
           title: selecting ? context.tr('${_selected.length} selected', '已选 ${_selected.length} 条') : 'DNS',
           subtitle: selecting ? null : widget.zoneName,
-          leading: selecting ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(_selected.clear)) : null,
+          leading: selecting
+              ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(_selected.clear))
+              : null,
           actions: selecting
               ? [
                   IconButton(
@@ -211,7 +234,11 @@ class _DnsViewState extends ConsumerState<_DnsView> {
                   ),
                 ]
               : [
-                  IconButton(tooltip: context.tr('Refresh', '刷新'), icon: const Icon(Icons.refresh), onPressed: h.reload),
+                  IconButton(
+                    tooltip: context.tr('Refresh', '刷新'),
+                    icon: const Icon(Icons.refresh),
+                    onPressed: h.reload,
+                  ),
                   PopupMenuButton<String>(
                     onSelected: (v) {
                       switch (v) {
@@ -220,9 +247,15 @@ class _DnsViewState extends ConsumerState<_DnsView> {
                         case 'export':
                           _export();
                         case 'dnssec':
-                          showDialog<void>(context: context, builder: (_) => _DnssecDialog(zoneId: widget.zoneId));
+                          showDialog<void>(
+                            context: context,
+                            builder: (_) => _DnssecDialog(zoneId: widget.zoneId),
+                          );
                         case 'settings':
-                          showDialog<void>(context: context, builder: (_) => _DnsSettingsDialog(zoneId: widget.zoneId));
+                          showDialog<void>(
+                            context: context,
+                            builder: (_) => _DnsSettingsDialog(zoneId: widget.zoneId),
+                          );
                       }
                     },
                     itemBuilder: (context) => [
@@ -359,10 +392,7 @@ class _RecordTile extends StatelessWidget {
     final typeBadge = Container(
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
+      decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(6)),
       child: Text(
         type,
         textAlign: TextAlign.center,
@@ -371,13 +401,18 @@ class _RecordTile extends StatelessWidget {
     );
     final proxy = proxiable
         ? Tooltip(
-            message: proxied ? context.tr('Proxied — click to make DNS only', '已代理——点击切换为仅 DNS') : context.tr('DNS only — click to proxy', '仅 DNS——点击开启代理'),
+            message: proxied
+                ? context.tr('Proxied — click to make DNS only', '已代理——点击切换为仅 DNS')
+                : context.tr('DNS only — click to proxy', '仅 DNS——点击开启代理'),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: selecting ? null : onToggleProxy,
               child: Padding(
                 padding: const EdgeInsets.all(6),
-                child: Icon(proxied ? Icons.cloud : Icons.cloud_outlined, color: proxied ? _cfOrange : theme.colorScheme.outline),
+                child: Icon(
+                  proxied ? Icons.cloud : Icons.cloud_outlined,
+                  color: proxied ? _cfOrange : theme.colorScheme.outline,
+                ),
               ),
             ),
           )
@@ -388,16 +423,21 @@ class _RecordTile extends StatelessWidget {
       onLongPress: onLongPress,
       leading: selecting ? Checkbox(value: selected, onChanged: (_) => onTap()) : typeBadge,
       title: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: relName, style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (wide) ...[
-            const TextSpan(text: '   '),
+        TextSpan(
+          children: [
             TextSpan(
-              text: '${priority != null ? '$priority ' : ''}$content',
-              style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+              text: relName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
+            if (wide) ...[
+              const TextSpan(text: '   '),
+              TextSpan(
+                text: '${priority != null ? '$priority ' : ''}$content',
+                style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
           ],
-        ]),
+        ),
         maxLines: wide ? 1 : 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -423,7 +463,14 @@ class _RecordTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(width: 48, child: Text(ttlLabel(context, record['ttl']), textAlign: TextAlign.center, style: theme.textTheme.bodySmall)),
+          SizedBox(
+            width: 48,
+            child: Text(
+              ttlLabel(context, record['ttl']),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
           proxy,
           if (!selecting)
             PopupMenuButton<String>(
@@ -435,7 +482,10 @@ class _RecordTile extends StatelessWidget {
               itemBuilder: (context) => [
                 PopupMenuItem(value: 'copy', child: Text(context.tr('Copy content', '复制内容'))),
                 PopupMenuItem(value: 'json', child: Text(context.tr('View JSON', '查看 JSON'))),
-                PopupMenuItem(value: 'delete', child: Text(context.tr('Delete', '删除'), style: TextStyle(color: theme.colorScheme.error))),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(context.tr('Delete', '删除'), style: TextStyle(color: theme.colorScheme.error)),
+                ),
               ],
             ),
         ],
@@ -475,7 +525,9 @@ class _DnssecDialog extends ConsumerWidget {
                         await runAction(
                           context,
                           () => client.patch('/zones/$zoneId/dnssec', data: {'status': on ? 'disabled' : 'active'}),
-                          success: on ? context.tr('DNSSEC disabled', 'DNSSEC 已关闭') : context.tr('DNSSEC enabled', 'DNSSEC 已开启'),
+                          success: on
+                              ? context.tr('DNSSEC disabled', 'DNSSEC 已关闭')
+                              : context.tr('DNSSEC enabled', 'DNSSEC 已开启'),
                         );
                         await h.reload();
                       },
@@ -484,8 +536,17 @@ class _DnssecDialog extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                if (d['ds'] != null) InfoRow(context.tr('DS record', 'DS 记录'), d['ds'].toString(), copy: true, mono: true),
-                for (final k in const ['digest', 'digest_type', 'algorithm', 'key_tag', 'flags', 'public_key', 'modified_on'])
+                if (d['ds'] != null)
+                  InfoRow(context.tr('DS record', 'DS 记录'), d['ds'].toString(), copy: true, mono: true),
+                for (final k in const [
+                  'digest',
+                  'digest_type',
+                  'algorithm',
+                  'key_tag',
+                  'flags',
+                  'public_key',
+                  'modified_on',
+                ])
                   if (d[k] != null) InfoRow(k, d[k].toString(), copy: k == 'digest' || k == 'public_key', mono: true),
               ],
             );
@@ -516,7 +577,11 @@ class _DnsSettingsDialog extends ConsumerWidget {
           builder: (context, d, h) {
             final client = ref.read(clientProvider)!;
             Future<void> patch(Map<String, dynamic> body) async {
-              await runAction(context, () => client.patch('/zones/$zoneId/dns_settings', data: body), success: context.tr('Saved', '已保存'));
+              await runAction(
+                context,
+                () => client.patch('/zones/$zoneId/dns_settings', data: body),
+                success: context.tr('Saved', '已保存'),
+              );
               await h.reload();
             }
 

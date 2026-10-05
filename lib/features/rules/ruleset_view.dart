@@ -43,7 +43,11 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
     }
   }
 
-  Future<void> _addOrEdit(Map<String, dynamic>? ruleset, QueryHandle<Map<String, dynamic>?> h, [Map<String, dynamic>? rule]) async {
+  Future<void> _addOrEdit(
+    Map<String, dynamic>? ruleset,
+    QueryHandle<Map<String, dynamic>?> h, [
+    Map<String, dynamic>? rule,
+  ]) async {
     final body = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => RuleEditorDialog(meta: widget.meta, rule: rule),
@@ -52,9 +56,13 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
     final r = await runAction(context, () async {
       if (ruleset == null) {
         // Creating the entry point with the first rule.
-        return _client.send('PUT', _entry, data: {
-          'rules': [body],
-        });
+        return _client.send(
+          'PUT',
+          _entry,
+          data: {
+            'rules': [body],
+          },
+        );
       }
       final id = ruleset['id'];
       if (rule == null) {
@@ -65,8 +73,15 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
     if (r != null) await h.reload();
   }
 
-  Future<void> _toggle(Map<String, dynamic> ruleset, Map<String, dynamic> rule, bool v, QueryHandle<Map<String, dynamic>?> h) async {
-    final rules = (ruleset['rules'] as List).map((e) => e['id'] == rule['id'] ? {...e as Map, 'enabled': v} : e).toList();
+  Future<void> _toggle(
+    Map<String, dynamic> ruleset,
+    Map<String, dynamic> rule,
+    bool v,
+    QueryHandle<Map<String, dynamic>?> h,
+  ) async {
+    final rules = (ruleset['rules'] as List)
+        .map((e) => e['id'] == rule['id'] ? {...e as Map, 'enabled': v} : e)
+        .toList();
     h.setData({...ruleset, 'rules': rules});
     final body = _ruleBody(rule)..['enabled'] = v;
     final r = await runAction(
@@ -77,11 +92,17 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
     if (r == null) await h.reload();
   }
 
-  Future<void> _delete(Map<String, dynamic> ruleset, Map<String, dynamic> rule, QueryHandle<Map<String, dynamic>?> h) async {
+  Future<void> _delete(
+    Map<String, dynamic> ruleset,
+    Map<String, dynamic> rule,
+    QueryHandle<Map<String, dynamic>?> h,
+  ) async {
     final ok = await confirmDanger(
       context,
       title: context.tr('Delete rule?', '删除规则？'),
-      message: (rule['description'] as String?)?.isNotEmpty == true ? rule['description'] as String : '${rule['expression']}',
+      message: (rule['description'] as String?)?.isNotEmpty == true
+          ? rule['description'] as String
+          : '${rule['expression']}',
     );
     if (!ok || !mounted) return;
     final r = await runAction(
@@ -113,16 +134,16 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
       cacheKey: 'ruleset:$_entry',
       load: _load,
       builder: (context, ruleset, h) {
-        final rules = ((ruleset?['rules'] as List?) ?? const []).cast<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        final rules = ((ruleset?['rules'] as List?) ?? const [])
+            .cast<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         final header = Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 12, 4),
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  widget.meta.description?.of(context) ?? '',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                child: Text(widget.meta.description?.of(context) ?? '', style: Theme.of(context).textTheme.bodySmall),
               ),
               IconButton(icon: const Icon(Icons.refresh), onPressed: h.reload),
               if (ruleset != null)
@@ -269,13 +290,15 @@ class _RuleEditorDialogState extends State<RuleEditorDialog> {
         : (widget.meta.templates[_action] == null ? '' : prettyJson(widget.meta.templates[_action])),
   );
   late final _ratelimit = TextEditingController(
-    text: prettyJson(widget.rule?['ratelimit'] ??
-        {
-          'characteristics': ['cf.colo.id', 'ip.src'],
-          'period': 60,
-          'requests_per_period': 100,
-          'mitigation_timeout': 600,
-        }),
+    text: prettyJson(
+      widget.rule?['ratelimit'] ??
+          {
+            'characteristics': ['cf.colo.id', 'ip.src'],
+            'period': 60,
+            'requests_per_period': 100,
+            'mitigation_timeout': 600,
+          },
+    ),
   );
   late bool _enabled = widget.rule?['enabled'] != false;
   String? _error;
@@ -331,7 +354,10 @@ class _RuleEditorDialogState extends State<RuleEditorDialog> {
             children: [
               TextField(
                 controller: _desc,
-                decoration: InputDecoration(labelText: context.tr('Rule name', '规则名称'), border: const OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: context.tr('Rule name', '规则名称'),
+                  border: const OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -378,7 +404,10 @@ class _RuleEditorDialogState extends State<RuleEditorDialog> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _action,
-                      decoration: InputDecoration(labelText: context.tr('Action', '动作'), border: const OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: context.tr('Action', '动作'),
+                        border: const OutlineInputBorder(),
+                      ),
                       items: [for (final a in widget.meta.actions) DropdownMenuItem(value: a, child: Text(a))],
                       onChanged: (v) => setState(() {
                         _action = v ?? _action;

@@ -22,7 +22,9 @@ class MembersPage extends ConsumerWidget {
           frame: (w) => PageScaffold(title: context.tr('Members', '成员'), body: w),
           load: (c) async {
             final members = await c.list(base, perPage: 50);
-            final roles = await c.list('/accounts/$accountId/roles', perPage: 50).catchError((_) => <Map<String, dynamic>>[]);
+            final roles = await c
+                .list('/accounts/$accountId/roles', perPage: 50)
+                .catchError((_) => <Map<String, dynamic>>[]);
             return (members, roles);
           },
           builder: (context, data, h) {
@@ -30,7 +32,9 @@ class MembersPage extends ConsumerWidget {
             final c = ref.read(clientProvider)!;
             Future<void> editRoles(Map<String, dynamic>? member) async {
               final email = TextEditingController();
-              final current = {for (final r in ((member?['roles'] as List?) ?? const []).cast<Map>()) r['id'] as String};
+              final current = {
+                for (final r in ((member?['roles'] as List?) ?? const []).cast<Map>()) r['id'] as String,
+              };
               final selected = {...current};
               final ok = await showDialog<bool>(
                 context: context,
@@ -45,7 +49,10 @@ class MembersPage extends ConsumerWidget {
                           if (member == null)
                             TextField(
                               controller: email,
-                              decoration: InputDecoration(labelText: ctx.tr('Email', '邮箱'), border: const OutlineInputBorder()),
+                              decoration: InputDecoration(
+                                labelText: ctx.tr('Email', '邮箱'),
+                                border: const OutlineInputBorder(),
+                              ),
                             ),
                           const SizedBox(height: 8),
                           Expanded(
@@ -56,8 +63,14 @@ class MembersPage extends ConsumerWidget {
                                     dense: true,
                                     value: selected.contains(r['id']),
                                     title: Text('${r['name']}'),
-                                    subtitle: Text('${r['description'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                                    onChanged: (v) => setState(() => v == true ? selected.add(r['id'] as String) : selected.remove(r['id'])),
+                                    subtitle: Text(
+                                      '${r['description'] ?? ''}',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    onChanged: (v) => setState(
+                                      () => v == true ? selected.add(r['id'] as String) : selected.remove(r['id']),
+                                    ),
                                   ),
                               ],
                             ),
@@ -67,7 +80,10 @@ class MembersPage extends ConsumerWidget {
                     ),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Cancel', '取消'))),
-                      FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(member == null ? ctx.tr('Invite', '邀请') : ctx.tr('Save', '保存'))),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(member == null ? ctx.tr('Invite', '邀请') : ctx.tr('Save', '保存')),
+                      ),
                     ],
                   ),
                 ),
@@ -77,13 +93,22 @@ class MembersPage extends ConsumerWidget {
               if (ok != true || selected.isEmpty || !context.mounted) return;
               if (member == null) {
                 if (mail.isEmpty) return;
-                await runAction(context, () => c.post(base, data: {'email': mail, 'roles': selected.toList(), 'status': 'pending'}), success: context.tr('Invitation sent', '邀请已发送'));
+                await runAction(
+                  context,
+                  () => c.post(base, data: {'email': mail, 'roles': selected.toList(), 'status': 'pending'}),
+                  success: context.tr('Invitation sent', '邀请已发送'),
+                );
               } else {
                 await runAction(
                   context,
-                  () => c.put('$base/${member['id']}', data: {
-                    'roles': [for (final id in selected) {'id': id}],
-                  }),
+                  () => c.put(
+                    '$base/${member['id']}',
+                    data: {
+                      'roles': [
+                        for (final id in selected) {'id': id},
+                      ],
+                    },
+                  ),
                   success: context.tr('Roles updated', '角色已更新'),
                 );
               }
@@ -108,17 +133,26 @@ class MembersPage extends ConsumerWidget {
                   final name = [user['first_name'], user['last_name']].whereType<String>().join(' ');
                   final roleNames = ((m['roles'] as List?) ?? const []).map((r) => (r as Map)['name']).join(', ');
                   return ListTile(
-                    leading: CircleAvatar(child: Text((user['email'] as String? ?? '?').characters.first.toUpperCase())),
+                    leading: CircleAvatar(
+                      child: Text((user['email'] as String? ?? '?').characters.first.toUpperCase()),
+                    ),
                     title: Text('${user['email'] ?? m['email'] ?? m['id']}'),
-                    subtitle: Text([
-                      if (name.isNotEmpty) name,
-                      if (roleNames.isNotEmpty) roleNames,
-                      if (user['two_factor_authentication_enabled'] == true) '2FA ✓',
-                    ].join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(
+                      [
+                        if (name.isNotEmpty) name,
+                        if (roleNames.isNotEmpty) roleNames,
+                        if (user['two_factor_authentication_enabled'] == true) '2FA ✓',
+                      ].join(' · '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        StatusChip('${m['status']}', tone: StatusChip.toneFor(m['status'] == 'accepted' ? 'active' : m['status'] as String?)),
+                        StatusChip(
+                          '${m['status']}',
+                          tone: StatusChip.toneFor(m['status'] == 'accepted' ? 'active' : m['status'] as String?),
+                        ),
                         PopupMenuButton<String>(
                           onSelected: (v) async {
                             if (v == 'roles') {
@@ -133,7 +167,11 @@ class MembersPage extends ConsumerWidget {
                                 confirmLabel: context.tr('Remove', '移除'),
                               );
                               if (!ok || !context.mounted) return;
-                              await runAction(context, () => c.delete('$base/${m['id']}'), success: context.tr('Removed', '已移除'));
+                              await runAction(
+                                context,
+                                () => c.delete('$base/${m['id']}'),
+                                success: context.tr('Removed', '已移除'),
+                              );
                               await h.reload();
                             }
                           },

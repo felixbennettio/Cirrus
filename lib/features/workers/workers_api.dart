@@ -72,7 +72,8 @@ Future<WorkerContent> fetchWorkerContent(CfClient c, String accountId, String sc
     ];
     final main = entry ?? modules.firstOrNull?.name ?? 'worker.js';
     final mainModule = modules.where((m) => m.name == main).firstOrNull;
-    final moduleSyntax = !(mainModule?.contentType == 'application/javascript' && !(mainModule?.text.contains('export ') ?? false));
+    final moduleSyntax =
+        !(mainModule?.contentType == 'application/javascript' && !(mainModule?.text.contains('export ') ?? false));
     return WorkerContent(mainModule: main, modules: modules, moduleSyntax: moduleSyntax);
   }
   final name = entry ?? 'worker.js';
@@ -87,10 +88,16 @@ Future<WorkerContent> fetchWorkerContent(CfClient c, String accountId, String sc
 
 FormData _scriptForm(Map<String, dynamic> metadata, List<WorkerModule> modules) {
   final form = FormData();
-  form.files.add(MapEntry(
-    'metadata',
-    MultipartFile.fromString(jsonEncode(metadata), filename: 'metadata.json', contentType: DioMediaType('application', 'json')),
-  ));
+  form.files.add(
+    MapEntry(
+      'metadata',
+      MultipartFile.fromString(
+        jsonEncode(metadata),
+        filename: 'metadata.json',
+        contentType: DioMediaType('application', 'json'),
+      ),
+    ),
+  );
   for (final m in modules) {
     final ct = DioMediaType.parse(m.contentType.isEmpty ? 'application/octet-stream' : m.contentType);
     form.files.add(MapEntry(m.name, MultipartFile.fromBytes(m.bytes, filename: m.name, contentType: ct)));
@@ -116,7 +123,13 @@ Future<void> createWorker(CfClient c, String accountId, String script, String co
     '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(script)}',
     data: _scriptForm(
       {'main_module': 'worker.js', 'compatibility_date': date, 'bindings': <Object>[]},
-      [WorkerModule(name: 'worker.js', contentType: 'application/javascript+module', bytes: Uint8List.fromList(utf8.encode(code)))],
+      [
+        WorkerModule(
+          name: 'worker.js',
+          contentType: 'application/javascript+module',
+          bytes: Uint8List.fromList(utf8.encode(code)),
+        ),
+      ],
     ),
   );
 }
@@ -124,10 +137,16 @@ Future<void> createWorker(CfClient c, String accountId, String script, String co
 /// Patches script settings (multipart `settings` part).
 Future<void> patchWorkerSettings(CfClient c, String accountId, String script, Map<String, dynamic> settings) async {
   final form = FormData();
-  form.files.add(MapEntry(
-    'settings',
-    MultipartFile.fromString(jsonEncode(settings), filename: 'settings.json', contentType: DioMediaType('application', 'json')),
-  ));
+  form.files.add(
+    MapEntry(
+      'settings',
+      MultipartFile.fromString(
+        jsonEncode(settings),
+        filename: 'settings.json',
+        contentType: DioMediaType('application', 'json'),
+      ),
+    ),
+  );
   await c.send('PATCH', '/accounts/$accountId/workers/scripts/${Uri.encodeComponent(script)}/settings', data: form);
 }
 
@@ -239,14 +258,22 @@ query WorkersSummary($accountTag: string, $since: Time, $until: Time) {
 
 double _d(Object? v) => v is num ? v.toDouble() : 0;
 
-Future<List<WorkerMetricsPoint>> fetchWorkerMetrics(CfClient c, String accountId, String script, {int hours = 24}) async {
+Future<List<WorkerMetricsPoint>> fetchWorkerMetrics(
+  CfClient c,
+  String accountId,
+  String script, {
+  int hours = 24,
+}) async {
   final now = DateTime.now().toUtc();
-  final data = await c.graphql(_scriptMetricsQuery, variables: {
-    'accountTag': accountId,
-    'script': script,
-    'since': now.subtract(Duration(hours: hours)).toIso8601String(),
-    'until': now.toIso8601String(),
-  });
+  final data = await c.graphql(
+    _scriptMetricsQuery,
+    variables: {
+      'accountTag': accountId,
+      'script': script,
+      'since': now.subtract(Duration(hours: hours)).toIso8601String(),
+      'until': now.toIso8601String(),
+    },
+  );
   final accounts = (data['viewer'] as Map?)?['accounts'] as List? ?? const [];
   if (accounts.isEmpty) return const [];
   final rows = ((accounts.first as Map)['workersInvocationsAdaptive'] as List? ?? const []).cast<Map>();
@@ -267,18 +294,28 @@ Future<List<WorkerMetricsPoint>> fetchWorkerMetrics(CfClient c, String accountId
   final keys = byHour.keys.toList()..sort();
   return [
     for (final k in keys)
-      WorkerMetricsPoint(DateTime.tryParse(k) ?? now, byHour[k]![0], byHour[k]![1], byHour[k]![2], byHour[k]![3], byHour[k]![4]),
+      WorkerMetricsPoint(
+        DateTime.tryParse(k) ?? now,
+        byHour[k]![0],
+        byHour[k]![1],
+        byHour[k]![2],
+        byHour[k]![3],
+        byHour[k]![4],
+      ),
   ];
 }
 
 /// Requests and errors per script for the last 24 hours.
 Future<Map<String, (double, double)>> fetchWorkersSummary(CfClient c, String accountId) async {
   final now = DateTime.now().toUtc();
-  final data = await c.graphql(_accountMetricsQuery, variables: {
-    'accountTag': accountId,
-    'since': now.subtract(const Duration(hours: 24)).toIso8601String(),
-    'until': now.toIso8601String(),
-  });
+  final data = await c.graphql(
+    _accountMetricsQuery,
+    variables: {
+      'accountTag': accountId,
+      'since': now.subtract(const Duration(hours: 24)).toIso8601String(),
+      'until': now.toIso8601String(),
+    },
+  );
   final accounts = (data['viewer'] as Map?)?['accounts'] as List? ?? const [];
   if (accounts.isEmpty) return const {};
   final out = <String, (double, double)>{};

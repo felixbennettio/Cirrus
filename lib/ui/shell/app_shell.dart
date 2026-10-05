@@ -42,11 +42,7 @@ class AppShell extends ConsumerWidget {
         SingleActivator(LogicalKeyboardKey.keyK, meta: true): OpenPaletteIntent(),
       },
       child: Actions(
-        actions: {
-          OpenPaletteIntent: CallbackAction<OpenPaletteIntent>(
-            onInvoke: (_) => showCommandPalette(context),
-          ),
-        },
+        actions: {OpenPaletteIntent: CallbackAction<OpenPaletteIntent>(onInvoke: (_) => showCommandPalette(context))},
         child: Focus(
           autofocus: true,
           child: Scaffold(
@@ -130,7 +126,9 @@ class Sidebar extends ConsumerWidget {
                               : section.label.of(context),
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: section.id == 'zone' ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                            color: section.id == 'zone'
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.6,
                             fontWeight: FontWeight.w700,
                           ),

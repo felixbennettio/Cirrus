@@ -32,7 +32,11 @@ class PagesListPage extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: Text(context.tr('Create project', '创建项目')),
           onPressed: () async {
-            final name = await promptText(context, title: context.tr('New Pages project (direct upload)', '新建 Pages 项目（直接上传）'), hint: 'my-site');
+            final name = await promptText(
+              context,
+              title: context.tr('New Pages project (direct upload)', '新建 Pages 项目（直接上传）'),
+              hint: 'my-site',
+            );
             if (name == null || name.trim().isEmpty || !context.mounted) return;
             final c = ref.read(clientProvider)!;
             final r = await runAction(
@@ -63,13 +67,18 @@ class PagesListPage extends ConsumerWidget {
                 return ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.web)),
                   title: Text('${p['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text([
-                    p['subdomain'],
-                    if (source != null) '${(source['config'] as Map?)?['owner'] ?? ''}/${(source['config'] as Map?)?['repo_name'] ?? ''}',
-                    if (trigger['branch'] != null) '⎇ ${trigger['branch']}',
-                    if (latest['created_on'] != null) formatRelative(latest['created_on'], zh: context.isZh),
-                  ].whereType<String>().join(' · ')),
-                  trailing: stage.isEmpty ? null : StatusChip('${stage['status']}', tone: StatusChip.toneFor(stage['status'] as String?)),
+                  subtitle: Text(
+                    [
+                      p['subdomain'],
+                      if (source != null)
+                        '${(source['config'] as Map?)?['owner'] ?? ''}/${(source['config'] as Map?)?['repo_name'] ?? ''}',
+                      if (trigger['branch'] != null) '⎇ ${trigger['branch']}',
+                      if (latest['created_on'] != null) formatRelative(latest['created_on'], zh: context.isZh),
+                    ].whereType<String>().join(' · '),
+                  ),
+                  trailing: stage.isEmpty
+                      ? null
+                      : StatusChip('${stage['status']}', tone: StatusChip.toneFor(stage['status'] as String?)),
                   onTap: () => context.push('/pages/${Uri.encodeComponent(p['name'] as String)}'),
                 );
               },
@@ -101,16 +110,27 @@ class PagesProjectPage extends ConsumerWidget {
                 final c = ref.read(clientProvider)!;
                 final base = '${_projects(accountId)}/${Uri.encodeComponent(name)}';
                 if (v == 'purge') {
-                  await runAction(context, () => c.post('$base/purge_build_cache'), success: context.tr('Build cache purged', '构建缓存已清除'));
+                  await runAction(
+                    context,
+                    () => c.post('$base/purge_build_cache'),
+                    success: context.tr('Build cache purged', '构建缓存已清除'),
+                  );
                 } else if (v == 'delete') {
                   final ok = await confirmDanger(
                     context,
                     title: context.tr('Delete project?', '删除项目？'),
-                    message: context.tr('All deployments and domains of $name will be removed.', '$name 的所有部署和域名都将被删除。'),
+                    message: context.tr(
+                      'All deployments and domains of $name will be removed.',
+                      '$name 的所有部署和域名都将被删除。',
+                    ),
                     typeToConfirm: name,
                   );
                   if (!ok || !context.mounted) return;
-                  final r = await runAction(context, () => c.send('DELETE', base), success: context.tr('Deleted', '已删除'));
+                  final r = await runAction(
+                    context,
+                    () => c.send('DELETE', base),
+                    success: context.tr('Deleted', '已删除'),
+                  );
                   if (r != null && context.mounted) {
                     QueryCache.instance.invalidate('pages:');
                     context.go('/pages');
@@ -183,33 +203,56 @@ class _Deployments extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text([
-                  d['environment'],
-                  if (meta['branch'] != null) '⎇ ${meta['branch']}',
-                  if (meta['commit_hash'] != null) (meta['commit_hash'] as String).substring(0, 7),
-                  formatRelative(d['created_on'], zh: context.isZh),
-                ].whereType<String>().join(' · ')),
+                subtitle: Text(
+                  [
+                    d['environment'],
+                    if (meta['branch'] != null) '⎇ ${meta['branch']}',
+                    if (meta['commit_hash'] != null) (meta['commit_hash'] as String).substring(0, 7),
+                    formatRelative(d['created_on'], zh: context.isZh),
+                  ].whereType<String>().join(' · '),
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    StatusChip('${stage['name'] ?? ''} ${stage['status'] ?? ''}'.trim(), tone: StatusChip.toneFor(stage['status'] as String?)),
+                    StatusChip(
+                      '${stage['name'] ?? ''} ${stage['status'] ?? ''}'.trim(),
+                      tone: StatusChip.toneFor(stage['status'] as String?),
+                    ),
                     PopupMenuButton<String>(
                       onSelected: (v) async {
                         switch (v) {
                           case 'open':
                             _open(d['url'] as String?);
                           case 'logs':
-                            await showDialog<void>(context: context, builder: (_) => _LogsDialog(path: '$base/$id/history/logs'));
+                            await showDialog<void>(
+                              context: context,
+                              builder: (_) => _LogsDialog(path: '$base/$id/history/logs'),
+                            );
                           case 'retry':
-                            await runAction(context, () => c.post('$base/$id/retry'), success: context.tr('Retry started', '已开始重试'));
+                            await runAction(
+                              context,
+                              () => c.post('$base/$id/retry'),
+                              success: context.tr('Retry started', '已开始重试'),
+                            );
                             await h.reload();
                           case 'rollback':
-                            final ok = await confirm(context, title: context.tr('Roll back production to this deployment?', '将生产环境回滚到此部署？'));
+                            final ok = await confirm(
+                              context,
+                              title: context.tr('Roll back production to this deployment?', '将生产环境回滚到此部署？'),
+                            );
                             if (!ok || !context.mounted) return;
-                            await runAction(context, () => c.post('$base/$id/rollback'), success: context.tr('Rolled back', '已回滚'));
+                            await runAction(
+                              context,
+                              () => c.post('$base/$id/rollback'),
+                              success: context.tr('Rolled back', '已回滚'),
+                            );
                             await h.reload();
                           case 'delete':
-                            final ok = await confirmDanger(context, title: context.tr('Delete deployment?', '删除部署？'), message: id);
+                            final ok = await confirmDanger(
+                              context,
+                              title: context.tr('Delete deployment?', '删除部署？'),
+                              message: id,
+                            );
                             if (!ok || !context.mounted) return;
                             await runAction(context, () => c.send('DELETE', '$base/$id', query: {'force': true}));
                             await h.reload();
@@ -310,9 +353,17 @@ class _Domains extends ConsumerWidget {
                     icon: const Icon(Icons.add),
                     label: Text(context.tr('Add domain', '添加域名')),
                     onPressed: () async {
-                      final name = await promptText(context, title: context.tr('Custom domain', '自定义域名'), hint: 'www.example.com');
+                      final name = await promptText(
+                        context,
+                        title: context.tr('Custom domain', '自定义域名'),
+                        hint: 'www.example.com',
+                      );
                       if (name == null || name.trim().isEmpty || !context.mounted) return;
-                      await runAction(context, () => c.post(base, data: {'name': name.trim()}), success: context.tr('Domain added', '域名已添加'));
+                      await runAction(
+                        context,
+                        () => c.post(base, data: {'name': name.trim()}),
+                        success: context.tr('Domain added', '域名已添加'),
+                      );
                       await h.reload();
                     },
                   ),
@@ -326,7 +377,9 @@ class _Domains extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.language),
                       title: Text('${d['name']}'),
-                      subtitle: Text('${(d['validation_data'] as Map?)?['status'] ?? ''} · ${(d['verification_data'] as Map?)?['status'] ?? ''}'),
+                      subtitle: Text(
+                        '${(d['validation_data'] as Map?)?['status'] ?? ''} · ${(d['verification_data'] as Map?)?['status'] ?? ''}',
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -342,7 +395,11 @@ class _Domains extends ConsumerWidget {
                           IconButton(
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () async {
-                              final ok = await confirmDanger(context, title: context.tr('Remove domain?', '移除域名？'), message: '${d['name']}');
+                              final ok = await confirmDanger(
+                                context,
+                                title: context.tr('Remove domain?', '移除域名？'),
+                                message: '${d['name']}',
+                              );
                               if (!ok || !context.mounted) return;
                               await runAction(context, () => c.delete('$base/${d['name']}'));
                               await h.reload();
@@ -386,7 +443,9 @@ class _Settings extends ConsumerWidget {
           final cfg = configs[env] as Map? ?? const {};
           final vars = (cfg['env_vars'] as Map? ?? const {}).cast<String, dynamic>();
           return SectionCard(
-            title: env == 'production' ? context.tr('Production variables', '生产环境变量') : context.tr('Preview variables', '预览环境变量'),
+            title: env == 'production'
+                ? context.tr('Production variables', '生产环境变量')
+                : context.tr('Preview variables', '预览环境变量'),
             trailing: TextButton.icon(
               icon: const Icon(Icons.add),
               label: Text(context.tr('Add', '添加')),
@@ -398,7 +457,9 @@ class _Settings extends ConsumerWidget {
                 await patch({
                   'deployment_configs': {
                     env: {
-                      'env_vars': {name.trim(): {'type': 'plain_text', 'value': value}},
+                      'env_vars': {
+                        name.trim(): {'type': 'plain_text', 'value': value},
+                      },
                     },
                   },
                 });
@@ -410,7 +471,9 @@ class _Settings extends ConsumerWidget {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(e.key, style: const TextStyle(fontFamily: 'monospace')),
-                  subtitle: Text((e.value as Map?)?['type'] == 'secret_text' ? '••••••' : '${(e.value as Map?)?['value'] ?? ''}'),
+                  subtitle: Text(
+                    (e.value as Map?)?['type'] == 'secret_text' ? '••••••' : '${(e.value as Map?)?['value'] ?? ''}',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () => patch({
@@ -440,9 +503,19 @@ class _Settings extends ConsumerWidget {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () async {
-                      final cmd = await promptText(context, title: context.tr('Build command', '构建命令'), initial: build['build_command'] as String?, monospace: true);
+                      final cmd = await promptText(
+                        context,
+                        title: context.tr('Build command', '构建命令'),
+                        initial: build['build_command'] as String?,
+                        monospace: true,
+                      );
                       if (cmd == null || !context.mounted) return;
-                      final out = await promptText(context, title: context.tr('Output directory', '输出目录'), initial: build['destination_dir'] as String?, monospace: true);
+                      final out = await promptText(
+                        context,
+                        title: context.tr('Output directory', '输出目录'),
+                        initial: build['destination_dir'] as String?,
+                        monospace: true,
+                      );
                       if (out == null) return;
                       await patch({
                         'build_config': {'build_command': cmd, 'destination_dir': out},

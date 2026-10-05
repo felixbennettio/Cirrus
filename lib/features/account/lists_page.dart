@@ -29,10 +29,12 @@ class ListsPage extends ConsumerWidget {
       length: 2,
       child: PageScaffold(
         title: context.tr('Lists', '列表'),
-        bottom: TabBar(tabs: [
-          Tab(text: context.tr('Lists', '列表')),
-          Tab(text: context.tr('Bulk redirect rules', '批量重定向规则')),
-        ]),
+        bottom: TabBar(
+          tabs: [
+            Tab(text: context.tr('Lists', '列表')),
+            Tab(text: context.tr('Bulk redirect rules', '批量重定向规则')),
+          ],
+        ),
         body: AccountRequired(
           builder: (context, accountId) => TabBarView(
             children: [
@@ -41,7 +43,10 @@ class ListsPage extends ConsumerWidget {
                 meta: const PhaseMeta(
                   phase: 'http_request_redirect',
                   title: L10nText('Bulk redirect rules', '批量重定向规则'),
-                  description: L10nText('Enable redirect lists with an expression. Rule action must be "redirect" with from_list.', '用表达式启用重定向列表。规则动作需为 redirect 并使用 from_list。'),
+                  description: L10nText(
+                    'Enable redirect lists with an expression. Rule action must be "redirect" with from_list.',
+                    '用表达式启用重定向列表。规则动作需为 redirect 并使用 from_list。',
+                  ),
                   icon: Icons.turn_right,
                   actions: ['redirect'],
                   templates: {
@@ -89,9 +94,16 @@ class _ListsView extends ConsumerWidget {
                     icon: const Icon(Icons.add),
                     label: Text(context.tr('Create list', '创建列表')),
                     onPressed: () async {
-                      final r = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => const _CreateListDialog());
+                      final r = await showDialog<Map<String, dynamic>>(
+                        context: context,
+                        builder: (_) => const _CreateListDialog(),
+                      );
                       if (r == null || !context.mounted) return;
-                      await runAction(context, () => c.post(_lists(accountId), data: r), success: context.tr('List created', '列表已创建'));
+                      await runAction(
+                        context,
+                        () => c.post(_lists(accountId), data: r),
+                        success: context.tr('List created', '列表已创建'),
+                      );
                       await h.reload();
                     },
                   ),
@@ -108,8 +120,13 @@ class _ListsView extends ConsumerWidget {
                         final l = lists[i];
                         return ListTile(
                           leading: const Icon(Icons.list_alt),
-                          title: Text('\$${l['name']}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
-                          subtitle: Text('${_kinds[l['kind']]?.of(context) ?? l['kind']} · ${l['num_items']} ${context.tr('items', '项')}${(l['description'] as String?)?.isNotEmpty == true ? ' · ${l['description']}' : ''}'),
+                          title: Text(
+                            '\$${l['name']}',
+                            style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            '${_kinds[l['kind']]?.of(context) ?? l['kind']} · ${l['num_items']} ${context.tr('items', '项')}${(l['description'] as String?)?.isNotEmpty == true ? ' · ${l['description']}' : ''}',
+                          ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () async {
@@ -124,7 +141,9 @@ class _ListsView extends ConsumerWidget {
                               await h.reload();
                             },
                           ),
-                          onTap: () => context.push('/account/lists/${l['id']}?kind=${l['kind']}&name=${Uri.encodeComponent('${l['name']}')}'),
+                          onTap: () => context.push(
+                            '/account/lists/${l['id']}?kind=${l['kind']}&name=${Uri.encodeComponent('${l['name']}')}',
+                          ),
                         );
                       },
                     ),
@@ -180,14 +199,21 @@ class _CreateListDialogState extends State<_CreateListDialog> {
               onChanged: (v) => setState(() => _kind = v ?? 'ip'),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _desc, decoration: InputDecoration(labelText: context.tr('Description', '描述'), border: const OutlineInputBorder())),
+            TextField(
+              controller: _desc,
+              decoration: InputDecoration(
+                labelText: context.tr('Description', '描述'),
+                border: const OutlineInputBorder(),
+              ),
+            ),
           ],
         ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('Cancel', '取消'))),
         FilledButton(
-          onPressed: () => Navigator.pop(context, {'name': _name.text.trim(), 'kind': _kind, 'description': _desc.text.trim()}),
+          onPressed: () =>
+              Navigator.pop(context, {'name': _name.text.trim(), 'kind': _kind, 'description': _desc.text.trim()}),
           child: Text(context.tr('Create', '创建')),
         ),
       ],
@@ -220,7 +246,9 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
   Map<String, dynamic>? _parse(String line) {
     final parts = line.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
     if (parts.isEmpty) return null;
-    final comment = parts.length > (widget.kind == 'redirect' ? 3 : 1) ? parts.sublist(widget.kind == 'redirect' ? 3 : 1).join(' ') : null;
+    final comment = parts.length > (widget.kind == 'redirect' ? 3 : 1)
+        ? parts.sublist(widget.kind == 'redirect' ? 3 : 1).join(' ')
+        : null;
     return switch (widget.kind) {
       'ip' => {'ip': parts[0], 'comment': ?comment},
       'asn' => {'asn': int.tryParse(parts[0].replaceAll(RegExp('as', caseSensitive: false), '')), 'comment': ?comment},
@@ -228,16 +256,17 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
         'hostname': {'url_hostname': parts[0]},
         'comment': ?comment,
       },
-      'redirect' => parts.length < 2
-          ? null
-          : {
-              'redirect': {
-                'source_url': parts[0],
-                'target_url': parts[1],
-                'status_code': parts.length > 2 ? int.tryParse(parts[2]) ?? 301 : 301,
+      'redirect' =>
+        parts.length < 2
+            ? null
+            : {
+                'redirect': {
+                  'source_url': parts[0],
+                  'target_url': parts[1],
+                  'status_code': parts.length > 2 ? int.tryParse(parts[2]) ?? 301 : 301,
+                },
+                'comment': ?comment,
               },
-              'comment': ?comment,
-            },
       _ => null,
     };
   }
@@ -245,7 +274,12 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
   @override
   Widget build(BuildContext context) {
     final accountId = ref.watch(currentAccountIdProvider);
-    if (accountId == null) return PageScaffold(title: widget.name ?? '', body: AccountRequired(builder: (_, _) => const SizedBox()));
+    if (accountId == null) {
+      return PageScaffold(
+        title: widget.name ?? '',
+        body: AccountRequired(builder: (_, _) => const SizedBox()),
+      );
+    }
     final base = '${_lists(accountId)}/${widget.listId}/items';
     return PageScaffold(
       title: '\$${widget.name ?? widget.listId}',
@@ -256,7 +290,11 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
         builder: (context, items, h) {
           final c = ref.read(clientProvider)!;
           final q = _q.toLowerCase();
-          final list = q.isEmpty ? items : items.where((i) => _label(i).toLowerCase().contains(q) || '${i['comment']}'.toLowerCase().contains(q)).toList();
+          final list = q.isEmpty
+              ? items
+              : items
+                    .where((i) => _label(i).toLowerCase().contains(q) || '${i['comment']}'.toLowerCase().contains(q))
+                    .toList();
           return Column(
             children: [
               Padding(
@@ -275,9 +313,21 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
                           'hostname' => 'www.example.com',
                           _ => 'https://old.example.com/a https://new.example.com/b 301',
                         };
-                        final text = await promptText(context, title: context.tr('One item per line', '每行一个条目'), hint: hint, multiline: true, monospace: true);
+                        final text = await promptText(
+                          context,
+                          title: context.tr('One item per line', '每行一个条目'),
+                          hint: hint,
+                          multiline: true,
+                          monospace: true,
+                        );
                         if (text == null || !context.mounted) return;
-                        final parsed = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).map(_parse).whereType<Map<String, dynamic>>().toList();
+                        final parsed = text
+                            .split('\n')
+                            .map((l) => l.trim())
+                            .where((l) => l.isNotEmpty)
+                            .map(_parse)
+                            .whereType<Map<String, dynamic>>()
+                            .toList();
                         if (parsed.isEmpty) return;
                         await runAction(
                           context,
@@ -300,17 +350,22 @@ class _ListItemsPageState extends ConsumerState<ListItemsPage> {
                     return ListTile(
                       dense: true,
                       title: Text(_label(it), style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
-                      subtitle: Text([if (it['comment'] != null) '${it['comment']}', formatDate(it['created_on'])].join(' · ')),
+                      subtitle: Text(
+                        [if (it['comment'] != null) '${it['comment']}', formatDate(it['created_on'])].join(' · '),
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline, size: 20),
                         onPressed: () async {
                           await runAction(
                             context,
-                            () => c.delete(base, data: {
-                              'items': [
-                                {'id': it['id']},
-                              ],
-                            }),
+                            () => c.delete(
+                              base,
+                              data: {
+                                'items': [
+                                  {'id': it['id']},
+                                ],
+                              },
+                            ),
                           );
                           await Future<void>.delayed(const Duration(seconds: 1));
                           await h.reload();

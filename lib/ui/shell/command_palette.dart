@@ -11,10 +11,7 @@ import '../widgets/common.dart';
 import 'nav.dart';
 
 Future<void> showCommandPalette(BuildContext context) {
-  return showDialog<void>(
-    context: context,
-    builder: (_) => const _CommandPalette(),
-  );
+  return showDialog<void>(context: context, builder: (_) => const _CommandPalette());
 }
 
 class _Entry {
@@ -52,62 +49,72 @@ class _CommandPaletteState extends ConsumerState<_CommandPalette> {
     for (final item in allNavItems) {
       if (item.scope == NavScope.zone && zone == null) continue;
       if (hit([item.label.en, item.label.zh, ...item.keywords, item.path])) {
-        out.add(_Entry(
-          icon: item.icon,
-          title: item.label.of(context),
-          subtitle: item.scope == NavScope.zone ? zone!['name'] as String? : null,
-          run: (c) => c.go(item.path),
-        ));
+        out.add(
+          _Entry(
+            icon: item.icon,
+            title: item.label.of(context),
+            subtitle: item.scope == NavScope.zone ? zone!['name'] as String? : null,
+            run: (c) => c.go(item.path),
+          ),
+        );
       }
     }
     for (final spec in resourceSpecs) {
       if (hit([spec.title.en, spec.title.zh, spec.id, ...spec.keywords])) {
-        out.add(_Entry(
-          icon: spec.icon,
-          title: spec.title.of(context),
-          subtitle: spec.group.of(context),
-          run: (c) => c.go('/r/${spec.id}'),
-        ));
+        out.add(
+          _Entry(
+            icon: spec.icon,
+            title: spec.title.of(context),
+            subtitle: spec.group.of(context),
+            run: (c) => c.go('/r/${spec.id}'),
+          ),
+        );
       }
     }
     if (terms.isNotEmpty) {
       final zones = ref.read(zonesProvider).value ?? const [];
       final accountId = ref.read(currentAccountIdProvider);
       for (final z in zones.where((z) => hit([z['name'] as String? ?? ''])).take(8)) {
-        out.add(_Entry(
-          icon: Icons.public,
-          title: z['name'] as String,
-          subtitle: context.tr('Switch to this zone', '切换到该域名'),
-          run: (c) {
-            ref.read(settingsProvider.notifier).setActiveZone(accountId ?? '-', z['id'] as String);
-            c.go('/zone');
-          },
-        ));
+        out.add(
+          _Entry(
+            icon: Icons.public,
+            title: z['name'] as String,
+            subtitle: context.tr('Switch to this zone', '切换到该域名'),
+            run: (c) {
+              ref.read(settingsProvider.notifier).setActiveZone(accountId ?? '-', z['id'] as String);
+              c.go('/zone');
+            },
+          ),
+        );
       }
       final profile = ref.read(activeProfileProvider);
       final accounts = ref.read(accountsProvider).value ?? const [];
       for (final a in accounts.where((a) => hit([a['name'] as String? ?? ''])).take(5)) {
-        out.add(_Entry(
-          icon: Icons.account_tree_outlined,
-          title: a['name'] as String,
-          subtitle: context.tr('Switch account', '切换账户'),
-          run: (c) {
-            if (profile != null) {
-              ref.read(settingsProvider.notifier).setActiveAccount(profile.id, a['id'] as String);
-            }
-          },
-        ));
+        out.add(
+          _Entry(
+            icon: Icons.account_tree_outlined,
+            title: a['name'] as String,
+            subtitle: context.tr('Switch account', '切换账户'),
+            run: (c) {
+              if (profile != null) {
+                ref.read(settingsProvider.notifier).setActiveAccount(profile.id, a['id'] as String);
+              }
+            },
+          ),
+        );
       }
       final catalog = ref.read(catalogProvider).value;
       if (catalog != null && q.length >= 2) {
         for (final op in catalog.search(q, limit: 25)) {
-          out.add(_Entry(
-            icon: Icons.terminal,
-            title: op.summary.isEmpty ? op.path : op.summary,
-            subtitle: op.path,
-            trailing: MethodBadge(op.method, small: true),
-            run: (c) => c.go('/console?op=${Uri.encodeComponent(op.id)}'),
-          ));
+          out.add(
+            _Entry(
+              icon: Icons.terminal,
+              title: op.summary.isEmpty ? op.path : op.summary,
+              subtitle: op.path,
+              trailing: MethodBadge(op.method, small: true),
+              run: (c) => c.go('/console?op=${Uri.encodeComponent(op.id)}'),
+            ),
+          );
         }
       }
     }
@@ -151,10 +158,7 @@ class _CommandPaletteState extends ConsumerState<_CommandPalette> {
                   autofocus: true,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: context.tr(
-                      'Jump to a page, zone, account or API endpoint…',
-                      '跳转到页面、域名、账户或 API 接口…',
-                    ),
+                    hintText: context.tr('Jump to a page, zone, account or API endpoint…', '跳转到页面、域名、账户或 API 接口…'),
                     border: const OutlineInputBorder(),
                   ),
                   onChanged: (v) => setState(() {

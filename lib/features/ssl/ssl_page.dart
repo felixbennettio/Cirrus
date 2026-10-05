@@ -114,7 +114,9 @@ class _Overview extends ConsumerWidget {
                         children: [
                           Icon(icon, color: selected ? scheme.onPrimaryContainer : scheme.primary),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(title.of(context), style: const TextStyle(fontWeight: FontWeight.w600))),
+                          Expanded(
+                            child: Text(title.of(context), style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ),
                           if (selected) const Icon(Icons.check_circle, size: 18),
                         ],
                       ),
@@ -138,10 +140,30 @@ class _Overview extends ConsumerWidget {
                   ResponsiveGrid(
                     minItemWidth: 190,
                     children: [
-                      modeCard('off', Icons.lock_open, const L10nText('Off', '关闭'), const L10nText('No encryption. Not recommended.', '不加密，不推荐。')),
-                      modeCard('flexible', Icons.lock_outline, const L10nText('Flexible', '灵活'), const L10nText('HTTPS to visitors, HTTP to origin.', '访客到 Cloudflare 加密，回源 HTTP。')),
-                      modeCard('full', Icons.lock, const L10nText('Full', '完全'), const L10nText('HTTPS to origin, any certificate.', '回源 HTTPS，接受任意证书。')),
-                      modeCard('strict', Icons.verified_user, const L10nText('Full (strict)', '完全（严格）'), const L10nText('HTTPS to origin with a valid certificate.', '回源 HTTPS，要求有效证书。')),
+                      modeCard(
+                        'off',
+                        Icons.lock_open,
+                        const L10nText('Off', '关闭'),
+                        const L10nText('No encryption. Not recommended.', '不加密，不推荐。'),
+                      ),
+                      modeCard(
+                        'flexible',
+                        Icons.lock_outline,
+                        const L10nText('Flexible', '灵活'),
+                        const L10nText('HTTPS to visitors, HTTP to origin.', '访客到 Cloudflare 加密，回源 HTTP。'),
+                      ),
+                      modeCard(
+                        'full',
+                        Icons.lock,
+                        const L10nText('Full', '完全'),
+                        const L10nText('HTTPS to origin, any certificate.', '回源 HTTPS，接受任意证书。'),
+                      ),
+                      modeCard(
+                        'strict',
+                        Icons.verified_user,
+                        const L10nText('Full (strict)', '完全（严格）'),
+                        const L10nText('HTTPS to origin with a valid certificate.', '回源 HTTPS，要求有效证书。'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -160,7 +182,8 @@ class _Overview extends ConsumerWidget {
                     'ssl_automatic_mode',
                     'ciphers',
                   ])
-                    if (settings[id] != null) ZoneSettingTile(zoneId: zoneId, setting: settings[id]!, onChanged: update),
+                    if (settings[id] != null)
+                      ZoneSettingTile(zoneId: zoneId, setting: settings[id]!, onChanged: update),
                 ],
               ),
               if (settings['security_header'] != null)
@@ -193,9 +216,13 @@ class _HstsCardState extends ConsumerState<_HstsCard> {
     final client = ref.read(clientProvider)!;
     final r = await runAction(
       context,
-      () => client.send('PATCH', '/zones/${widget.zoneId}/settings/security_header', data: {
-        'value': {'strict_transport_security': _hsts},
-      }),
+      () => client.send(
+        'PATCH',
+        '/zones/${widget.zoneId}/settings/security_header',
+        data: {
+          'value': {'strict_transport_security': _hsts},
+        },
+      ),
       success: context.tr('HSTS saved', 'HSTS 已保存'),
     );
     if (r?.result is Map) widget.onChanged(Map<String, dynamic>.from(r!.result as Map));
@@ -225,7 +252,13 @@ class _HstsCardState extends ConsumerState<_HstsCard> {
             value: ages.contains(maxAge) ? maxAge : null,
             hint: Text('$maxAge'),
             underline: const SizedBox(),
-            items: [for (final a in ages) DropdownMenuItem(value: a, child: Text(a == 0 ? '0 (disable)' : '${a ~/ 2592000} ${context.tr('months', '个月')}'))],
+            items: [
+              for (final a in ages)
+                DropdownMenuItem(
+                  value: a,
+                  child: Text(a == 0 ? '0 (disable)' : '${a ~/ 2592000} ${context.tr('months', '个月')}'),
+                ),
+            ],
             onChanged: (v) => setState(() => _hsts = {..._hsts, 'max_age': v}),
           ),
         ),
@@ -284,7 +317,12 @@ class _EdgeCertificates extends ConsumerWidget {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(context.tr('Universal SSL', '通用 SSL')),
-                      subtitle: Text(context.tr('Free certificate covering the apex and first-level subdomains.', '覆盖根域名和一级子域名的免费证书。')),
+                      subtitle: Text(
+                        context.tr(
+                          'Free certificate covering the apex and first-level subdomains.',
+                          '覆盖根域名和一级子域名的免费证书。',
+                        ),
+                      ),
                       value: universal['enabled'] == true,
                       onChanged: (v) async {
                         if (!v &&
@@ -297,7 +335,10 @@ class _EdgeCertificates extends ConsumerWidget {
                           return;
                         }
                         if (!context.mounted) return;
-                        await runAction(context, () => client.patch('/zones/$zoneId/ssl/universal/settings', data: {'enabled': v}));
+                        await runAction(
+                          context,
+                          () => client.patch('/zones/$zoneId/ssl/universal/settings', data: {'enabled': v}),
+                        );
                         await h.reload();
                       },
                     ),
@@ -314,19 +355,22 @@ class _EdgeCertificates extends ConsumerWidget {
                   },
                 ),
                 children: [
-                  if (packs.isEmpty) Padding(padding: const EdgeInsets.all(12), child: Text(context.tr('No certificates', '没有证书'))),
+                  if (packs.isEmpty)
+                    Padding(padding: const EdgeInsets.all(12), child: Text(context.tr('No certificates', '没有证书'))),
                   for (final p in packs)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.workspace_premium_outlined),
                       title: Text(((p['hosts'] as List?) ?? const []).join(', ')),
-                      subtitle: Text([
-                        p['type'],
-                        p['certificate_authority'],
-                        if (p['validity_days'] != null) '${p['validity_days']}d',
-                        if ((p['certificates'] as List?)?.isNotEmpty ?? false)
-                          '${context.tr('expires', '到期')} ${formatDate(((p['certificates'] as List).first as Map)['expires_on'], withTime: false)}',
-                      ].whereType<Object>().join(' · ')),
+                      subtitle: Text(
+                        [
+                          p['type'],
+                          p['certificate_authority'],
+                          if (p['validity_days'] != null) '${p['validity_days']}d',
+                          if ((p['certificates'] as List?)?.isNotEmpty ?? false)
+                            '${context.tr('expires', '到期')} ${formatDate(((p['certificates'] as List).first as Map)['expires_on'], withTime: false)}',
+                        ].whereType<Object>().join(' · '),
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -342,13 +386,17 @@ class _EdgeCertificates extends ConsumerWidget {
                                   message: ((p['hosts'] as List?) ?? const []).join(', '),
                                 );
                                 if (!ok || !context.mounted) return;
-                                await runAction(context, () => client.delete('/zones/$zoneId/ssl/certificate_packs/${p['id']}'));
+                                await runAction(
+                                  context,
+                                  () => client.delete('/zones/$zoneId/ssl/certificate_packs/${p['id']}'),
+                                );
                                 await h.reload();
                               }
                             },
                             itemBuilder: (context) => [
                               PopupMenuItem(value: 'json', child: Text(context.tr('Details', '详情'))),
-                              if (p['type'] != 'universal') PopupMenuItem(value: 'delete', child: Text(context.tr('Delete', '删除'))),
+                              if (p['type'] != 'universal')
+                                PopupMenuItem(value: 'delete', child: Text(context.tr('Delete', '删除'))),
                             ],
                           ),
                         ],
@@ -382,12 +430,18 @@ class _EdgeCertificates extends ConsumerWidget {
                   controller: hosts,
                   minLines: 2,
                   maxLines: 6,
-                  decoration: InputDecoration(labelText: ctx.tr('Hostnames (one per line)', '主机名（每行一个）'), border: const OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: ctx.tr('Hostnames (one per line)', '主机名（每行一个）'),
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: ca,
-                  decoration: InputDecoration(labelText: ctx.tr('Certificate authority', '证书颁发机构'), border: const OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: ctx.tr('Certificate authority', '证书颁发机构'),
+                    border: const OutlineInputBorder(),
+                  ),
                   items: const [
                     DropdownMenuItem(value: 'lets_encrypt', child: Text("Let's Encrypt")),
                     DropdownMenuItem(value: 'google', child: Text('Google Trust Services')),
@@ -398,7 +452,10 @@ class _EdgeCertificates extends ConsumerWidget {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: validation,
-                  decoration: InputDecoration(labelText: ctx.tr('Validation method', '验证方式'), border: const OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: ctx.tr('Validation method', '验证方式'),
+                    border: const OutlineInputBorder(),
+                  ),
                   items: const [
                     DropdownMenuItem(value: 'txt', child: Text('TXT')),
                     DropdownMenuItem(value: 'http', child: Text('HTTP')),
@@ -434,13 +491,17 @@ class _EdgeCertificates extends ConsumerWidget {
     final client = ref.read(clientProvider)!;
     final r = await runAction(
       context,
-      () => client.send('POST', '/zones/$zoneId/ssl/certificate_packs/order', data: {
-        'type': 'advanced',
-        'hosts': list,
-        'certificate_authority': ca,
-        'validation_method': validation,
-        'validity_days': days,
-      }),
+      () => client.send(
+        'POST',
+        '/zones/$zoneId/ssl/certificate_packs/order',
+        data: {
+          'type': 'advanced',
+          'hosts': list,
+          'certificate_authority': ca,
+          'validation_method': validation,
+          'validity_days': days,
+        },
+      ),
       success: context.tr('Certificate ordered', '证书已订购'),
     );
     return r != null;
@@ -475,26 +536,43 @@ class _OriginCertificates extends ConsumerWidget {
                   },
                 ),
                 children: [
-                  if (certs.isEmpty) Padding(padding: const EdgeInsets.all(12), child: Text(context.tr('No origin certificates', '没有源站证书'))),
+                  if (certs.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(context.tr('No origin certificates', '没有源站证书')),
+                    ),
                   for (final cert in certs)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.verified_outlined),
                       title: Text(((cert['hostnames'] as List?) ?? const []).join(', ')),
-                      subtitle: Text('${cert['request_type'] ?? ''} · ${context.tr('expires', '到期')} ${formatDate(cert['expires_on'], withTime: false)}'),
+                      subtitle: Text(
+                        '${cert['request_type'] ?? ''} · ${context.tr('expires', '到期')} ${formatDate(cert['expires_on'], withTime: false)}',
+                      ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (v) async {
                           if (v == 'download') {
-                            await saveText(context, fileName: 'origin-${cert['id']}.pem', text: '${cert['certificate'] ?? ''}');
+                            await saveText(
+                              context,
+                              fileName: 'origin-${cert['id']}.pem',
+                              text: '${cert['certificate'] ?? ''}',
+                            );
                           } else if (v == 'revoke') {
                             final ok = await confirmDanger(
                               context,
                               title: context.tr('Revoke certificate?', '吊销证书？'),
-                              message: context.tr('Origins using it will stop working with Full (strict).', '使用该证书的源站在完全（严格）模式下将无法工作。'),
+                              message: context.tr(
+                                'Origins using it will stop working with Full (strict).',
+                                '使用该证书的源站在完全（严格）模式下将无法工作。',
+                              ),
                               confirmLabel: context.tr('Revoke', '吊销'),
                             );
                             if (!ok || !context.mounted) return;
-                            await runAction(context, () => client.delete('/certificates/${cert['id']}'), success: context.tr('Revoked', '已吊销'));
+                            await runAction(
+                              context,
+                              () => client.delete('/certificates/${cert['id']}'),
+                              success: context.tr('Revoked', '已吊销'),
+                            );
                             await h.reload();
                           }
                         },
@@ -536,7 +614,10 @@ Future<bool> _createOriginCert(BuildContext context, WidgetRef ref, String zoneN
                   controller: hosts,
                   minLines: 2,
                   maxLines: 6,
-                  decoration: InputDecoration(labelText: ctx.tr('Hostnames (one per line)', '主机名（每行一个）'), border: const OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: ctx.tr('Hostnames (one per line)', '主机名（每行一个）'),
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
@@ -600,12 +681,11 @@ Future<bool> _createOriginCert(BuildContext context, WidgetRef ref, String zoneN
       csr = generated.$1;
       privateKeyPem = generated.$2;
     }
-    return client.send('POST', '/certificates', data: {
-      'hostnames': hostnames,
-      'requested_validity': validity,
-      'request_type': 'origin-ecc',
-      'csr': csr,
-    });
+    return client.send(
+      'POST',
+      '/certificates',
+      data: {'hostnames': hostnames, 'requested_validity': validity, 'request_type': 'origin-ecc', 'csr': csr},
+    );
   });
   if (res == null || !context.mounted) return false;
   final cert = (res.result as Map?)?['certificate'] as String? ?? '';

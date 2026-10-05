@@ -47,7 +47,10 @@ class TunnelsPage extends ConsumerWidget {
                 final t = r.result as Map? ?? const {};
                 var token = t['token'] as String?;
                 if (token == null && t['id'] != null) {
-                  token = await c.get('${_tunnels(accountId)}/${t['id']}/token').then((v) => v as String?).catchError((_) => null);
+                  token = await c
+                      .get('${_tunnels(accountId)}/${t['id']}/token')
+                      .then((v) => v as String?)
+                      .catchError((_) => null);
                 }
                 if (token != null && context.mounted) await showInstallDialog(context, token);
                 if (t['id'] != null && context.mounted) context.push('/zt/tunnels/${t['id']}');
@@ -73,11 +76,15 @@ class TunnelsPage extends ConsumerWidget {
                           child: Icon(Icons.settings_ethernet, color: _statusColor(t['status'] as String?)),
                         ),
                         title: Text('${t['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text([
-                          t['config_src'] == 'cloudflare' ? context.tr('Remotely managed', '远程管理') : context.tr('Locally managed', '本地管理'),
-                          if (conns.isNotEmpty) '${conns.length} ${context.tr('connections', '个连接')} ($colos)',
-                          formatDate(t['created_at'], withTime: false),
-                        ].join(' · ')),
+                        subtitle: Text(
+                          [
+                            t['config_src'] == 'cloudflare'
+                                ? context.tr('Remotely managed', '远程管理')
+                                : context.tr('Locally managed', '本地管理'),
+                            if (conns.isNotEmpty) '${conns.length} ${context.tr('connections', '个连接')} ($colos)',
+                            formatDate(t['created_at'], withTime: false),
+                          ].join(' · '),
+                        ),
                         trailing: StatusChip('${t['status']}', tone: StatusChip.toneFor(t['status'] as String?)),
                         onTap: () => context.push('/zt/tunnels/${t['id']}'),
                       );
@@ -101,7 +108,8 @@ Future<void> showInstallDialog(BuildContext context, String token) {
   final cmds = {
     context.tr('Install as a service', '安装为系统服务'): 'cloudflared service install $token',
     context.tr('Run in the foreground', '前台运行'): 'cloudflared tunnel run --token $token',
-    'Docker': 'docker run -d --restart unless-stopped cloudflare/cloudflared:latest tunnel --no-autoupdate run --token $token',
+    'Docker':
+        'docker run -d --restart unless-stopped cloudflare/cloudflared:latest tunnel --no-autoupdate run --token $token',
   };
   return showDialog<void>(
     context: context,
@@ -127,7 +135,9 @@ Future<void> showInstallDialog(BuildContext context, String token) {
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: SelectableText(e.value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12))),
+                      Expanded(
+                        child: SelectableText(e.value, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                      ),
                       IconButton(icon: const Icon(Icons.copy, size: 18), onPressed: () => copyText(ctx, e.value)),
                     ],
                   ),
@@ -182,18 +192,29 @@ class TunnelDetailPage extends ConsumerWidget {
                   PopupMenuButton<String>(
                     onSelected: (v) async {
                       if (v == 'rename') {
-                        final n = await promptText(context, title: context.tr('Rename tunnel', '重命名隧道'), initial: t['name'] as String?);
+                        final n = await promptText(
+                          context,
+                          title: context.tr('Rename tunnel', '重命名隧道'),
+                          initial: t['name'] as String?,
+                        );
                         if (n == null || n.trim().isEmpty || !context.mounted) return;
                         await runAction(context, () => c.patch(base, data: {'name': n.trim()}));
                         await h.reload();
                       } else if (v == 'cleanup') {
-                        await runAction(context, () => c.delete('$base/connections'), success: context.tr('Stale connections removed', '已清理失效连接'));
+                        await runAction(
+                          context,
+                          () => c.delete('$base/connections'),
+                          success: context.tr('Stale connections removed', '已清理失效连接'),
+                        );
                         await h.reload();
                       } else if (v == 'delete') {
                         final ok = await confirmDanger(
                           context,
                           title: context.tr('Delete tunnel?', '删除隧道？'),
-                          message: context.tr('Connectors will be disconnected and the tunnel removed.', '连接器将断开，隧道将被删除。'),
+                          message: context.tr(
+                            'Connectors will be disconnected and the tunnel removed.',
+                            '连接器将断开，隧道将被删除。',
+                          ),
                           typeToConfirm: t['name'] as String?,
                         );
                         if (!ok || !context.mounted) return;
@@ -269,9 +290,15 @@ class _Overview extends StatelessWidget {
             InfoRow('Tunnel ID', '${t['id']}', copy: true, mono: true),
             InfoRow('CNAME', '${t['id']}.cfargotunnel.com', copy: true, mono: true),
             InfoRow(context.tr('Type', '类型'), '${t['tun_type'] ?? 'cfd_tunnel'}'),
-            InfoRow(context.tr('Configuration', '配置方式'), t['config_src'] == 'cloudflare' ? context.tr('Remote (dashboard/API)', '远程（面板/API）') : context.tr('Local (config.yml)', '本地 (config.yml)')),
+            InfoRow(
+              context.tr('Configuration', '配置方式'),
+              t['config_src'] == 'cloudflare'
+                  ? context.tr('Remote (dashboard/API)', '远程（面板/API）')
+                  : context.tr('Local (config.yml)', '本地 (config.yml)'),
+            ),
             InfoRow(context.tr('Created', '创建时间'), formatDate(t['created_at'])),
-            if (t['conns_active_at'] != null) InfoRow(context.tr('Active since', '活跃自'), formatDate(t['conns_active_at'])),
+            if (t['conns_active_at'] != null)
+              InfoRow(context.tr('Active since', '活跃自'), formatDate(t['conns_active_at'])),
           ],
         ),
         SectionCard(
@@ -283,11 +310,13 @@ class _Overview extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.cable),
                 title: Text('${cn['colo_name'] ?? ''}  ${cn['origin_ip'] ?? ''}'),
-                subtitle: Text([
-                  if (cn['client_version'] != null) 'cloudflared ${cn['client_version']}',
-                  if (cn['opened_at'] != null) formatRelative(cn['opened_at'], zh: context.isZh),
-                  if (cn['is_pending_reconnect'] == true) 'pending reconnect',
-                ].join(' · ')),
+                subtitle: Text(
+                  [
+                    if (cn['client_version'] != null) 'cloudflared ${cn['client_version']}',
+                    if (cn['opened_at'] != null) formatRelative(cn['opened_at'], zh: context.isZh),
+                    if (cn['is_pending_reconnect'] == true) 'pending reconnect',
+                  ].join(' · '),
+                ),
               ),
           ],
         ),
@@ -315,12 +344,18 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
   }
 
   List<Map<String, dynamic>> _ingress(Map<String, dynamic> cfg) =>
-      (((cfg['config'] as Map?)?['ingress'] as List?) ?? const []).cast<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      (((cfg['config'] as Map?)?['ingress'] as List?) ?? const [])
+          .cast<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
 
   Future<void> _save(Map<String, dynamic> cfg, List<Map<String, dynamic>> rules, QueryHandle h) async {
     // cloudflared requires a final catch-all rule.
     final withoutCatchAll = rules.where((r) => r['hostname'] != null || r['path'] != null).toList();
-    final catchAll = rules.lastWhere((r) => r['hostname'] == null && r['path'] == null, orElse: () => {'service': 'http_status:404'});
+    final catchAll = rules.lastWhere(
+      (r) => r['hostname'] == null && r['path'] == null,
+      orElse: () => {'service': 'http_status:404'},
+    );
     final config = Map<String, dynamic>.from(cfg['config'] as Map? ?? const {});
     config['ingress'] = [...withoutCatchAll, catchAll];
     final r = await runAction(
@@ -355,21 +390,33 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
     Map<String, dynamic>? zone;
     for (final z in zones) {
       final n = z['name'] as String;
-      if ((hostname == n || hostname.endsWith('.$n')) && (zone == null || n.length > (zone['name'] as String).length)) zone = z;
+      if ((hostname == n || hostname.endsWith('.$n')) && (zone == null || n.length > (zone['name'] as String).length)) {
+        zone = z;
+      }
     }
     if (zone == null) {
-      showToast(context, context.tr('No zone in this account matches $hostname; add the CNAME manually.', '账户中没有与 $hostname 匹配的域名，请手动添加 CNAME。'), error: true);
+      showToast(
+        context,
+        context.tr(
+          'No zone in this account matches $hostname; add the CNAME manually.',
+          '账户中没有与 $hostname 匹配的域名，请手动添加 CNAME。',
+        ),
+        error: true,
+      );
       return;
     }
     await runAction(
       context,
-      () => _c.post('/zones/${zone!['id']}/dns_records', data: {
-        'type': 'CNAME',
-        'name': hostname,
-        'content': '${widget.tunnelId}.cfargotunnel.com',
-        'proxied': true,
-        'comment': 'Cloudflare Tunnel (Cirrus)',
-      }),
+      () => _c.post(
+        '/zones/${zone!['id']}/dns_records',
+        data: {
+          'type': 'CNAME',
+          'name': hostname,
+          'content': '${widget.tunnelId}.cfargotunnel.com',
+          'proxied': true,
+          'comment': 'Cloudflare Tunnel (Cirrus)',
+        },
+      ),
       success: context.tr('DNS record created', 'DNS 记录已创建'),
     );
   }
@@ -387,7 +434,12 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
               child: Row(
                 children: [
-                  Expanded(child: Text(context.tr('Rules are matched top to bottom.', '规则按从上到下的顺序匹配。'), style: Theme.of(context).textTheme.bodySmall)),
+                  Expanded(
+                    child: Text(
+                      context.tr('Rules are matched top to bottom.', '规则按从上到下的顺序匹配。'),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                   IconButton(icon: const Icon(Icons.refresh), onPressed: h.reload),
                   IconButton(
                     tooltip: context.tr('Edit raw config', '编辑原始配置'),
@@ -404,7 +456,11 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
                       if (text == null || !context.mounted) return;
                       try {
                         final parsed = jsonDecode(text);
-                        await runAction(context, () => _c.put('${widget.base}/configurations', data: {'config': parsed}), success: context.tr('Saved', '已保存'));
+                        await runAction(
+                          context,
+                          () => _c.put('${widget.base}/configurations', data: {'config': parsed}),
+                          success: context.tr('Saved', '已保存'),
+                        );
                         await h.reload();
                       } catch (e) {
                         if (context.mounted) showToast(context, e.toString(), error: true);
@@ -431,7 +487,10 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
                             : '${rules[i]['hostname'] ?? '*'}${rules[i]['path'] != null ? '  ${rules[i]['path']}' : ''}',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      subtitle: Text('→ ${rules[i]['service']}', style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                      subtitle: Text(
+                        '→ ${rules[i]['service']}',
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      ),
                       trailing: rules[i]['hostname'] == null && rules[i]['path'] == null
                           ? null
                           : Row(
@@ -441,7 +500,14 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline),
                                   onPressed: () async {
-                                    final ok = await confirm(context, title: context.tr('Remove ${rules[i]['hostname']}?', '移除 ${rules[i]['hostname']}？'), destructive: true);
+                                    final ok = await confirm(
+                                      context,
+                                      title: context.tr(
+                                        'Remove ${rules[i]['hostname']}?',
+                                        '移除 ${rules[i]['hostname']}？',
+                                      ),
+                                      destructive: true,
+                                    );
                                     if (!ok) return;
                                     final copy = [...rules]..removeAt(i);
                                     await _save(cfg, copy, h);
@@ -519,12 +585,20 @@ class _IngressRuleDialogState extends ConsumerState<_IngressRuleDialog> {
             children: [
               TextField(
                 controller: _host,
-                decoration: InputDecoration(labelText: context.tr('Hostname', '主机名'), hintText: 'app.example.com', border: const OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: context.tr('Hostname', '主机名'),
+                  hintText: 'app.example.com',
+                  border: const OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _path,
-                decoration: InputDecoration(labelText: context.tr('Path (regex, optional)', '路径（正则，可选）'), hintText: '^/api/', border: const OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: context.tr('Path (regex, optional)', '路径（正则，可选）'),
+                  hintText: '^/api/',
+                  border: const OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -533,7 +607,10 @@ class _IngressRuleDialogState extends ConsumerState<_IngressRuleDialog> {
                     width: 150,
                     child: DropdownButtonFormField<String>(
                       initialValue: _scheme,
-                      decoration: InputDecoration(labelText: context.tr('Service', '服务'), border: const OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: context.tr('Service', '服务'),
+                        border: const OutlineInputBorder(),
+                      ),
                       items: [for (final s in _schemes) DropdownMenuItem(value: s, child: Text(s))],
                       onChanged: (v) => setState(() => _scheme = v ?? 'http'),
                     ),
@@ -627,7 +704,15 @@ class _PrivateRoutes extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
               child: Row(
                 children: [
-                  Expanded(child: Text(context.tr('CIDR routes reachable through this tunnel (WARP to Tunnel).', '通过此隧道可访问的 CIDR 路由（WARP 到隧道）。'), style: Theme.of(context).textTheme.bodySmall)),
+                  Expanded(
+                    child: Text(
+                      context.tr(
+                        'CIDR routes reachable through this tunnel (WARP to Tunnel).',
+                        '通过此隧道可访问的 CIDR 路由（WARP 到隧道）。',
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                   IconButton(icon: const Icon(Icons.refresh), onPressed: h.reload),
                   FilledButton.tonalIcon(
                     icon: const Icon(Icons.add),
@@ -635,7 +720,11 @@ class _PrivateRoutes extends ConsumerWidget {
                     onPressed: () async {
                       final cidr = await promptText(context, title: 'CIDR', hint: '10.0.0.0/24');
                       if (cidr == null || cidr.trim().isEmpty || !context.mounted) return;
-                      await runAction(context, () => c.post(base, data: {'network': cidr.trim(), 'tunnel_id': tunnelId}), success: context.tr('Route added', '路由已添加'));
+                      await runAction(
+                        context,
+                        () => c.post(base, data: {'network': cidr.trim(), 'tunnel_id': tunnelId}),
+                        success: context.tr('Route added', '路由已添加'),
+                      );
                       await h.reload();
                     },
                   ),
@@ -649,11 +738,17 @@ class _PrivateRoutes extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.route),
                       title: Text('${r['network']}', style: const TextStyle(fontFamily: 'monospace')),
-                      subtitle: Text('${r['comment'] ?? ''}${r['virtual_network_id'] != null ? ' · vnet ${r['virtual_network_id']}' : ''}'),
+                      subtitle: Text(
+                        '${r['comment'] ?? ''}${r['virtual_network_id'] != null ? ' · vnet ${r['virtual_network_id']}' : ''}',
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () async {
-                          final ok = await confirm(context, title: context.tr('Delete route ${r['network']}?', '删除路由 ${r['network']}？'), destructive: true);
+                          final ok = await confirm(
+                            context,
+                            title: context.tr('Delete route ${r['network']}?', '删除路由 ${r['network']}？'),
+                            destructive: true,
+                          );
                           if (!ok || !context.mounted) return;
                           await runAction(context, () => c.delete('$base/${r['id']}'));
                           await h.reload();

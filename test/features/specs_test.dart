@@ -55,7 +55,9 @@ void main() {
   });
 
   test('spec ids are unique', () {
-    final ids = [for (final s in resourceSpecs) ...[s.id, for (final c in s.children) c.id]];
+    final ids = [
+      for (final s in resourceSpecs) ...[s.id, for (final c in s.children) c.id],
+    ];
     expect(ids.toSet().length, ids.length);
   });
 

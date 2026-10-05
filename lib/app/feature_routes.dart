@@ -46,7 +46,12 @@ final featureRoutes = <RouteBase>[
   GoRoute(
     path: '/pages',
     pageBuilder: (c, s) => _page(s, const PagesListPage()),
-    routes: [GoRoute(path: ':name', builder: (c, s) => PagesProjectPage(name: s.pathParameters['name']!))],
+    routes: [
+      GoRoute(
+        path: ':name',
+        builder: (c, s) => PagesProjectPage(name: s.pathParameters['name']!),
+      ),
+    ],
   ),
   GoRoute(
     path: '/kv',
@@ -61,7 +66,12 @@ final featureRoutes = <RouteBase>[
   GoRoute(
     path: '/r2',
     pageBuilder: (c, s) => _page(s, const R2BucketsPage()),
-    routes: [GoRoute(path: ':bucket', builder: (c, s) => R2BucketPage(bucket: s.pathParameters['bucket']!))],
+    routes: [
+      GoRoute(
+        path: ':bucket',
+        builder: (c, s) => R2BucketPage(bucket: s.pathParameters['bucket']!),
+      ),
+    ],
   ),
   GoRoute(
     path: '/d1',
@@ -77,7 +87,10 @@ final featureRoutes = <RouteBase>[
     path: '/workers',
     pageBuilder: (c, s) => _page(s, const WorkersListPage()),
     routes: [
-      GoRoute(path: ':name', builder: (c, s) => WorkerDetailPage(name: s.pathParameters['name']!)),
+      GoRoute(
+        path: ':name',
+        builder: (c, s) => WorkerDetailPage(name: s.pathParameters['name']!),
+      ),
     ],
   ),
   GoRoute(
@@ -99,7 +112,12 @@ final featureRoutes = <RouteBase>[
   GoRoute(
     path: '/zt/tunnels',
     pageBuilder: (c, s) => _page(s, const TunnelsPage()),
-    routes: [GoRoute(path: ':id', builder: (c, s) => TunnelDetailPage(tunnelId: s.pathParameters['id']!))],
+    routes: [
+      GoRoute(
+        path: ':id',
+        builder: (c, s) => TunnelDetailPage(tunnelId: s.pathParameters['id']!),
+      ),
+    ],
   ),
   GoRoute(path: '/account/members', pageBuilder: (c, s) => _page(s, const MembersPage())),
   GoRoute(path: '/account/tokens', pageBuilder: (c, s) => _page(s, const TokensPage())),
@@ -121,7 +139,12 @@ final featureRoutes = <RouteBase>[
   GoRoute(
     path: '/console',
     pageBuilder: (c, s) => _page(s, ConsolePage(initialOpId: s.uri.queryParameters['op'])),
-    routes: [GoRoute(path: 'op/:id', builder: (c, s) => ConsoleOperationPage(opId: s.pathParameters['id']!))],
+    routes: [
+      GoRoute(
+        path: 'op/:id',
+        builder: (c, s) => ConsoleOperationPage(opId: s.pathParameters['id']!),
+      ),
+    ],
   ),
   GoRoute(path: '/graphql', pageBuilder: (c, s) => _page(s, const GraphqlPage())),
   GoRoute(path: '/requests', pageBuilder: (c, s) => _page(s, const RequestLogPage())),
@@ -137,7 +160,10 @@ final featureRoutes = <RouteBase>[
     path: '/zt/access',
     pageBuilder: (c, s) => _page(
       s,
-      TabbedResourcesPage(title: c.tr('Access', 'Access 访问控制'), tabs: [...accessSpecs, documentById['access_organization']!]),
+      TabbedResourcesPage(
+        title: c.tr('Access', 'Access 访问控制'),
+        tabs: [...accessSpecs, documentById['access_organization']!],
+      ),
     ),
   ),
   GoRoute(
@@ -175,7 +201,11 @@ final featureRoutes = <RouteBase>[
     path: '/zt/more',
     pageBuilder: (c, s) => _page(
       s,
-      ResourceHubPage(title: c.tr('More Zero Trust', '更多 Zero Trust'), specs: zeroTrustMoreSpecs, documents: [documentById['access_organization']!]),
+      ResourceHubPage(
+        title: c.tr('More Zero Trust', '更多 Zero Trust'),
+        specs: zeroTrustMoreSpecs,
+        documents: [documentById['access_organization']!],
+      ),
     ),
   ),
   GoRoute(
@@ -188,7 +218,12 @@ final featureRoutes = <RouteBase>[
       s,
       TabbedResourcesPage(
         title: c.tr('Notifications', '通知'),
-        tabs: [specById['alert_policies']!, specById['alert_webhooks']!, specById['alert_history']!, documentById['available_alerts']!],
+        tabs: [
+          specById['alert_policies']!,
+          specById['alert_webhooks']!,
+          specById['alert_history']!,
+          documentById['available_alerts']!,
+        ],
       ),
     ),
   ),
@@ -198,7 +233,11 @@ final featureRoutes = <RouteBase>[
       s,
       ResourceHubPage(
         title: c.tr('More account features', '更多账户功能'),
-        specs: accountSpecs.where((e) => !const {'registrar_domains', 'alert_policies', 'alert_webhooks', 'alert_history'}.contains(e.id)).toList(),
+        specs: accountSpecs
+            .where(
+              (e) => !const {'registrar_domains', 'alert_policies', 'alert_webhooks', 'alert_history'}.contains(e.id),
+            )
+            .toList(),
         documents: documentSpecs.where((d) => d.group == gAccount).toList(),
       ),
     ),

@@ -33,30 +33,41 @@ class EmailRoutingPage extends StatelessWidget {
 
 String _describeActions(List? actions) {
   if (actions == null || actions.isEmpty) return '—';
-  return actions.map((a) {
-    final m = a as Map;
-    final v = (m['value'] as List?)?.join(', ') ?? '';
-    return switch (m['type']) {
-      'forward' => '→ $v',
-      'worker' => '⚡ Worker: $v',
-      'drop' => '✗ drop',
-      _ => '${m['type']} $v',
-    };
-  }).join('; ');
+  return actions
+      .map((a) {
+        final m = a as Map;
+        final v = (m['value'] as List?)?.join(', ') ?? '';
+        return switch (m['type']) {
+          'forward' => '→ $v',
+          'worker' => '⚡ Worker: $v',
+          'drop' => '✗ drop',
+          _ => '${m['type']} $v',
+        };
+      })
+      .join('; ');
 }
 
 String _describeMatchers(List? matchers) {
   if (matchers == null || matchers.isEmpty) return '—';
-  return matchers.map((m) {
-    final mm = m as Map;
-    return mm['type'] == 'all' ? '*' : '${mm['value']}';
-  }).join(', ');
+  return matchers
+      .map((m) {
+        final mm = m as Map;
+        return mm['type'] == 'all' ? '*' : '${mm['value']}';
+      })
+      .join(', ');
 }
 
 class _Rules extends ConsumerWidget {
   const _Rules();
 
-  Future<void> _edit(BuildContext context, WidgetRef ref, String zoneId, String zoneName, QueryHandle h, [Map<String, dynamic>? rule]) async {
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    String zoneId,
+    String zoneName,
+    QueryHandle h, [
+    Map<String, dynamic>? rule,
+  ]) async {
     final body = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => _RuleDialog(zoneName: zoneName, rule: rule),
@@ -66,7 +77,9 @@ class _Rules extends ConsumerWidget {
     final base = '/zones/$zoneId/email/routing/rules';
     final r = await runAction(
       context,
-      () => rule == null ? client.send('POST', base, data: body) : client.send('PUT', '$base/${rule['id'] ?? rule['tag']}', data: body),
+      () => rule == null
+          ? client.send('POST', base, data: body)
+          : client.send('PUT', '$base/${rule['id'] ?? rule['tag']}', data: body),
       success: context.tr('Saved', '已保存'),
     );
     if (r != null) await h.reload();
@@ -80,7 +93,9 @@ class _Rules extends ConsumerWidget {
         load: (c) => c.list('/zones/$zoneId/email/routing/rules', perPage: 50),
         builder: (context, rules, h) {
           final client = ref.read(clientProvider)!;
-          final custom = rules.where((r) => !((r['matchers'] as List?) ?? const []).any((m) => (m as Map)['type'] == 'all')).toList();
+          final custom = rules
+              .where((r) => !((r['matchers'] as List?) ?? const []).any((m) => (m as Map)['type'] == 'all'))
+              .toList();
           return Column(
             children: [
               Padding(
@@ -109,7 +124,9 @@ class _Rules extends ConsumerWidget {
                           return ListTile(
                             leading: const Icon(Icons.alternate_email),
                             title: Text(_describeMatchers(r['matchers'] as List?)),
-                            subtitle: Text('${_describeActions(r['actions'] as List?)}${(r['name'] as String?)?.isNotEmpty == true ? ' · ${r['name']}' : ''}'),
+                            subtitle: Text(
+                              '${_describeActions(r['actions'] as List?)}${(r['name'] as String?)?.isNotEmpty == true ? ' · ${r['name']}' : ''}',
+                            ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -118,7 +135,12 @@ class _Rules extends ConsumerWidget {
                                   onChanged: (v) async {
                                     await runAction(
                                       context,
-                                      () => client.put('/zones/$zoneId/email/routing/rules/$id', data: {...r, 'enabled': v}..remove('id')..remove('tag')),
+                                      () => client.put(
+                                        '/zones/$zoneId/email/routing/rules/$id',
+                                        data: {...r, 'enabled': v}
+                                          ..remove('id')
+                                          ..remove('tag'),
+                                      ),
                                       blocking: false,
                                     );
                                     await h.reload();
@@ -133,7 +155,10 @@ class _Rules extends ConsumerWidget {
                                       message: _describeMatchers(r['matchers'] as List?),
                                     );
                                     if (!ok || !context.mounted) return;
-                                    await runAction(context, () => client.delete('/zones/$zoneId/email/routing/rules/$id'));
+                                    await runAction(
+                                      context,
+                                      () => client.delete('/zones/$zoneId/email/routing/rules/$id'),
+                                    );
                                     await h.reload();
                                   },
                                 ),
@@ -218,8 +243,12 @@ class _RuleDialogState extends State<_RuleDialog> {
               TextField(
                 controller: _value,
                 decoration: InputDecoration(
-                  labelText: _type == 'forward' ? context.tr('Destination email(s)', '目标邮箱') : context.tr('Worker name', 'Worker 名称'),
-                  helperText: _type == 'forward' ? context.tr('Must be a verified destination address', '必须是已验证的目标地址') : null,
+                  labelText: _type == 'forward'
+                      ? context.tr('Destination email(s)', '目标邮箱')
+                      : context.tr('Worker name', 'Worker 名称'),
+                  helperText: _type == 'forward'
+                      ? context.tr('Must be a verified destination address', '必须是已验证的目标地址')
+                      : null,
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -227,7 +256,10 @@ class _RuleDialogState extends State<_RuleDialog> {
             const SizedBox(height: 12),
             TextField(
               controller: _name,
-              decoration: InputDecoration(labelText: context.tr('Name (optional)', '名称（可选）'), border: const OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: context.tr('Name (optional)', '名称（可选）'),
+                border: const OutlineInputBorder(),
+              ),
             ),
           ],
         ),
@@ -282,11 +314,19 @@ class _Destinations extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: Text(context.tr('Add', '添加')),
                       onPressed: () async {
-                        final email = await promptText(context, title: context.tr('Destination address', '目标地址'), hint: 'me@example.com');
+                        final email = await promptText(
+                          context,
+                          title: context.tr('Destination address', '目标地址'),
+                          hint: 'me@example.com',
+                        );
                         if (email == null || email.trim().isEmpty || !context.mounted) return;
                         final r = await runAction(
                           context,
-                          () => client.send('POST', '/accounts/$accountId/email/routing/addresses', data: {'email': email.trim()}),
+                          () => client.send(
+                            'POST',
+                            '/accounts/$accountId/email/routing/addresses',
+                            data: {'email': email.trim()},
+                          ),
                           success: context.tr('Verification email sent', '验证邮件已发送'),
                         );
                         if (r != null) await h.reload();
@@ -302,17 +342,33 @@ class _Destinations extends ConsumerWidget {
                       ListTile(
                         leading: const Icon(Icons.mail_outline),
                         title: Text('${a['email']}'),
-                        subtitle: Text(a['verified'] != null ? '${context.tr('Verified', '已验证')} ${formatDate(a['verified'])}' : context.tr('Pending verification', '等待验证')),
+                        subtitle: Text(
+                          a['verified'] != null
+                              ? '${context.tr('Verified', '已验证')} ${formatDate(a['verified'])}'
+                              : context.tr('Pending verification', '等待验证'),
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            StatusChip(a['verified'] != null ? 'verified' : 'pending', tone: a['verified'] != null ? Tone.good : Tone.warn),
+                            StatusChip(
+                              a['verified'] != null ? 'verified' : 'pending',
+                              tone: a['verified'] != null ? Tone.good : Tone.warn,
+                            ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () async {
-                                final ok = await confirmDanger(context, title: context.tr('Remove address?', '移除地址？'), message: '${a['email']}');
+                                final ok = await confirmDanger(
+                                  context,
+                                  title: context.tr('Remove address?', '移除地址？'),
+                                  message: '${a['email']}',
+                                );
                                 if (!ok || !context.mounted) return;
-                                await runAction(context, () => client.delete('/accounts/$accountId/email/routing/addresses/${a['id'] ?? a['tag']}'));
+                                await runAction(
+                                  context,
+                                  () => client.delete(
+                                    '/accounts/$accountId/email/routing/addresses/${a['id'] ?? a['tag']}',
+                                  ),
+                                );
                                 await h.reload();
                               },
                             ),
@@ -369,7 +425,10 @@ class _Settings extends ConsumerWidget {
             children: [
               SectionCard(
                 title: context.tr('Status', '状态'),
-                trailing: StatusChip('${s.settings['status'] ?? (enabled ? 'enabled' : 'disabled')}', tone: enabled ? Tone.good : Tone.warn),
+                trailing: StatusChip(
+                  '${s.settings['status'] ?? (enabled ? 'enabled' : 'disabled')}',
+                  tone: enabled ? Tone.good : Tone.warn,
+                ),
                 children: [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -377,7 +436,10 @@ class _Settings extends ConsumerWidget {
                     subtitle: Text(context.tr('Adds the required MX and TXT records.', '会自动添加所需的 MX 和 TXT 记录。')),
                     value: enabled,
                     onChanged: (v) async {
-                      await runAction(context, () => client.post('/zones/$zoneId/email/routing/${v ? 'enable' : 'disable'}', data: const {}));
+                      await runAction(
+                        context,
+                        () => client.post('/zones/$zoneId/email/routing/${v ? 'enable' : 'disable'}', data: const {}),
+                      );
                       await h.reload();
                     },
                   ),
@@ -392,7 +454,11 @@ class _Settings extends ConsumerWidget {
                       builder: (_) => _RuleDialog(zoneName: zone['name'] as String, rule: s.catchAll, catchAll: true),
                     );
                     if (body == null || !context.mounted) return;
-                    await runAction(context, () => client.put('/zones/$zoneId/email/routing/rules/catch_all', data: body), success: context.tr('Saved', '已保存'));
+                    await runAction(
+                      context,
+                      () => client.put('/zones/$zoneId/email/routing/rules/catch_all', data: body),
+                      success: context.tr('Saved', '已保存'),
+                    );
                     await h.reload();
                   },
                   child: Text(context.tr('Edit', '编辑')),
@@ -408,11 +474,14 @@ class _Settings extends ConsumerWidget {
                           : (v) async {
                               await runAction(
                                 context,
-                                () => client.put('/zones/$zoneId/email/routing/rules/catch_all', data: {
-                                  'enabled': v,
-                                  'matchers': s.catchAll!['matchers'],
-                                  'actions': s.catchAll!['actions'],
-                                }),
+                                () => client.put(
+                                  '/zones/$zoneId/email/routing/rules/catch_all',
+                                  data: {
+                                    'enabled': v,
+                                    'matchers': s.catchAll!['matchers'],
+                                    'actions': s.catchAll!['actions'],
+                                  },
+                                ),
                               );
                               await h.reload();
                             },
@@ -424,7 +493,12 @@ class _Settings extends ConsumerWidget {
                 title: context.tr('Required DNS records', '所需 DNS 记录'),
                 children: [
                   for (final r in s.dns.whereType<Map>())
-                    InfoRow('${r['type']} ${r['name'] ?? ''}', '${r['priority'] != null ? '${r['priority']} ' : ''}${r['content']}', mono: true, copy: true),
+                    InfoRow(
+                      '${r['type']} ${r['name'] ?? ''}',
+                      '${r['priority'] != null ? '${r['priority']} ' : ''}${r['content']}',
+                      mono: true,
+                      copy: true,
+                    ),
                   if (s.dns.isEmpty) Text(context.tr('No records reported', '无记录')),
                 ],
               ),

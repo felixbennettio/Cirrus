@@ -38,7 +38,11 @@ class KvNamespacesPage extends ConsumerWidget {
               onPressed: () async {
                 final title = await promptText(context, title: context.tr('Namespace name', '命名空间名称'), hint: 'MY_KV');
                 if (title == null || title.trim().isEmpty || !context.mounted) return;
-                await runAction(context, () => c.post(_ns(accountId), data: {'title': title.trim()}), success: context.tr('Created', '已创建'));
+                await runAction(
+                  context,
+                  () => c.post(_ns(accountId), data: {'title': title.trim()}),
+                  success: context.tr('Created', '已创建'),
+                );
                 await h.reload();
               },
             ),
@@ -58,7 +62,11 @@ class KvNamespacesPage extends ConsumerWidget {
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) async {
                             if (v == 'rename') {
-                              final t = await promptText(context, title: context.tr('Rename', '重命名'), initial: ns['title'] as String?);
+                              final t = await promptText(
+                                context,
+                                title: context.tr('Rename', '重命名'),
+                                initial: ns['title'] as String?,
+                              );
                               if (t == null || t.trim().isEmpty || !context.mounted) return;
                               await runAction(context, () => c.put('${_ns(accountId)}/$id', data: {'title': t.trim()}));
                               await h.reload();
@@ -138,11 +146,15 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
       }
     });
     try {
-      final res = await _c.send('GET', '$_base/keys', query: {
-        'limit': 1000,
-        if (_prefix.text.trim().isNotEmpty) 'prefix': _prefix.text.trim(),
-        if (_cursor != null && _cursor!.isNotEmpty) 'cursor': _cursor,
-      });
+      final res = await _c.send(
+        'GET',
+        '$_base/keys',
+        query: {
+          'limit': 1000,
+          if (_prefix.text.trim().isNotEmpty) 'prefix': _prefix.text.trim(),
+          if (_cursor != null && _cursor!.isNotEmpty) 'cursor': _cursor,
+        },
+      );
       final items = (res.result as List? ?? const []).cast<Map>().map((e) => Map<String, dynamic>.from(e));
       setState(() {
         _keys.addAll(items);
@@ -245,16 +257,26 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
   Widget build(BuildContext context) {
     final selecting = _selected.isNotEmpty;
     return PageScaffold(
-      title: selecting ? context.tr('${_selected.length} selected', '已选 ${_selected.length} 个') : (widget.title ?? 'KV'),
+      title: selecting
+          ? context.tr('${_selected.length} selected', '已选 ${_selected.length} 个')
+          : (widget.title ?? 'KV'),
       subtitle: selecting ? null : widget.namespaceId,
       leading: selecting ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(_selected.clear)) : null,
       actions: selecting
           ? [IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteSelected(_selected.toList()))]
           : [
-              IconButton(tooltip: context.tr('Upload file as value', '上传文件作为值'), icon: const Icon(Icons.upload_file), onPressed: _upload),
+              IconButton(
+                tooltip: context.tr('Upload file as value', '上传文件作为值'),
+                icon: const Icon(Icons.upload_file),
+                onPressed: _upload,
+              ),
               IconButton(icon: const Icon(Icons.refresh), onPressed: () => _load(reset: true)),
             ],
-      floatingActionButton: FloatingActionButton.extended(onPressed: _add, icon: const Icon(Icons.add), label: Text(context.tr('Add key', '添加键'))),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _add,
+        icon: const Icon(Icons.add),
+        label: Text(context.tr('Add key', '添加键')),
+      ),
       body: Column(
         children: [
           Padding(
@@ -270,7 +292,10 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
               onSubmitted: (_) => _load(reset: true),
             ),
           ),
-          if (_error != null) Expanded(child: ErrorView(error: _error!, onRetry: () => _load(reset: true))),
+          if (_error != null)
+            Expanded(
+              child: ErrorView(error: _error!, onRetry: () => _load(reset: true)),
+            ),
           if (_error == null)
             Expanded(
               child: _keys.isEmpty && _loading
@@ -285,7 +310,10 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
                           return Padding(
                             padding: const EdgeInsets.all(12),
                             child: Center(
-                              child: OutlinedButton(onPressed: _loading ? null : _load, child: Text(context.tr('Load more', '加载更多'))),
+                              child: OutlinedButton(
+                                onPressed: _loading ? null : _load,
+                                child: Text(context.tr('Load more', '加载更多')),
+                              ),
                             ),
                           );
                         }
@@ -295,19 +323,34 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
                         return ListTile(
                           dense: true,
                           selected: sel,
-                          leading: selecting ? Checkbox(value: sel, onChanged: (_) => setState(() => sel ? _selected.remove(name) : _selected.add(name))) : const Icon(Icons.vpn_key_outlined, size: 18),
+                          leading: selecting
+                              ? Checkbox(
+                                  value: sel,
+                                  onChanged: (_) => setState(() => sel ? _selected.remove(name) : _selected.add(name)),
+                                )
+                              : const Icon(Icons.vpn_key_outlined, size: 18),
                           title: Text(name, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
                           subtitle: k['expiration'] == null && k['metadata'] == null
                               ? null
-                              : Text([
-                                  if (k['expiration'] != null) '${context.tr('expires', '过期')} ${formatDate(k['expiration'])}',
-                                  if (k['metadata'] != null) 'metadata: ${jsonEncode(k['metadata'])}',
-                                ].join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          onTap: () => selecting ? setState(() => sel ? _selected.remove(name) : _selected.add(name)) : _openValue(k),
+                              : Text(
+                                  [
+                                    if (k['expiration'] != null)
+                                      '${context.tr('expires', '过期')} ${formatDate(k['expiration'])}',
+                                    if (k['metadata'] != null) 'metadata: ${jsonEncode(k['metadata'])}',
+                                  ].join(' · '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                          onTap: () => selecting
+                              ? setState(() => sel ? _selected.remove(name) : _selected.add(name))
+                              : _openValue(k),
                           onLongPress: () => setState(() => _selected.add(name)),
                           trailing: selecting
                               ? null
-                              : IconButton(icon: const Icon(Icons.delete_outline, size: 20), onPressed: () => _deleteSelected([name])),
+                              : IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20),
+                                  onPressed: () => _deleteSelected([name]),
+                                ),
                         );
                       },
                     ),
@@ -319,7 +362,14 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
 }
 
 class _ValueEditor extends StatefulWidget {
-  const _ValueEditor({required this.name, required this.onSave, this.initial, this.bytes, this.metadata, this.expiration});
+  const _ValueEditor({
+    required this.name,
+    required this.onSave,
+    this.initial,
+    this.bytes,
+    this.metadata,
+    this.expiration,
+  });
 
   final String name;
   final String? initial;
@@ -355,7 +405,12 @@ class _ValueEditorState extends State<_ValueEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (binary)
-              Text(context.tr('Binary value · ${formatBytes(widget.bytes?.length ?? 0)}', '二进制值 · ${formatBytes(widget.bytes?.length ?? 0)}'))
+              Text(
+                context.tr(
+                  'Binary value · ${formatBytes(widget.bytes?.length ?? 0)}',
+                  '二进制值 · ${formatBytes(widget.bytes?.length ?? 0)}',
+                ),
+              )
             else
               TextField(
                 controller: _text,

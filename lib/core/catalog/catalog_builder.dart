@@ -2,8 +2,7 @@
 // bundled with Cirrus. Pure Dart: used by tool/build_catalog.dart and by the
 // in-app "refresh API catalog" action.
 
-const openApiSchemaUrl =
-    'https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.json';
+const openApiSchemaUrl = 'https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.json';
 const _methods = ['get', 'post', 'put', 'patch', 'delete'];
 const _maxOpDescription = 900;
 const _maxSchemaDescription = 240;
@@ -13,17 +12,13 @@ Map<String, dynamic> buildCatalog(Map<String, dynamic> doc) {
   final components = (doc['components'] as Map<String, dynamic>?) ?? {};
   final schemas = (components['schemas'] as Map<String, dynamic>?) ?? {};
   final parameters = (components['parameters'] as Map<String, dynamic>?) ?? {};
-  final requestBodies =
-      (components['requestBodies'] as Map<String, dynamic>?) ?? {};
+  final requestBodies = (components['requestBodies'] as Map<String, dynamic>?) ?? {};
   final paths = doc['paths'] as Map<String, dynamic>;
 
   final referenced = <String>{};
   final ops = <Map<String, dynamic>>[];
 
-  Map<String, dynamic> resolveRef(
-    Map<String, dynamic> node,
-    Map<String, dynamic> pool,
-  ) {
+  Map<String, dynamic> resolveRef(Map<String, dynamic> node, Map<String, dynamic> pool) {
     var current = node;
     var guard = 0;
     while (current[r'$ref'] is String && guard++ < 8) {
@@ -52,8 +47,12 @@ Map<String, dynamic> buildCatalog(Map<String, dynamic> doc) {
         if (name == null || location == null) continue;
         if (!seen.add('$location:$name')) continue;
         if (location == 'header' &&
-            const {'x-auth-email', 'x-auth-key', 'authorization', 'x-auth-user-service-key'}
-                .contains(name.toLowerCase())) {
+            const {
+              'x-auth-email',
+              'x-auth-key',
+              'authorization',
+              'x-auth-user-service-key',
+            }.contains(name.toLowerCase())) {
           continue;
         }
         final schema = param['schema'] is Map<String, dynamic>
@@ -74,9 +73,7 @@ Map<String, dynamic> buildCatalog(Map<String, dynamic> doc) {
         final resolved = resolveRef(rb, requestBodies);
         final content = resolved['content'] as Map<String, dynamic>? ?? {};
         if (content.isNotEmpty) {
-          final ct = content.containsKey('application/json')
-              ? 'application/json'
-              : content.keys.first;
+          final ct = content.containsKey('application/json') ? 'application/json' : content.keys.first;
           final media = content[ct] as Map<String, dynamic>? ?? {};
           body = {
             'ct': ct,
@@ -105,19 +102,15 @@ Map<String, dynamic> buildCatalog(Map<String, dynamic> doc) {
         'g': op['x-fern-sdk-group-name'] ?? _groupFromPath(path),
         if (op['x-fern-sdk-method-name'] case final String n) 'n': n,
         if (tags.isNotEmpty) 't': tags.first,
-        if (op['x-api-token-group'] case final List perms when perms.isNotEmpty)
-          'perm': perms.cast<String>(),
+        if (op['x-api-token-group'] case final List perms when perms.isNotEmpty) 'perm': perms.cast<String>(),
         if (plan is Map)
           'plan': [
             for (final e in plan.entries)
               if (e.value == true) e.key,
           ],
-        if (op['deprecated'] == true ||
-            op['x-stainless-deprecation-message'] != null ||
-            op['x-cfDeprecation'] != null)
+        if (op['deprecated'] == true || op['x-stainless-deprecation-message'] != null || op['x-cfDeprecation'] != null)
           'dep': true,
-        if (availability is String && availability != 'generally-available')
-          'av': availability,
+        if (availability is String && availability != 'generally-available') 'av': availability,
         if (security.isNotEmpty) 'auth': security.toList()..sort(),
         if (params.isNotEmpty) 'params': params,
         'body': ?body,
@@ -151,8 +144,7 @@ Map<String, dynamic> buildCatalog(Map<String, dynamic> doc) {
     'generated': DateTime.now().toUtc().toIso8601String(),
     'title': (doc['info'] as Map?)?['title'],
     'apiVersion': (doc['info'] as Map?)?['version'],
-    'server': ((doc['servers'] as List?)?.first as Map?)?['url'] ??
-        'https://api.cloudflare.com/client/v4',
+    'server': ((doc['servers'] as List?)?.first as Map?)?['url'] ?? 'https://api.cloudflare.com/client/v4',
     'ops': ops,
     'schemas': out,
   };
@@ -227,9 +219,7 @@ Object? _minSchema(Object? node, Set<String> refs) {
         }
       case 'properties':
         final props = e.value as Map<String, dynamic>;
-        out['properties'] = {
-          for (final p in props.entries) p.key: _minSchema(p.value, refs),
-        };
+        out['properties'] = {for (final p in props.entries) p.key: _minSchema(p.value, refs)};
       case 'items' || 'additionalProperties':
         out[e.key] = _minSchema(e.value, refs);
       case 'oneOf' || 'anyOf' || 'allOf':

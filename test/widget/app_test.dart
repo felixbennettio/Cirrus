@@ -37,14 +37,30 @@ const _zone = {
 
 (int, Object?, Map<String, List<String>>)? _routes(String method, Uri uri, Object? body) {
   final p = uri.path.replaceFirst('/client/v4', '');
-  if (method == 'GET' && p == '/accounts') return (200, FakeApi.ok([{'id': 'acc1', 'name': 'Acme Corp'}]), const {});
+  if (method == 'GET' && p == '/accounts') {
+    return (
+      200,
+      FakeApi.ok([
+        {'id': 'acc1', 'name': 'Acme Corp'},
+      ]),
+      const {},
+    );
+  }
   if (method == 'GET' && p == '/zones') return (200, FakeApi.ok([_zone]), const {});
   if (method == 'GET' && p == '/zones/zone0001/dns_records') {
     return (
       200,
       FakeApi.ok([
         {'id': 'r1', 'type': 'A', 'name': 'example.com', 'content': '203.0.113.10', 'proxied': true, 'ttl': 1},
-        {'id': 'r2', 'type': 'MX', 'name': 'example.com', 'content': 'mx.example.net', 'priority': 10, 'proxied': false, 'ttl': 3600},
+        {
+          'id': 'r2',
+          'type': 'MX',
+          'name': 'example.com',
+          'content': 'mx.example.net',
+          'priority': 10,
+          'proxied': false,
+          'ttl': 3600,
+        },
       ]),
       const {},
     );

@@ -28,11 +28,13 @@ class AiPage extends StatelessWidget {
       length: 3,
       child: PageScaffold(
         title: 'Workers AI',
-        bottom: TabBar(tabs: [
-          Tab(text: context.tr('Chat', '对话')),
-          Tab(text: context.tr('Image', '图像生成')),
-          Tab(text: context.tr('Models', '模型')),
-        ]),
+        bottom: TabBar(
+          tabs: [
+            Tab(text: context.tr('Chat', '对话')),
+            Tab(text: context.tr('Image', '图像生成')),
+            Tab(text: context.tr('Models', '模型')),
+          ],
+        ),
         body: AccountRequired(
           builder: (context, accountId) => TabBarView(
             children: [
@@ -85,14 +87,19 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
     });
     try {
       final c = ref.read(clientProvider)!;
-      final r = await c.post('/accounts/${widget.accountId}/ai/run/$_model', data: {
-        'messages': [
-          if (_system.text.trim().isNotEmpty) {'role': 'system', 'content': _system.text.trim()},
-          ..._messages,
-        ],
-        'max_tokens': 2048,
-      });
-      final reply = r is Map ? (r['response'] ?? (r['choices'] as List?)?.firstOrNull?['message']?['content'] ?? prettyJson(r)) : '$r';
+      final r = await c.post(
+        '/accounts/${widget.accountId}/ai/run/$_model',
+        data: {
+          'messages': [
+            if (_system.text.trim().isNotEmpty) {'role': 'system', 'content': _system.text.trim()},
+            ..._messages,
+          ],
+          'max_tokens': 2048,
+        },
+      );
+      final reply = r is Map
+          ? (r['response'] ?? (r['choices'] as List?)?.firstOrNull?['message']?['content'] ?? prettyJson(r))
+          : '$r';
       setState(() => _messages.add({'role': 'assistant', 'content': reply is String ? reply : prettyJson(reply)}));
     } catch (e) {
       setState(() => _messages.add({'role': 'error', 'content': errorText(e)}));
@@ -100,7 +107,13 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
     if (!mounted) return;
     setState(() => _busy = false);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    if (_scroll.hasClients) {
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -111,8 +124,12 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
       cacheKey: 'ai-models:${widget.accountId}',
       load: (c) => _models(c, widget.accountId),
       builder: (context, models, _) {
-        final textModels = models.where((m) => _taskOf(m) == 'Text Generation').map((m) => m['name'] as String).toList()..sort();
-        _model ??= textModels.firstWhere((m) => m.contains('llama-3.3-70b'), orElse: () => textModels.firstOrNull ?? '');
+        final textModels = models.where((m) => _taskOf(m) == 'Text Generation').map((m) => m['name'] as String).toList()
+          ..sort();
+        _model ??= textModels.firstWhere(
+          (m) => m.contains('llama-3.3-70b'),
+          orElse: () => textModels.firstOrNull ?? '',
+        );
         if (_model!.isEmpty) _model = null;
         return Column(
           children: [
@@ -124,8 +141,18 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
                     child: DropdownButtonFormField<String>(
                       initialValue: _model,
                       isExpanded: true,
-                      decoration: InputDecoration(labelText: context.tr('Model', '模型'), border: const OutlineInputBorder(), isDense: true),
-                      items: [for (final m in textModels) DropdownMenuItem(value: m, child: Text(m, overflow: TextOverflow.ellipsis))],
+                      decoration: InputDecoration(
+                        labelText: context.tr('Model', '模型'),
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        for (final m in textModels)
+                          DropdownMenuItem(
+                            value: m,
+                            child: Text(m, overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
                       onChanged: (v) => setState(() => _model = v),
                     ),
                   ),
@@ -133,17 +160,29 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
                     tooltip: context.tr('System prompt', '系统提示词'),
                     icon: const Icon(Icons.tune),
                     onPressed: () async {
-                      final t = await promptText(context, title: context.tr('System prompt', '系统提示词'), initial: _system.text, multiline: true);
+                      final t = await promptText(
+                        context,
+                        title: context.tr('System prompt', '系统提示词'),
+                        initial: _system.text,
+                        multiline: true,
+                      );
                       if (t != null) _system.text = t;
                     },
                   ),
-                  IconButton(tooltip: context.tr('New chat', '新对话'), icon: const Icon(Icons.add_comment_outlined), onPressed: () => setState(_messages.clear)),
+                  IconButton(
+                    tooltip: context.tr('New chat', '新对话'),
+                    icon: const Icon(Icons.add_comment_outlined),
+                    onPressed: () => setState(_messages.clear),
+                  ),
                 ],
               ),
             ),
             Expanded(
               child: _messages.isEmpty
-                  ? EmptyView(icon: Icons.auto_awesome, title: context.tr('Chat with models running on Cloudflare', '与运行在 Cloudflare 上的模型对话'))
+                  ? EmptyView(
+                      icon: Icons.auto_awesome,
+                      title: context.tr('Chat with models running on Cloudflare', '与运行在 Cloudflare 上的模型对话'),
+                    )
                   : ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.all(12),
@@ -186,7 +225,10 @@ class _ChatState extends ConsumerState<_Chat> with AutomaticKeepAliveClientMixin
                         maxLines: 6,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(hintText: context.tr('Message', '输入消息'), border: const OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          hintText: context.tr('Message', '输入消息'),
+                          border: const OutlineInputBorder(),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -231,14 +273,20 @@ class _ImageGenState extends ConsumerState<_ImageGen> with AutomaticKeepAliveCli
     setState(() => _busy = true);
     try {
       final c = ref.read(clientProvider)!;
-      final r = await c.raw('POST', '/accounts/${widget.accountId}/ai/run/$_model', data: {'prompt': _prompt.text.trim()});
+      final r = await c.raw(
+        'POST',
+        '/accounts/${widget.accountId}/ai/run/$_model',
+        data: {'prompt': _prompt.text.trim()},
+      );
       final ct = r.header('content-type') ?? '';
       Uint8List? bytes;
       if (ct.startsWith('image/')) {
         bytes = r.bytes;
       } else {
         final body = jsonDecode(r.text);
-        if (body is Map && body['success'] == false) throw Exception((body['errors'] as List?)?.map((e) => (e as Map)['message']).join('\n') ?? r.text);
+        if (body is Map && body['success'] == false) {
+          throw Exception((body['errors'] as List?)?.map((e) => (e as Map)['message']).join('\n') ?? r.text);
+        }
         String? img;
         if (body is Map) {
           final result = body['result'];
@@ -261,7 +309,8 @@ class _ImageGenState extends ConsumerState<_ImageGen> with AutomaticKeepAliveCli
       cacheKey: 'ai-models:${widget.accountId}',
       load: (c) => _models(c, widget.accountId),
       builder: (context, models, _) {
-        final imageModels = models.where((m) => _taskOf(m) == 'Text-to-Image').map((m) => m['name'] as String).toList()..sort();
+        final imageModels = models.where((m) => _taskOf(m) == 'Text-to-Image').map((m) => m['name'] as String).toList()
+          ..sort();
         _model ??= imageModels.firstWhere((m) => m.contains('flux'), orElse: () => imageModels.firstOrNull ?? '');
         if (_model!.isEmpty) _model = null;
         return ContentList(
@@ -286,20 +335,27 @@ class _ImageGenState extends ConsumerState<_ImageGen> with AutomaticKeepAliveCli
               children: [
                 FilledButton.icon(
                   onPressed: _busy ? null : _generate,
-                  icon: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.brush),
+                  icon: _busy
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.brush),
                   label: Text(context.tr('Generate', '生成')),
                 ),
                 const SizedBox(width: 8),
                 if (_image != null)
                   OutlinedButton.icon(
-                    onPressed: () => saveBytes(context, fileName: 'cirrus-ai.png', bytes: _image!, mimeType: 'image/png'),
+                    onPressed: () =>
+                        saveBytes(context, fileName: 'cirrus-ai.png', bytes: _image!, mimeType: 'image/png'),
                     icon: const Icon(Icons.save_alt),
                     label: Text(context.tr('Save', '保存')),
                   ),
               ],
             ),
             const SizedBox(height: 16),
-            if (_image != null) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(_image!, fit: BoxFit.contain)),
+            if (_image != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(_image!, fit: BoxFit.contain),
+              ),
           ],
         );
       },
@@ -369,8 +425,7 @@ class _ModelsState extends ConsumerState<_Models> {
         final list = models.where((m) {
           if (_task != 'all' && _taskOf(m) != _task) return false;
           return q.isEmpty || '${m['name']} ${m['description']}'.toLowerCase().contains(q);
-        }).toList()
-          ..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+        }).toList()..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
         return Column(
           children: [
             Padding(
@@ -399,8 +454,16 @@ class _ModelsState extends ConsumerState<_Models> {
                   final m = list[i];
                   return ListTile(
                     title: Text('${m['name']}', style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
-                    subtitle: Text('${_taskOf(m)} · ${m['description'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                    trailing: IconButton(tooltip: context.tr('Run', '运行'), icon: const Icon(Icons.play_arrow), onPressed: () => _run(m)),
+                    subtitle: Text(
+                      '${_taskOf(m)} · ${m['description'] ?? ''}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      tooltip: context.tr('Run', '运行'),
+                      icon: const Icon(Icons.play_arrow),
+                      onPressed: () => _run(m),
+                    ),
                     onTap: () => showJsonDialog(context, m, title: '${m['name']}'),
                   );
                 },

@@ -163,8 +163,7 @@ class _ApiQueryState<T> extends ConsumerState<ApiQuery<T>> {
     return Stack(
       children: [
         Positioned.fill(child: widget.builder(context, data, _handle)),
-        if (_refreshing)
-          const Positioned(top: 0, left: 0, right: 0, child: LinearProgressIndicator(minHeight: 2)),
+        if (_refreshing) const Positioned(top: 0, left: 0, right: 0, child: LinearProgressIndicator(minHeight: 2)),
       ],
     );
   }
@@ -328,10 +327,7 @@ class ZoneRequired extends ConsumerWidget {
     {
       if (zones.isLoading) return const Center(child: CircularProgressIndicator());
       if (zones.hasError) {
-        return ErrorView(
-          error: zones.error!,
-          onRetry: () => ref.read(zonesProvider.notifier).refresh(),
-        );
+        return ErrorView(error: zones.error!, onRetry: () => ref.read(zonesProvider.notifier).refresh());
       }
       return EmptyView(
         icon: Icons.public_off,
@@ -369,10 +365,7 @@ class AccountRequired extends ConsumerWidget {
     {
       if (accounts.isLoading) return const Center(child: CircularProgressIndicator());
       if (accounts.hasError) {
-        return ErrorView(
-          error: accounts.error!,
-          onRetry: () => ref.read(accountsProvider.notifier).refresh(),
-        );
+        return ErrorView(error: accounts.error!, onRetry: () => ref.read(accountsProvider.notifier).refresh());
       }
       return EmptyView(
         icon: Icons.account_tree_outlined,

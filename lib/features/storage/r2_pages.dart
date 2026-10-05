@@ -42,9 +42,16 @@ class R2BucketsPage extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: Text(context.tr('Create bucket', '创建存储桶')),
               onPressed: () async {
-                final r = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => const _CreateBucketDialog());
+                final r = await showDialog<Map<String, dynamic>>(
+                  context: context,
+                  builder: (_) => const _CreateBucketDialog(),
+                );
                 if (r == null || !context.mounted) return;
-                await runAction(context, () => c.post(_buckets(accountId), data: r), success: context.tr('Bucket created', '存储桶已创建'));
+                await runAction(
+                  context,
+                  () => c.post(_buckets(accountId), data: r),
+                  success: context.tr('Bucket created', '存储桶已创建'),
+                );
                 await h.reload();
               },
             ),
@@ -59,12 +66,14 @@ class R2BucketsPage extends ConsumerWidget {
                       return ListTile(
                         leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
                         title: Text('${b['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text([
-                          if (b['location'] != null) '${b['location']}',
-                          if (b['storage_class'] != null) '${b['storage_class']}',
-                          if (b['jurisdiction'] != null && b['jurisdiction'] != 'default') '${b['jurisdiction']}',
-                          formatDate(b['creation_date'], withTime: false),
-                        ].join(' · ')),
+                        subtitle: Text(
+                          [
+                            if (b['location'] != null) '${b['location']}',
+                            if (b['storage_class'] != null) '${b['storage_class']}',
+                            if (b['jurisdiction'] != null && b['jurisdiction'] != 'default') '${b['jurisdiction']}',
+                            formatDate(b['creation_date'], withTime: false),
+                          ].join(' · '),
+                        ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/r2/${Uri.encodeComponent(b['name'] as String)}'),
                       );
@@ -107,12 +116,18 @@ class _CreateBucketDialogState extends State<_CreateBucketDialog> {
             TextField(
               controller: _name,
               autofocus: true,
-              decoration: InputDecoration(labelText: context.tr('Bucket name', '存储桶名称'), border: const OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: context.tr('Bucket name', '存储桶名称'),
+                border: const OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _location,
-              decoration: InputDecoration(labelText: context.tr('Location hint', '位置提示'), border: const OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: context.tr('Location hint', '位置提示'),
+                border: const OutlineInputBorder(),
+              ),
               items: [
                 DropdownMenuItem(value: '', child: Text(context.tr('Automatic', '自动'))),
                 const DropdownMenuItem(value: 'apac', child: Text('Asia-Pacific (APAC)')),
@@ -127,7 +142,10 @@ class _CreateBucketDialogState extends State<_CreateBucketDialog> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _class,
-              decoration: InputDecoration(labelText: context.tr('Default storage class', '默认存储类型'), border: const OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: context.tr('Default storage class', '默认存储类型'),
+                border: const OutlineInputBorder(),
+              ),
               items: const [
                 DropdownMenuItem(value: 'Standard', child: Text('Standard')),
                 DropdownMenuItem(value: 'InfrequentAccess', child: Text('Infrequent Access')),
@@ -179,17 +197,25 @@ class R2BucketPage extends ConsumerWidget {
                     typeToConfirm: bucket,
                   );
                   if (!ok || !context.mounted) return;
-                  final r = await runAction(context, () => ref.read(clientProvider)!.send('DELETE', base), success: context.tr('Deleted', '已删除'));
+                  final r = await runAction(
+                    context,
+                    () => ref.read(clientProvider)!.send('DELETE', base),
+                    success: context.tr('Deleted', '已删除'),
+                  );
                   if (r != null && context.mounted) context.go('/r2');
                 },
-                itemBuilder: (context) => [PopupMenuItem(value: 'delete', child: Text(context.tr('Delete bucket', '删除存储桶')))],
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'delete', child: Text(context.tr('Delete bucket', '删除存储桶'))),
+                ],
               ),
             ],
-            bottom: TabBar(tabs: [
-              Tab(text: context.tr('Objects', '对象')),
-              Tab(text: context.tr('Settings', '设置')),
-              Tab(text: context.tr('Custom domains', '自定义域')),
-            ]),
+            bottom: TabBar(
+              tabs: [
+                Tab(text: context.tr('Objects', '对象')),
+                Tab(text: context.tr('Settings', '设置')),
+                Tab(text: context.tr('Custom domains', '自定义域')),
+              ],
+            ),
             body: TabBarView(
               children: [
                 _ObjectBrowser(base: base, bucket: bucket),
@@ -246,12 +272,11 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
       }
     });
     try {
-      final res = await _c.send('GET', '${widget.base}/objects', query: {
-        'prefix': _prefix,
-        'delimiter': '/',
-        'per_page': 1000,
-        if (_cursor != null) 'cursor': _cursor,
-      });
+      final res = await _c.send(
+        'GET',
+        '${widget.base}/objects',
+        query: {'prefix': _prefix, 'delimiter': '/', 'per_page': 1000, if (_cursor != null) 'cursor': _cursor},
+      );
       final r = res.result;
       final objs = r is Map ? (r['objects'] as List? ?? const []) : (r as List? ?? const []);
       final info = res.resultInfo ?? const {};
@@ -314,7 +339,12 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
     final key = o['key'] as String;
     final r = await runAction(context, () => _c.rawOk('GET', _objPath(key)));
     if (r == null || !mounted) return;
-    await saveBytes(context, fileName: key.split('/').last, bytes: r.bytes, mimeType: r.header('content-type') ?? 'application/octet-stream');
+    await saveBytes(
+      context,
+      fileName: key.split('/').last,
+      bytes: r.bytes,
+      mimeType: r.header('content-type') ?? 'application/octet-stream',
+    );
   }
 
   Future<void> _preview(Map<String, dynamic> o) async {
@@ -322,7 +352,12 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
     final size = (o['size'] as num?)?.toInt() ?? 0;
     final ct = ((o['http_metadata'] as Map?)?['contentType'] as String?) ?? _mimeFor(key);
     final isImage = ct.startsWith('image/');
-    final isText = ct.startsWith('text/') || ct.contains('json') || ct.contains('javascript') || ct.contains('xml') || ct.contains('yaml');
+    final isText =
+        ct.startsWith('text/') ||
+        ct.contains('json') ||
+        ct.contains('javascript') ||
+        ct.contains('xml') ||
+        ct.contains('yaml');
     if ((!isImage && !isText) || size > 5 * 1024 * 1024) {
       await showJsonDialog(context, o, title: key);
       return;
@@ -385,24 +420,45 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      TextButton.icon(onPressed: () => _cd(''), icon: const Icon(Icons.home_outlined, size: 18), label: Text(widget.bucket)),
+                      TextButton.icon(
+                        onPressed: () => _cd(''),
+                        icon: const Icon(Icons.home_outlined, size: 18),
+                        label: Text(widget.bucket),
+                      ),
                       for (var i = 0; i < crumbs.length; i++) ...[
                         const Icon(Icons.chevron_right, size: 16),
-                        TextButton(onPressed: () => _cd('${crumbs.sublist(0, i + 1).join('/')}/'), child: Text(crumbs[i])),
+                        TextButton(
+                          onPressed: () => _cd('${crumbs.sublist(0, i + 1).join('/')}/'),
+                          child: Text(crumbs[i]),
+                        ),
                       ],
                     ],
                   ),
                 ),
               ),
-              IconButton(tooltip: context.tr('New folder', '新建文件夹'), icon: const Icon(Icons.create_new_folder_outlined), onPressed: _newFolder),
-              IconButton(tooltip: context.tr('Refresh', '刷新'), icon: const Icon(Icons.refresh), onPressed: () => _load(reset: true)),
-              FilledButton.tonalIcon(onPressed: _progress == null ? _upload : null, icon: const Icon(Icons.upload), label: Text(context.tr('Upload', '上传'))),
+              IconButton(
+                tooltip: context.tr('New folder', '新建文件夹'),
+                icon: const Icon(Icons.create_new_folder_outlined),
+                onPressed: _newFolder,
+              ),
+              IconButton(
+                tooltip: context.tr('Refresh', '刷新'),
+                icon: const Icon(Icons.refresh),
+                onPressed: () => _load(reset: true),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: _progress == null ? _upload : null,
+                icon: const Icon(Icons.upload),
+                label: Text(context.tr('Upload', '上传')),
+              ),
             ],
           ),
         ),
         if (_progress != null) LinearProgressIndicator(value: _progress),
         if (_error != null)
-          Expanded(child: ErrorView(error: _error!, onRetry: () => _load(reset: true)))
+          Expanded(
+            child: ErrorView(error: _error!, onRetry: () => _load(reset: true)),
+          )
         else
           Expanded(
             child: _loading && _objects.isEmpty && _folders.isEmpty
@@ -429,8 +485,14 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
                       for (final o in _objects)
                         ListTile(
                           leading: Icon(_iconFor(o['key'] as String)),
-                          title: Text((o['key'] as String).substring(_prefix.length), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: Text('${formatBytes(o['size'] as num?)} · ${formatDate(o['last_modified'])}${o['storage_class'] != null ? ' · ${o['storage_class']}' : ''}'),
+                          title: Text(
+                            (o['key'] as String).substring(_prefix.length),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            '${formatBytes(o['size'] as num?)} · ${formatDate(o['last_modified'])}${o['storage_class'] != null ? ' · ${o['storage_class']}' : ''}',
+                          ),
                           onTap: () => _preview(o),
                           trailing: PopupMenuButton<String>(
                             onSelected: (v) {
@@ -450,7 +512,12 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
                       if (_cursor != null)
                         Padding(
                           padding: const EdgeInsets.all(12),
-                          child: Center(child: OutlinedButton(onPressed: _loading ? null : _load, child: Text(context.tr('Load more', '加载更多')))),
+                          child: Center(
+                            child: OutlinedButton(
+                              onPressed: _loading ? null : _load,
+                              child: Text(context.tr('Load more', '加载更多')),
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -552,7 +619,8 @@ class _BucketSettings extends ConsumerWidget {
               SectionCard(
                 title: context.tr('Bucket', '存储桶'),
                 children: [
-                  for (final e in info.entries.where((e) => e.value is! Map && e.value is! List)) InfoRow(e.key, '${e.value}'),
+                  for (final e in info.entries.where((e) => e.value is! Map && e.value is! List))
+                    InfoRow(e.key, '${e.value}'),
                 ],
               ),
             SectionCard(
@@ -583,7 +651,8 @@ class _BucketSettings extends ConsumerWidget {
             SectionCard(
               title: context.tr('Lifecycle rules', '生命周期规则'),
               trailing: TextButton(
-                onPressed: () => editJson(context.tr('Lifecycle rules', '生命周期规则'), '$base/lifecycle', lifecycle ?? {'rules': []}),
+                onPressed: () =>
+                    editJson(context.tr('Lifecycle rules', '生命周期规则'), '$base/lifecycle', lifecycle ?? {'rules': []}),
                 child: Text(context.tr('Edit', '编辑')),
               ),
               children: [JsonTreeView(lifecycle ?? {}, shrinkWrap: true)],
@@ -625,11 +694,18 @@ class _CustomDomains extends ConsumerWidget {
                     onPressed: () async {
                       final zoneId = ref.read(currentZoneIdProvider);
                       final zone = ref.read(currentZoneProvider);
-                      final domain = await promptText(context, title: context.tr('Domain', '域名'), hint: 'files.${zone?['name'] ?? 'example.com'}');
+                      final domain = await promptText(
+                        context,
+                        title: context.tr('Domain', '域名'),
+                        hint: 'files.${zone?['name'] ?? 'example.com'}',
+                      );
                       if (domain == null || domain.trim().isEmpty || !context.mounted) return;
                       await runAction(
                         context,
-                        () => c.post('$base/domains/custom', data: {'domain': domain.trim(), 'zoneId': zoneId, 'enabled': true}),
+                        () => c.post(
+                          '$base/domains/custom',
+                          data: {'domain': domain.trim(), 'zoneId': zoneId, 'enabled': true},
+                        ),
                         success: context.tr('Domain connected', '域名已连接'),
                       );
                       await h.reload();
@@ -647,11 +723,17 @@ class _CustomDomains extends ConsumerWidget {
                           ListTile(
                             leading: const Icon(Icons.language),
                             title: Text('${d['domain']}'),
-                            subtitle: Text('${(d['status'] as Map?)?['ssl'] ?? ''} · ${(d['status'] as Map?)?['ownership'] ?? ''}'),
+                            subtitle: Text(
+                              '${(d['status'] as Map?)?['ssl'] ?? ''} · ${(d['status'] as Map?)?['ownership'] ?? ''}',
+                            ),
                             trailing: IconButton(
                               icon: const Icon(Icons.link_off),
                               onPressed: () async {
-                                final ok = await confirm(context, title: context.tr('Disconnect ${d['domain']}?', '断开 ${d['domain']}？'), destructive: true);
+                                final ok = await confirm(
+                                  context,
+                                  title: context.tr('Disconnect ${d['domain']}?', '断开 ${d['domain']}？'),
+                                  destructive: true,
+                                );
                                 if (!ok || !context.mounted) return;
                                 await runAction(context, () => c.delete('$base/domains/custom/${d['domain']}'));
                                 await h.reload();

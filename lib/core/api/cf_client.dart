@@ -38,12 +38,7 @@ class CfResponse {
 
 /// Raw response without envelope parsing (object downloads, scripts...).
 class CfRawResponse {
-  const CfRawResponse({
-    required this.statusCode,
-    required this.bytes,
-    required this.headers,
-    required this.duration,
-  });
+  const CfRawResponse({required this.statusCode, required this.bytes, required this.headers, required this.duration});
 
   final int statusCode;
   final Uint8List bytes;
@@ -57,14 +52,7 @@ class CfRawResponse {
 
 /// One page of a paginated list endpoint.
 class CfPage {
-  const CfPage({
-    required this.items,
-    this.page,
-    this.perPage,
-    this.totalPages,
-    this.totalCount,
-    this.cursor,
-  });
+  const CfPage({required this.items, this.page, this.perPage, this.totalPages, this.totalCount, this.cursor});
 
   final List<dynamic> items;
   final int? page;
@@ -102,8 +90,7 @@ class RequestRecord {
 
 /// Thin, typed wrapper around the Cloudflare REST + GraphQL API.
 class CfClient {
-  CfClient(this.profile, {Dio? dio, this.baseUrl = cfApiBase})
-    : _dio = dio ?? Dio() {
+  CfClient(this.profile, {Dio? dio, this.baseUrl = cfApiBase}) : _dio = dio ?? Dio() {
     _dio.options
       ..connectTimeout = const Duration(seconds: 20)
       ..receiveTimeout = const Duration(seconds: 90)
@@ -139,10 +126,7 @@ class CfClient {
 
   Map<String, String> _headers(String path, Map<String, String>? extra, bool originCa) {
     final useOriginCa = originCa || path.startsWith('/certificates');
-    return {
-      ...profile.authHeaders(originCa: useOriginCa),
-      ...?extra,
-    };
+    return {...profile.authHeaders(originCa: useOriginCa), ...?extra};
   }
 
   void _log(RequestRecord r) {
@@ -179,7 +163,8 @@ class CfClient {
           options: Options(
             method: method,
             headers: _headers(path, headers, originCa),
-            contentType: contentType ??
+            contentType:
+                contentType ??
                 (data is FormData
                     ? null
                     : data == null
@@ -191,13 +176,15 @@ class CfClient {
           ),
         );
         sw.stop();
-        _log(RequestRecord(
-          method: method,
-          url: uri.replace(query: '').toString().replaceAll('?', ''),
-          statusCode: res.statusCode,
-          duration: sw.elapsed,
-          at: DateTime.now(),
-        ));
+        _log(
+          RequestRecord(
+            method: method,
+            url: uri.replace(query: '').toString().replaceAll('?', ''),
+            statusCode: res.statusCode,
+            duration: sw.elapsed,
+            at: DateTime.now(),
+          ),
+        );
         final status = res.statusCode ?? 0;
         final retryable = status == 429 || (isIdempotent && status >= 500);
         if (retryable && attempt <= 3) {
@@ -207,27 +194,26 @@ class CfClient {
         return res;
       } on DioException catch (e) {
         sw.stop();
-        _log(RequestRecord(
-          method: method,
-          url: uri.replace(query: '').toString().replaceAll('?', ''),
-          statusCode: null,
-          duration: sw.elapsed,
-          at: DateTime.now(),
-          error: e.message ?? e.type.name,
-        ));
+        _log(
+          RequestRecord(
+            method: method,
+            url: uri.replace(query: '').toString().replaceAll('?', ''),
+            statusCode: null,
+            duration: sw.elapsed,
+            at: DateTime.now(),
+            error: e.message ?? e.type.name,
+          ),
+        );
         if (e.type == DioExceptionType.cancel) rethrow;
-        final transient = e.type == DioExceptionType.connectionError ||
+        final transient =
+            e.type == DioExceptionType.connectionError ||
             e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout;
         if (isIdempotent && transient && attempt <= 2) {
           await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
           continue;
         }
-        throw CfApiException(
-          method: method,
-          path: path,
-          cause: e.error ?? e.message ?? e.type.name,
-        );
+        throw CfApiException(method: method, path: path, cause: e.error ?? e.message ?? e.type.name);
       }
     }
   }
@@ -294,8 +280,7 @@ class CfClient {
       }
     }
     final ok = statusCode >= 200 && statusCode < 300;
-    if (data is Map && data.containsKey('success') &&
-        (data.containsKey('result') || data.containsKey('errors'))) {
+    if (data is Map && data.containsKey('success') && (data.containsKey('result') || data.containsKey('errors'))) {
       final errors = (data['errors'] as List? ?? const []).map(CfMessage.fromJson).toList();
       final messages = (data['messages'] as List? ?? const []).map(CfMessage.fromJson).toList();
       if (data['success'] != true || !ok) {
@@ -318,8 +303,11 @@ class CfClient {
         duration: duration,
       );
     }
-    if (data is Map && data.containsKey('errors') && data['errors'] is List &&
-        (data['errors'] as List).isNotEmpty && !data.containsKey('data')) {
+    if (data is Map &&
+        data.containsKey('errors') &&
+        data['errors'] is List &&
+        (data['errors'] as List).isNotEmpty &&
+        !data.containsKey('data')) {
       throw CfApiException(
         method: method,
         path: path,
@@ -330,13 +318,7 @@ class CfClient {
     if (!ok) {
       throw CfApiException(method: method, path: path, statusCode: statusCode, body: data);
     }
-    return CfResponse(
-      statusCode: statusCode,
-      result: data,
-      headers: headers,
-      raw: data,
-      duration: duration,
-    );
+    return CfResponse(statusCode: statusCode, result: data, headers: headers, raw: data, duration: duration);
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) async =>
@@ -356,19 +338,17 @@ class CfClient {
 
   /// Fetches one page of a list endpoint. Handles both page/per_page and
   /// cursor based pagination.
-  Future<CfPage> page(
-    String path, {
-    Map<String, dynamic>? query,
-    int? page,
-    int? perPage,
-    String? cursor,
-  }) async {
-    final res = await send('GET', path, query: {
-      ...?query,
-      'page': ?page,
-      'per_page': ?perPage,
-      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
-    });
+  Future<CfPage> page(String path, {Map<String, dynamic>? query, int? page, int? perPage, String? cursor}) async {
+    final res = await send(
+      'GET',
+      path,
+      query: {
+        ...?query,
+        'page': ?page,
+        'per_page': ?perPage,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
     final info = res.resultInfo;
     final result = res.result;
     final items = switch (result) {
@@ -385,7 +365,8 @@ class CfClient {
       perPage: _int(info?['per_page']) ?? perPage,
       totalPages: _int(info?['total_pages']),
       totalCount: _int(info?['total_count']),
-      cursor: (info?['cursor'] as String?) ??
+      cursor:
+          (info?['cursor'] as String?) ??
           (result is Map ? result['cursor'] as String? : null) ??
           (info?['cursors'] is Map ? (info!['cursors'] as Map)['after'] as String? : null),
     );
@@ -497,15 +478,8 @@ class CfClient {
   }
 
   /// Runs a query against the GraphQL Analytics API.
-  Future<Map<String, dynamic>> graphql(
-    String query, {
-    Map<String, dynamic>? variables,
-  }) async {
-    final res = await _send(
-      'POST',
-      '/graphql',
-      data: {'query': query, 'variables': variables ?? const {}},
-    );
+  Future<Map<String, dynamic>> graphql(String query, {Map<String, dynamic>? variables}) async {
+    final res = await _send('POST', '/graphql', data: {'query': query, 'variables': variables ?? const {}});
     var body = res.data;
     if (body is String) body = jsonDecode(body);
     if (body is! Map) {
@@ -528,13 +502,7 @@ class CfClient {
 
   /// Builds a copy-pasteable cURL command. Secrets are masked unless
   /// [includeSecrets] is set.
-  String curl(
-    String method,
-    String path, {
-    Map<String, dynamic>? query,
-    Object? body,
-    bool includeSecrets = false,
-  }) {
+  String curl(String method, String path, {Map<String, dynamic>? query, Object? body, bool includeSecrets = false}) {
     final uri = resolve(path, query);
     final b = StringBuffer("curl -X $method '${uri.toString()}'");
     _headers(path, null, false).forEach((k, v) {

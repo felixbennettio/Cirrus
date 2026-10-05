@@ -34,7 +34,11 @@ class _SwitcherButton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     if (subtitle != null)
                       Text(
                         subtitle!,
@@ -63,7 +67,8 @@ class AccountSwitcher extends ConsumerWidget {
     final accounts = ref.watch(accountsProvider);
     return _SwitcherButton(
       icon: Icons.account_tree_outlined,
-      title: account?['name'] as String? ??
+      title:
+          account?['name'] as String? ??
           (accounts.isLoading ? context.tr('Loading…', '加载中…') : context.tr('No account', '无账户')),
       subtitle: profile?.name,
       onTap: () => showAccountPicker(context),
@@ -142,7 +147,12 @@ class _AccountPickerDialog extends ConsumerWidget {
                 if (list.isEmpty)
                   ListTile(title: Text(context.tr('No accounts visible to this credential', '当前凭据看不到任何账户'))),
               ],
-              loading: () => [const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))],
+              loading: () => [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
               error: (e, _) => [ListTile(leading: const Icon(Icons.error_outline), title: Text(e.toString()))],
             ),
           ],
@@ -161,11 +171,10 @@ class ZoneSwitcher extends ConsumerWidget {
     final zones = ref.watch(zonesProvider);
     return _SwitcherButton(
       icon: Icons.public,
-      title: zone?['name'] as String? ??
+      title:
+          zone?['name'] as String? ??
           (zones.isLoading ? context.tr('Loading zones…', '加载域名中…') : context.tr('No zones', '没有域名')),
-      subtitle: zone == null
-          ? null
-          : '${(zone['plan'] as Map?)?['name'] ?? ''} · ${zone['status'] ?? ''}',
+      subtitle: zone == null ? null : '${(zone['plan'] as Map?)?['name'] ?? ''} · ${zone['status'] ?? ''}',
       onTap: () => showZonePicker(context),
     );
   }

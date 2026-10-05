@@ -4,8 +4,27 @@ import '../../core/util/tr.dart';
 
 /// Every DNS record type the API supports.
 const dnsTypes = [
-  'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'HTTPS', 'SVCB', 'PTR', 'TLSA',
-  'SSHFP', 'URI', 'LOC', 'CERT', 'DS', 'DNSKEY', 'NAPTR', 'SMIMEA', 'OPENPGPKEY',
+  'A',
+  'AAAA',
+  'CNAME',
+  'MX',
+  'TXT',
+  'NS',
+  'SRV',
+  'CAA',
+  'HTTPS',
+  'SVCB',
+  'PTR',
+  'TLSA',
+  'SSHFP',
+  'URI',
+  'LOC',
+  'CERT',
+  'DS',
+  'DNSKEY',
+  'NAPTR',
+  'SMIMEA',
+  'OPENPGPKEY',
 ];
 
 const proxiableTypes = {'A', 'AAAA', 'CNAME'};
@@ -254,7 +273,9 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
               decoration: InputDecoration(
                 labelText: context.tr('Name', '名称'),
                 hintText: _type == 'SRV' ? '_sip._tcp' : context.tr('@ for root', '根域名填 @'),
-                suffixText: _name.text.trim() == '@' || _name.text.trim().endsWith(widget.zoneName) ? null : '.${widget.zoneName}',
+                suffixText: _name.text.trim() == '@' || _name.text.trim().endsWith(widget.zoneName)
+                    ? null
+                    : '.${widget.zoneName}',
                 border: const OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),
@@ -293,7 +314,10 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
                 width: f.numeric || f.options != null ? 150 : 480,
                 child: f.options != null
                     ? DropdownButtonFormField<String>(
-                        initialValue: _dataOptions[f.key] ?? (widget.record?['data'] as Map?)?[f.key]?.toString() ?? f.options!.first,
+                        initialValue:
+                            _dataOptions[f.key] ??
+                            (widget.record?['data'] as Map?)?[f.key]?.toString() ??
+                            f.options!.first,
                         decoration: InputDecoration(labelText: f.label.of(context), border: const OutlineInputBorder()),
                         items: [for (final o in f.options!) DropdownMenuItem(value: o, child: Text(o))],
                         onChanged: (v) => _dataOptions[f.key] = v,
@@ -301,7 +325,11 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
                     : TextFormField(
                         controller: _dataController(f.key),
                         keyboardType: f.numeric ? TextInputType.number : TextInputType.text,
-                        decoration: InputDecoration(labelText: f.label.of(context), hintText: f.hint, border: const OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: f.label.of(context),
+                          hintText: f.hint,
+                          border: const OutlineInputBorder(),
+                        ),
                       ),
               ),
           ],
@@ -318,7 +346,11 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
               child: TextFormField(
                 controller: _priority,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: context.tr('Priority', '优先级'), hintText: '10', border: const OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: context.tr('Priority', '优先级'),
+                  hintText: '10',
+                  border: const OutlineInputBorder(),
+                ),
               ),
             ),
           SizedBox(
@@ -330,9 +362,7 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
                 for (final t in _ttls) DropdownMenuItem(value: t, child: Text(ttlLabel(context, t))),
                 DropdownMenuItem(value: -1, child: Text(context.tr('Custom', '自定义'))),
               ],
-              onChanged: (_proxied && proxiableTypes.contains(_type))
-                  ? null
-                  : (v) => setState(() => _ttl = v ?? 1),
+              onChanged: (_proxied && proxiableTypes.contains(_type)) ? null : (v) => setState(() => _ttl = v ?? 1),
             ),
           ),
           if (_ttl == -1 && !(_proxied && proxiableTypes.contains(_type)))
@@ -381,7 +411,12 @@ class _DnsRecordDialogState extends State<_DnsRecordDialog> {
       title: Text(_isEdit ? context.tr('Edit record', '编辑记录') : context.tr('Add record', '添加记录')),
       content: SizedBox(
         width: 620,
-        child: Form(key: _form, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: fields))),
+        child: Form(
+          key: _form,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: fields),
+          ),
+        ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('Cancel', '取消'))),

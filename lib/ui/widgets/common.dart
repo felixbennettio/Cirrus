@@ -59,9 +59,8 @@ class PageScaffold extends StatelessWidget {
                   Text(
                     subtitle!,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -116,9 +115,7 @@ class SectionCard extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
                                 subtitle!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                               ),
                             ),
                         ],
@@ -160,9 +157,7 @@ class InfoRow extends StatelessWidget {
           );
           final valueW = SelectableText(
             value,
-            style: mono
-                ? const TextStyle(fontFamily: 'monospace', fontSize: 13)
-                : theme.textTheme.bodyMedium,
+            style: mono ? const TextStyle(fontFamily: 'monospace', fontSize: 13) : theme.textTheme.bodyMedium,
           );
           final tail = [
             if (copy)
@@ -180,7 +175,12 @@ class InfoRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 labelW,
-                Row(children: [Expanded(child: valueW), ...tail]),
+                Row(
+                  children: [
+                    Expanded(child: valueW),
+                    ...tail,
+                  ],
+                ),
               ],
             );
           }
@@ -209,13 +209,60 @@ class StatusChip extends StatelessWidget {
 
   static Tone toneFor(String? status) {
     final s = (status ?? '').toLowerCase();
-    if (const ['active', 'healthy', 'success', 'enabled', 'on', 'deployed', 'verified', 'ready', 'connected', 'valid', 'running', 'complete', 'completed', 'ok', 'up'].contains(s)) {
+    if (const [
+      'active',
+      'healthy',
+      'success',
+      'enabled',
+      'on',
+      'deployed',
+      'verified',
+      'ready',
+      'connected',
+      'valid',
+      'running',
+      'complete',
+      'completed',
+      'ok',
+      'up',
+    ].contains(s)) {
       return Tone.good;
     }
-    if (const ['pending', 'initializing', 'pending_validation', 'pending_deployment', 'pending_issuance', 'queued', 'building', 'degraded', 'moved', 'paused', 'inactive', 'idle', 'waiting', 'unverified', 'staging'].contains(s)) {
+    if (const [
+      'pending',
+      'initializing',
+      'pending_validation',
+      'pending_deployment',
+      'pending_issuance',
+      'queued',
+      'building',
+      'degraded',
+      'moved',
+      'paused',
+      'inactive',
+      'idle',
+      'waiting',
+      'unverified',
+      'staging',
+    ].contains(s)) {
       return Tone.warn;
     }
-    if (const ['failed', 'failure', 'error', 'deleted', 'down', 'disabled', 'off', 'expired', 'revoked', 'unhealthy', 'blocked', 'canceled', 'cancelled', 'inactive_deleted'].contains(s)) {
+    if (const [
+      'failed',
+      'failure',
+      'error',
+      'deleted',
+      'down',
+      'disabled',
+      'off',
+      'expired',
+      'revoked',
+      'unhealthy',
+      'blocked',
+      'canceled',
+      'cancelled',
+      'inactive_deleted',
+    ].contains(s)) {
       return Tone.bad;
     }
     return Tone.neutral;
@@ -226,8 +273,14 @@ class StatusChip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final (bg, fg) = switch (tone) {
-      Tone.good => (dark ? const Color(0xFF1E3A2A) : const Color(0xFFDDF4E4), dark ? const Color(0xFF8BE0A8) : const Color(0xFF16683A)),
-      Tone.warn => (dark ? const Color(0xFF3D3214) : const Color(0xFFFFF1CC), dark ? const Color(0xFFF5CF6A) : const Color(0xFF7A5A00)),
+      Tone.good => (
+        dark ? const Color(0xFF1E3A2A) : const Color(0xFFDDF4E4),
+        dark ? const Color(0xFF8BE0A8) : const Color(0xFF16683A),
+      ),
+      Tone.warn => (
+        dark ? const Color(0xFF3D3214) : const Color(0xFFFFF1CC),
+        dark ? const Color(0xFFF5CF6A) : const Color(0xFF7A5A00),
+      ),
       Tone.bad => (scheme.errorContainer, scheme.onErrorContainer),
       Tone.info => (scheme.primaryContainer, scheme.onPrimaryContainer),
       Tone.neutral => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
@@ -239,7 +292,10 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[Icon(icon, size: 13, color: fg), const SizedBox(width: 4)],
-          Text(label, style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -275,12 +331,7 @@ class MethodBadge extends StatelessWidget {
       ),
       child: Text(
         method.toUpperCase(),
-        style: TextStyle(
-          color: c,
-          fontSize: small ? 10 : 11,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
+        style: TextStyle(color: c, fontSize: small ? 10 : 11, fontWeight: FontWeight.w700, fontFamily: 'monospace'),
       ),
     );
   }
@@ -329,7 +380,10 @@ class ContentList extends StatelessWidget {
       children: [
         for (final c in children)
           Center(
-            child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: c),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: c,
+            ),
           ),
       ],
     );
@@ -376,10 +430,7 @@ class StatTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 16, color: theme.colorScheme.primary),
-                  const SizedBox(width: 6),
-                ],
+                if (icon != null) ...[Icon(icon, size: 16, color: theme.colorScheme.primary), const SizedBox(width: 6)],
                 Expanded(
                   child: Text(
                     label,
