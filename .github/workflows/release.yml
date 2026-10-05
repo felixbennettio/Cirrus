@@ -3,8 +3,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    # Temporary: lets a commit marked [release] on this branch publish (tag pushes are unavailable here).
-    branches: ['claude/admiring-pascal-son4gl']
   workflow_dispatch:
     inputs:
       tag:
@@ -18,17 +16,13 @@ jobs:
   meta:
     name: Version
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     outputs:
       tag: ${{ steps.v.outputs.tag }}
       version: ${{ steps.v.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
       - id: v
         run: |
-          TAG="${{ github.event.inputs.tag }}"
-          if [ -z "$TAG" ] && [ "${{ github.ref_type }}" = tag ]; then TAG="${{ github.ref_name }}"; fi
-          if [ -z "$TAG" ]; then TAG="v$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)"; fi
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
