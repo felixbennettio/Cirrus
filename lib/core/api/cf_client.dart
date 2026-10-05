@@ -397,16 +397,16 @@ class CfClient {
     int perPage = 50,
     int maxItems = 5000,
     bool paginate = true,
+    bool cursorPagination = false,
   }) async {
     final out = <Map<String, dynamic>>[];
     var pageNo = 1;
     String? cursor;
-    final usesCursor = query?.containsKey('cursor') ?? false;
     while (true) {
       final p = await page(
         path,
         query: query,
-        page: (paginate && !usesCursor && cursor == null) ? pageNo : null,
+        page: (paginate && !cursorPagination && cursor == null) ? pageNo : null,
         perPage: paginate ? perPage : null,
         cursor: cursor,
       );
