@@ -64,7 +64,7 @@ Installed-Size: $INSTALLED_KB
 Depends: libgtk-3-0, libsecret-1-0, libstdc++6
 Recommends: gnome-keyring
 Maintainer: Cirrus contributors <noreply@users.noreply.github.com>
-Homepage: https://github.com/felixbennettio/edgeops
+Homepage: https://github.com/felixbennettio/Cirrus
 Description: Cirrus - fast, native client for the Cloudflare API
  Manage DNS, SSL/TLS, rules, Workers, Pages, R2, KV, D1, Tunnels,
  Zero Trust and every other Cloudflare API endpoint from one app.
