@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/util/tr.dart';
+import '../features/account/audit_page.dart';
+import '../features/account/lists_page.dart';
+import '../features/account/members_page.dart';
+import '../features/account/tokens_page.dart';
+import '../features/ai/ai_page.dart';
 import '../features/analytics/zone_analytics_page.dart';
 import '../features/cache/cache_page.dart';
+import '../features/console/console_page.dart';
+import '../features/console/graphql_page.dart';
 import '../features/dns/dns_page.dart';
 import '../features/email/email_routing_page.dart';
 import '../features/generic/resource_page.dart';
@@ -17,6 +24,7 @@ import '../features/storage/r2_pages.dart';
 import '../features/zone_settings/zone_settings.dart';
 import '../features/workers/worker_detail_page.dart';
 import '../features/workers/workers_list_page.dart';
+import '../features/zerotrust/tunnels_pages.dart';
 import '../features/zones/zone_overview_page.dart';
 
 NoTransitionPage<void> _page(GoRouterState s, Widget child) => NoTransitionPage(key: s.pageKey, child: child);
@@ -87,6 +95,36 @@ final featureRoutes = <RouteBase>[
     path: '/zone/workers-routes',
     pageBuilder: (c, s) => _page(s, ResourcePage(spec: specById['zone_worker_routes']!)),
   ),
+  GoRoute(path: '/ai', pageBuilder: (c, s) => _page(s, const AiPage())),
+  GoRoute(
+    path: '/zt/tunnels',
+    pageBuilder: (c, s) => _page(s, const TunnelsPage()),
+    routes: [GoRoute(path: ':id', builder: (c, s) => TunnelDetailPage(tunnelId: s.pathParameters['id']!))],
+  ),
+  GoRoute(path: '/account/members', pageBuilder: (c, s) => _page(s, const MembersPage())),
+  GoRoute(path: '/account/tokens', pageBuilder: (c, s) => _page(s, const TokensPage())),
+  GoRoute(path: '/account/audit', pageBuilder: (c, s) => _page(s, const AuditLogPage())),
+  GoRoute(
+    path: '/account/lists',
+    pageBuilder: (c, s) => _page(s, const ListsPage()),
+    routes: [
+      GoRoute(
+        path: ':id',
+        builder: (c, s) => ListItemsPage(
+          listId: s.pathParameters['id']!,
+          kind: s.uri.queryParameters['kind'] ?? 'ip',
+          name: s.uri.queryParameters['name'],
+        ),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: '/console',
+    pageBuilder: (c, s) => _page(s, ConsolePage(initialOpId: s.uri.queryParameters['op'])),
+    routes: [GoRoute(path: 'op/:id', builder: (c, s) => ConsoleOperationPage(opId: s.pathParameters['id']!))],
+  ),
+  GoRoute(path: '/graphql', pageBuilder: (c, s) => _page(s, const GraphqlPage())),
+  GoRoute(path: '/requests', pageBuilder: (c, s) => _page(s, const RequestLogPage())),
   GoRoute(
     path: '/compute/more',
     pageBuilder: (c, s) => _page(s, ResourceHubPage(title: c.tr('More compute', '更多计算服务'), specs: computeSpecs)),
