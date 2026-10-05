@@ -8,6 +8,7 @@ import '../../core/api/cf_exception.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/session/session.dart';
 import '../../core/util/tr.dart';
+import 'common.dart';
 import 'feedback.dart';
 
 /// Handle passed to [ApiQuery.builder] to reload or patch data.
@@ -35,6 +36,7 @@ class ApiQuery<T> extends ConsumerStatefulWidget {
     this.cache = true,
     this.loading,
     this.empty,
+    this.frame,
   });
 
   /// Identifies the request; changing it triggers a reload.
@@ -46,6 +48,10 @@ class ApiQuery<T> extends ConsumerStatefulWidget {
 
   /// Optional widget shown when the data is an empty list.
   final Widget? empty;
+
+  /// Wraps the loading and error states, for pages whose scaffold is
+  /// built from the loaded data.
+  final Widget Function(Widget child)? frame;
 
   @override
   ConsumerState<ApiQuery<T>> createState() => _ApiQueryState<T>();
@@ -136,10 +142,11 @@ class _ApiQueryState<T> extends ConsumerState<ApiQuery<T>> {
       _load(force: true);
     });
     if (!_hasData) {
+      final frame = widget.frame ?? (Widget w) => w;
       if (_error != null) {
-        return ErrorView(error: _error!, onRetry: () => _load(force: true));
+        return frame(ErrorView(error: _error!, onRetry: () => _load(force: true)));
       }
-      return widget.loading ?? const Center(child: CircularProgressIndicator());
+      return frame(widget.loading ?? const Center(child: CircularProgressIndicator()));
     }
     final data = _data as T;
     if (widget.empty != null && data is List && data.isEmpty) {
@@ -299,15 +306,26 @@ class EmptyView extends StatelessWidget {
 
 /// Requires a selected zone; shows a hint otherwise.
 class ZoneRequired extends ConsumerWidget {
-  const ZoneRequired({super.key, required this.builder});
+  const ZoneRequired({super.key, required this.builder, this.pageTitle});
 
   final Widget Function(BuildContext context, String zoneId, Map<String, dynamic> zone) builder;
 
+  /// When set, unmet states are shown inside a page scaffold with this title.
+  final String? pageTitle;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final zones = ref.watch(zonesProvider);
     final zone = ref.watch(currentZoneProvider);
     if (zone == null) {
+      final body = _missing(context, ref);
+      return pageTitle == null ? body : PageScaffold(title: pageTitle!, body: body);
+    }
+    return builder(context, zone['id'] as String, zone);
+  }
+
+  Widget _missing(BuildContext context, WidgetRef ref) {
+    final zones = ref.watch(zonesProvider);
+    {
       if (zones.isLoading) return const Center(child: CircularProgressIndicator());
       if (zones.hasError) {
         return ErrorView(
@@ -324,21 +342,31 @@ class ZoneRequired extends ConsumerWidget {
         ),
       );
     }
-    return builder(context, zone['id'] as String, zone);
   }
 }
 
 /// Requires a selected account.
 class AccountRequired extends ConsumerWidget {
-  const AccountRequired({super.key, required this.builder});
+  const AccountRequired({super.key, required this.builder, this.pageTitle});
 
   final Widget Function(BuildContext context, String accountId) builder;
 
+  /// When set, unmet states are shown inside a page scaffold with this title.
+  final String? pageTitle;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accounts = ref.watch(accountsProvider);
     final id = ref.watch(currentAccountIdProvider);
     if (id == null) {
+      final body = _missing(context, ref);
+      return pageTitle == null ? body : PageScaffold(title: pageTitle!, body: body);
+    }
+    return builder(context, id);
+  }
+
+  Widget _missing(BuildContext context, WidgetRef ref) {
+    final accounts = ref.watch(accountsProvider);
+    {
       if (accounts.isLoading) return const Center(child: CircularProgressIndicator());
       if (accounts.hasError) {
         return ErrorView(
@@ -355,7 +383,6 @@ class AccountRequired extends ConsumerWidget {
         ),
       );
     }
-    return builder(context, id);
   }
 }
 

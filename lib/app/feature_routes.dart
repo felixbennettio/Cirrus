@@ -5,10 +5,18 @@ import '../core/util/tr.dart';
 import '../features/analytics/zone_analytics_page.dart';
 import '../features/cache/cache_page.dart';
 import '../features/dns/dns_page.dart';
+import '../features/email/email_routing_page.dart';
 import '../features/generic/resource_page.dart';
 import '../features/generic/resource_specs.dart';
+import '../features/pages/pages_pages.dart';
+import '../features/rules/rules_pages.dart';
 import '../features/ssl/ssl_page.dart';
+import '../features/storage/d1_pages.dart';
+import '../features/storage/kv_pages.dart';
+import '../features/storage/r2_pages.dart';
 import '../features/zone_settings/zone_settings.dart';
+import '../features/workers/worker_detail_page.dart';
+import '../features/workers/workers_list_page.dart';
 import '../features/zones/zone_overview_page.dart';
 
 NoTransitionPage<void> _page(GoRouterState s, Widget child) => NoTransitionPage(key: s.pageKey, child: child);
@@ -21,6 +29,49 @@ final featureRoutes = <RouteBase>[
   GoRoute(path: '/zone/cache', pageBuilder: (c, s) => _page(s, const CachePage())),
   GoRoute(path: '/zone/settings', pageBuilder: (c, s) => _page(s, const ZoneSettingsPage())),
   GoRoute(path: '/zone/analytics', pageBuilder: (c, s) => _page(s, const ZoneAnalyticsPage())),
+  GoRoute(path: '/zone/security', pageBuilder: (c, s) => _page(s, const SecurityPage())),
+  GoRoute(
+    path: '/zone/rules',
+    pageBuilder: (c, s) => _page(s, RulesPage(initialPhase: s.uri.queryParameters['phase'])),
+  ),
+  GoRoute(path: '/zone/email', pageBuilder: (c, s) => _page(s, const EmailRoutingPage())),
+  GoRoute(
+    path: '/pages',
+    pageBuilder: (c, s) => _page(s, const PagesListPage()),
+    routes: [GoRoute(path: ':name', builder: (c, s) => PagesProjectPage(name: s.pathParameters['name']!))],
+  ),
+  GoRoute(
+    path: '/kv',
+    pageBuilder: (c, s) => _page(s, const KvNamespacesPage()),
+    routes: [
+      GoRoute(
+        path: ':id',
+        builder: (c, s) => KvBrowserPage(namespaceId: s.pathParameters['id']!, title: s.uri.queryParameters['title']),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: '/r2',
+    pageBuilder: (c, s) => _page(s, const R2BucketsPage()),
+    routes: [GoRoute(path: ':bucket', builder: (c, s) => R2BucketPage(bucket: s.pathParameters['bucket']!))],
+  ),
+  GoRoute(
+    path: '/d1',
+    pageBuilder: (c, s) => _page(s, const D1DatabasesPage()),
+    routes: [
+      GoRoute(
+        path: ':id',
+        builder: (c, s) => D1ConsolePage(databaseId: s.pathParameters['id']!, name: s.uri.queryParameters['name']),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: '/workers',
+    pageBuilder: (c, s) => _page(s, const WorkersListPage()),
+    routes: [
+      GoRoute(path: ':name', builder: (c, s) => WorkerDetailPage(name: s.pathParameters['name']!)),
+    ],
+  ),
   GoRoute(
     path: '/zone/more',
     pageBuilder: (c, s) => _page(

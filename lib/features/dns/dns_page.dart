@@ -177,6 +177,7 @@ class _DnsViewState extends ConsumerState<_DnsView> {
   Widget build(BuildContext context) {
     return ApiQuery<List<Map<String, dynamic>>>(
       cacheKey: 'dns:${widget.zoneId}',
+      frame: (w) => PageScaffold(title: 'DNS', subtitle: widget.zoneName, body: w),
       load: (c) => c.list(_base, perPage: 1000, maxItems: 100000, query: {'order': 'type'}),
       builder: (context, all, h) {
         final q = _q.toLowerCase();
