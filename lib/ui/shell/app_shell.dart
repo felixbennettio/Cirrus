@@ -66,14 +66,21 @@ class Sidebar extends ConsumerWidget {
   final String location;
   final bool inDrawer;
 
-  bool _selected(NavItem item) {
-    if (item.path == '/') return location == '/';
-    return location == item.path || location.startsWith('${item.path}/');
+  /// The most specific nav item matching the current location.
+  String? get _selectedPath {
+    String? best;
+    for (final item in allNavItems) {
+      final p = item.path;
+      final hit = p == '/' ? location == '/' : (location == p || location.startsWith('$p/'));
+      if (hit && (best == null || p.length > best.length)) best = p;
+    }
+    return best;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final selectedPath = _selectedPath;
     final zone = ref.watch(currentZoneProvider);
     final accountId = ref.watch(currentAccountIdProvider);
     return Material(
@@ -133,7 +140,7 @@ class Sidebar extends ConsumerWidget {
                       if (item.scope != NavScope.account || accountId != null)
                         _NavTile(
                           item: item,
-                          selected: _selected(item),
+                          selected: item.path == selectedPath,
                           onTap: () {
                             if (inDrawer) Navigator.of(context).pop();
                             context.go(item.path);

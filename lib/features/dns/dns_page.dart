@@ -359,12 +359,15 @@ class _RecordTile extends StatelessWidget {
     final typeBadge = Container(
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 3),
-      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(type, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: theme.colorScheme.onSecondaryContainer)),
+      child: Text(
+        type,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: theme.colorScheme.onSecondaryContainer),
+      ),
     );
     final proxy = proxiable
         ? Tooltip(
@@ -420,8 +423,6 @@ class _RecordTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (wide && !selecting) typeBadge,
-          const SizedBox(width: 4),
           SizedBox(width: 48, child: Text(ttlLabel(context, record['ttl']), textAlign: TextAlign.center, style: theme.textTheme.bodySmall)),
           proxy,
           if (!selecting)
