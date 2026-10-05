@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/api/cf_client.dart';
 import '../core/session/session.dart';
 import '../core/util/tr.dart';
 import '../features/generic/resource_page.dart';
@@ -29,7 +32,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/',
+    // Development builds (pointed at a mock API) can open a given page.
+    initialLocation: isDevApiBase ? (Platform.environment['CIRRUS_INITIAL_ROUTE'] ?? '/') : '/',
     refreshListenable: refresh,
     redirect: (context, state) {
       final profiles = ref.read(profilesProvider);

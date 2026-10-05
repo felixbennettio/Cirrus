@@ -38,6 +38,9 @@ class QueryCache {
 class DiskCache {
   DiskCache._();
 
+  /// Tests disable the disk cache (no real file I/O under fake async).
+  static bool enabled = true;
+
   static Directory? _dir;
 
   static Future<Directory> _root() async {
@@ -54,6 +57,7 @@ class DiskCache {
   }
 
   static Future<Object?> read(String key) async {
+    if (!enabled) return null;
     try {
       final f = await _file(key);
       if (!await f.exists()) return null;
@@ -64,6 +68,7 @@ class DiskCache {
   }
 
   static Future<void> write(String key, Object? value) async {
+    if (!enabled) return;
     try {
       final f = await _file(key);
       await f.writeAsString(jsonEncode(value));
@@ -71,6 +76,7 @@ class DiskCache {
   }
 
   static Future<void> clear() async {
+    if (!enabled) return;
     try {
       final d = await _root();
       if (await d.exists()) await d.delete(recursive: true);

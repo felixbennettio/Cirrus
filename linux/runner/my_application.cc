@@ -52,7 +52,13 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "Cirrus");
   }
 
-  gtk_window_set_default_size(window, 1280, 800);
+  gint width = 1280, height = 800;
+  // Optional override, handy for testing compact layouts: CIRRUS_WINDOW_SIZE=420x860
+  const gchar* size_env = g_getenv("CIRRUS_WINDOW_SIZE");
+  if (size_env != nullptr) {
+    sscanf(size_env, "%dx%d", &width, &height);
+  }
+  gtk_window_set_default_size(window, width, height);
 
   // Window / taskbar icon: installed next to the executable by CMake.
   {
