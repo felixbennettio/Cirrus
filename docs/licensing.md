@@ -106,11 +106,21 @@ Request: `{"license_key", "email"}`. 200 `{"ok": true}`; 403
     `"pay": {"type": "static_qr", "qr_image": "/static/pay/alipay.png", "amount": "198.00", "note": "<order_no>"}`.
     The buyer pays that amount and writes the order number in the payment
     note; the operator confirms the payment in `/admin`.
-  - Alipay Face-to-Face (当面付), when configured:
-    `"pay": {"type": "qr", "qr_text": "https://qr.alipay.com/…"}`, confirmed
-    automatically by Alipay's notification.
+  - Alipay Face-to-Face (当面付, `ALIPAY_MODE=precreate`):
+    `"pay": {"type": "qr", "qr_text": "https://qr.alipay.com/…", "qr_image", "amount"}`.
+  - Alipay website payment (电脑网站支付, `ALIPAY_MODE=page`; 手机网站支付 on
+    phones): `"pay": {"type": "redirect", "url": "<signed Alipay cashier URL>"}`.
+  - Both Alipay modes are confirmed automatically by Alipay's notification to
+    `/pay/alipay/notify`.
+  - Errors: 400 `invalid_product` / `invalid_email` / `invalid_method`,
+    503 `method_unavailable`, 502 `payment_error`.
 - `GET /api/v1/orders/{order_no}?token=…` → `{"status": "pending" | "paid" | "expired", "license_key"?}`.
-  The licence key is only included once paid and only with the order token.
+  The licence key is only included once paid and only with the order token;
+  a missing or wrong token gets 404 `order_not_found`.
+
+Any rate-limited POST gets 429 `rate_limited` with `Retry-After`; a malformed
+request (including a device id that is not 64 lowercase hex characters) gets
+400 `bad_request`.
 
 The purchase page links from the app as `/buy?product=cirrus-windows`.
 
