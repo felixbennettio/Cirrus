@@ -15,6 +15,7 @@ import '../../core/billing/billing.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/catalog/catalog.dart';
 import '../../core/catalog/catalog_builder.dart';
+import '../../core/licensing/license_controller.dart';
 import '../../core/session/session.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/util/format.dart';
@@ -22,6 +23,7 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../onboarding/add_profile_page.dart';
+import '../pro/license_panel.dart';
 import '../pro/pro_page.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -360,7 +362,7 @@ class _AboutCard extends StatelessWidget {
   }
 }
 
-/// Cirrus Pro status, purchase and restore (store builds only).
+/// Cirrus Pro status, purchase and restore (store and licence builds only).
 class _ProSection extends ConsumerWidget {
   const _ProSection({required this.pro});
 
@@ -368,6 +370,7 @@ class _ProSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(storeChannelProvider) == StoreChannel.license) return const _LicenseSection();
     final ctl = ref.read(proProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
     return SectionCard(
@@ -403,6 +406,74 @@ class _ProSection extends ConsumerWidget {
                 ),
         ),
         if (pro.error != null) Text(pro.error!, style: TextStyle(color: scheme.error)),
+      ],
+    );
+  }
+}
+
+/// Licence status and deactivation (licence builds).
+class _LicenseSection extends ConsumerWidget {
+  const _LicenseSection();
+
+  Future<void> _deactivate(BuildContext context, WidgetRef ref) async {
+    final ok = await confirm(
+      context,
+      title: context.tr('Deactivate on this device?', '在此设备上停用？'),
+      message: context.tr(
+        'Cirrus Pro will be locked on this device, and the activation freed so the key can be used on another device.',
+        '本设备上的 Cirrus Pro 将被锁定，并释放该激活名额，之后可以在其他设备上使用此密钥。',
+      ),
+      confirmLabel: context.tr('Deactivate', '停用'),
+      destructive: true,
+    );
+    if (!ok) return;
+    final done = await ref.read(licenseProvider.notifier).deactivate();
+    if (done && context.mounted) showToast(context, context.tr('Deactivated on this device', '已在此设备上停用'));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final license = ref.watch(licenseProvider);
+    final active = license.active;
+    final scheme = Theme.of(context).colorScheme;
+    return SectionCard(
+      title: 'Cirrus Pro',
+      subtitle: active != null
+          ? context.tr('Activated on this device. Thank you!', '已在本设备激活，感谢支持！')
+          : context.tr('Activate a licence key bought on the Cirrus website.', '使用在 Cirrus 网站购买的许可证密钥激活。'),
+      children: [
+        if (active != null) ...[
+          InfoRow(context.tr('Status', '状态'), context.tr('Activated', '已激活')),
+          InfoRow(context.tr('Licence key', '许可证密钥'), active.maskedKey, mono: true),
+          if (active.payload.owner.isNotEmpty) InfoRow(context.tr('Owner', '所有者'), active.payload.owner),
+          InfoRow(context.tr('Platform', '平台'), licensePlatformLabel(active.payload.platform)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: license.busy ? null : () => _deactivate(context, ref),
+              icon: license.busy
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.link_off),
+              label: Text(context.tr('Deactivate on this device', '在此设备上停用')),
+            ),
+          ),
+        ] else
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.workspace_premium_outlined, color: scheme.primary),
+            title: Text(context.tr('Not activated', '未激活')),
+            trailing: FilledButton(
+              onPressed: license.busy
+                  ? null
+                  : () => showDialog<void>(
+                      context: context,
+                      builder: (ctx) => const Dialog(child: ProPaywall()),
+                    ),
+              child: Text(context.tr('Activate', '激活')),
+            ),
+          ),
+        if (license.error != null) ...[const SizedBox(height: 8), LicenseErrorView(error: license.error!)],
       ],
     );
   }

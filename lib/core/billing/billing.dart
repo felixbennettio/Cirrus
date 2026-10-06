@@ -6,23 +6,35 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
+import '../licensing/license_controller.dart';
 import '../settings/app_settings.dart';
 
-/// The store this binary is distributed through, from
-/// `--dart-define=CIRRUS_STORE=appstore|play`. Cirrus Pro is only sold (and
-/// only enforced) in store builds; every other build is fully unlocked.
-enum StoreChannel { none, appStore, googlePlay }
+/// The channel this binary is sold through, from
+/// `--dart-define=CIRRUS_STORE=appstore|play|license`. Cirrus Pro is only
+/// sold (and only enforced) in those builds; every other build is fully
+/// unlocked. `license` builds (Windows, Linux and Android sold outside the
+/// stores) unlock Pro with a licence key from the website
+/// (`lib/core/licensing`).
+enum StoreChannel { none, appStore, googlePlay, license }
 
 StoreChannel storeChannelFrom(String value) => switch (value.trim().toLowerCase()) {
   'appstore' || 'app_store' || 'apple' => StoreChannel.appStore,
   'play' || 'googleplay' || 'google_play' => StoreChannel.googlePlay,
+  'license' || 'licence' || 'direct' => StoreChannel.license,
   _ => StoreChannel.none,
 };
 
 final storeChannelProvider = Provider<StoreChannel>((ref) {
-  // Only iOS, macOS and Android have a store implementation.
-  final supported = !kIsWeb && (Platform.isIOS || Platform.isMacOS || Platform.isAndroid);
-  return supported ? storeChannelFrom(const String.fromEnvironment('CIRRUS_STORE')) : StoreChannel.none;
+  if (kIsWeb) return StoreChannel.none;
+  final channel = storeChannelFrom(const String.fromEnvironment('CIRRUS_STORE'));
+  // Each channel only exists on the platforms it is implemented for.
+  final supported = switch (channel) {
+    StoreChannel.none => true,
+    StoreChannel.appStore => Platform.isIOS || Platform.isMacOS,
+    StoreChannel.googlePlay => Platform.isAndroid,
+    StoreChannel.license => Platform.isWindows || Platform.isLinux || Platform.isAndroid,
+  };
+  return supported ? channel : StoreChannel.none;
 });
 
 /// Cirrus Pro, lifetime: a non-consumable on the App Store and a one-time
@@ -117,7 +129,8 @@ class ProState {
 }
 
 /// Owns the Pro entitlement: loads the product, restores past purchases on
-/// start, runs purchases and remembers the result on this device.
+/// start, runs purchases and remembers the result on this device. In
+/// licence builds it follows [licenseProvider] instead.
 class ProController extends Notifier<ProState> {
   static const cacheKey = 'cirrus.pro.v1';
 
@@ -125,8 +138,13 @@ class ProController extends Notifier<ProState> {
 
   @override
   ProState build() {
-    if (ref.watch(storeChannelProvider) == StoreChannel.none) {
+    final channel = ref.watch(storeChannelProvider);
+    if (channel == StoreChannel.none) {
       return const ProState(enforced: false, unlocked: true);
+    }
+    if (channel == StoreChannel.license) {
+      // Unlocked only by a verified activation of this device.
+      return ProState(enforced: true, unlocked: ref.watch(licenseProvider.select((s) => s.isActive)));
     }
     final cached = ref.read(sharedPrefsProvider).getBool(cacheKey) ?? false;
     final sub = _store.purchaseStream.listen(

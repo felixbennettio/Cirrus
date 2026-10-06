@@ -5,10 +5,12 @@ import '../../core/billing/billing.dart';
 import '../../core/session/session.dart';
 import '../../core/util/tr.dart';
 import '../../ui/widgets/common.dart';
+import 'license_panel.dart';
 import 'pro_features.dart';
 
-/// Explains Cirrus Pro and offers the purchase. [feature] is what the user
-/// just tried to open, if any.
+/// Explains Cirrus Pro and offers the purchase (or, in licence builds, the
+/// licence key activation). [feature] is what the user just tried to open,
+/// if any.
 class ProPaywall extends ConsumerWidget {
   const ProPaywall({super.key, this.feature});
 
@@ -66,51 +68,56 @@ class ProPaywall extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: 20),
-              if (pro.unlocked)
-                FilledButton.tonalIcon(
-                  onPressed: null,
-                  icon: const Icon(Icons.verified),
-                  label: Text(context.tr('Cirrus Pro is unlocked', '已解锁 Cirrus Pro')),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                )
-              else
-                FilledButton.icon(
-                  onPressed: pro.busy || product == null ? null : ctl.buy,
-                  icon: pro.busy
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.lock_open),
-                  label: Text(
-                    product != null
-                        ? context.tr('Unlock for ${product.price}', '以 ${product.price} 解锁')
-                        : pro.storeAvailable
-                        ? context.tr('Loading…', '正在加载…')
-                        : context.tr('Store unavailable', '商店暂不可用'),
+              // Licence builds sell keys on the website instead of the store.
+              if (ref.watch(storeChannelProvider) == StoreChannel.license)
+                const LicensePanel()
+              else ...[
+                if (pro.unlocked)
+                  FilledButton.tonalIcon(
+                    onPressed: null,
+                    icon: const Icon(Icons.verified),
+                    label: Text(context.tr('Cirrus Pro is unlocked', '已解锁 Cirrus Pro')),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: pro.busy || product == null ? null : ctl.buy,
+                    icon: pro.busy
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.lock_open),
+                    label: Text(
+                      product != null
+                          ? context.tr('Unlock for ${product.price}', '以 ${product.price} 解锁')
+                          : pro.storeAvailable
+                          ? context.tr('Loading…', '正在加载…')
+                          : context.tr('Store unavailable', '商店暂不可用'),
+                    ),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                   ),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                ),
-              const SizedBox(height: 8),
-              if (!pro.unlocked)
-                TextButton(
-                  onPressed: pro.busy ? null : ctl.restore,
-                  child: Text(context.tr('Restore purchase', '恢复购买')),
-                ),
-              if (pro.error != null) ...[
                 const SizedBox(height: 8),
+                if (!pro.unlocked)
+                  TextButton(
+                    onPressed: pro.busy ? null : ctl.restore,
+                    child: Text(context.tr('Restore purchase', '恢复购买')),
+                  ),
+                if (pro.error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    pro.error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: scheme.error),
+                  ),
+                ],
+                const SizedBox(height: 12),
                 Text(
-                  pro.error!,
+                  context.tr(
+                    'A one-time purchase, not a subscription. Paid through ${_storeName(ref)}; restore it on any device signed in to the same account.',
+                    '一次性购买，不是订阅。通过 ${_storeName(ref)} 付款，在登录同一账号的设备上都可以恢复购买。',
+                  ),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: scheme.error),
+                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
-              const SizedBox(height: 12),
-              Text(
-                context.tr(
-                  'A one-time purchase, not a subscription. Paid through ${_storeName(ref)}; restore it on any device signed in to the same account.',
-                  '一次性购买，不是订阅。通过 ${_storeName(ref)} 付款，在登录同一账号的设备上都可以恢复购买。',
-                ),
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
             ],
           ),
         ),
