@@ -124,6 +124,8 @@ void main() {
   test('store channel names', () {
     expect(storeChannelFrom('appstore'), StoreChannel.appStore);
     expect(storeChannelFrom(' Play '), StoreChannel.googlePlay);
+    expect(storeChannelFrom('license'), StoreChannel.license);
+    expect(storeChannelFrom('Direct'), StoreChannel.license);
     expect(storeChannelFrom(''), StoreChannel.none);
   });
 
