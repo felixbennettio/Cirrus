@@ -62,12 +62,11 @@ def secrets():
         # Not set up yet: report it without failing the run.
         row(None, "API 密钥", f"还没有添加。在仓库 Settings → Secrets and variables → Actions 里添加 4 个 Secret（{GUIDE}第 1 步）")
         finish(False, 0)
-    values, bad = {}, False
+    values = {}
     for name, pattern in names.items():
         value = os.environ.get(name, "").strip()
         if not value:
             row(False, name, f"没有设置。在仓库 Settings → Secrets and variables → Actions 里添加（{GUIDE}第 1 步）")
-            bad = True
         elif not re.search(pattern, value, re.IGNORECASE if "ISSUER" in name else 0):
             hint = {
                 "APP_STORE_CONNECT_ISSUER_ID": "应形如 57246542-96fe-1a63-e053-0824d011072a",
@@ -76,11 +75,12 @@ def secrets():
                 "APPLE_TEAM_ID": "应是 10 位大写字母和数字",
             }[name]
             row(False, name, f"格式不对：{hint}")
-            bad = True
         else:
             values[name] = value
             row(True, name, "已设置")
-    if bad:
+    # The API key alone is enough to check everything else, so carry on
+    # without the Team ID (it is only needed for signing).
+    if any(n not in values for n in names if n != "APPLE_TEAM_ID"):
         finish(False, 1)
     return values
 
@@ -116,6 +116,8 @@ def error_text(body):
 
 def main():
     v = secrets()
+    team = v.get("APPLE_TEAM_ID")
+    fail = 0 if team else 1
     try:
         bearer = token(v)
     except Exception as e:  # malformed key
@@ -138,6 +140,10 @@ def main():
     if ids:
         attrs = ids[0]["attributes"]
         row(True, "App ID", f"{BUNDLE_ID}（{attrs.get('name')}，平台 {attrs.get('platform')}）")
+        seed = attrs.get("seedId")
+        if team and seed and seed != team:
+            row(False, "APPLE_TEAM_ID", f"和 App ID 所属团队不一致。Team ID 应为 {seed}")
+            fail = 1
     else:
         row(False, "App ID", f"还没有注册 {BUNDLE_ID}（{GUIDE}第 2 步）")
 
@@ -146,7 +152,7 @@ def main():
     if not apps:
         row(False, "App Store Connect 里的 App", f"还没有新建（{GUIDE}第 5 步）")
         row(None, f"内购 {PRODUCT_ID}", "先新建 App")
-        finish(False, 0)
+        finish(False, fail)
     app = apps[0]
     row(True, "App Store Connect 里的 App", f"{app['attributes'].get('name')}（SKU {app['attributes'].get('sku')}）")
 
@@ -163,8 +169,8 @@ def main():
     else:
         row(None, f"内购 {PRODUCT_ID}", f"查询失败：HTTP {status} {error_text(body)}")
 
-    # The upload only needs the App ID and the app record.
-    finish(bool(ids), 0)
+    # Signing and uploading need the Team ID, the App ID and the app record.
+    finish(bool(ids) and not fail, fail)
 
 
 if __name__ == "__main__":
