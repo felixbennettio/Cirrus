@@ -6,10 +6,11 @@ const licenseKeyPrefix = 'CIRRUS';
 const crockfordAlphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 /// The canonical form of a typed or pasted key, or null when it cannot be
-/// a licence key. Normalises like the server: trim, upper-case, `O`→`0` and
-/// `I`/`L`→`1`, with the dashes and the `CIRRUS` prefix optional.
+/// a licence key. Normalises like the server: whitespace anywhere removed,
+/// upper-case, `O`→`0` and `I`/`L`→`1`, with the dashes and the `CIRRUS`
+/// prefix optional.
 String? normalizeLicenseKey(String input) {
-  var s = input.trim().toUpperCase().replaceAll('-', '');
+  var s = input.toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
   // Before the mapping below, which would turn the prefix into "C1RRUS".
   if (s.startsWith(licenseKeyPrefix)) s = s.substring(licenseKeyPrefix.length);
   s = s.replaceAll('O', '0').replaceAll(RegExp('[IL]'), '1');

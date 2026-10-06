@@ -178,6 +178,8 @@ void main() {
         '7K3QDM2XRT9VB4NHJ6WP',
         'CIRRUS7K3QDM2XRT9VB4NHJ6WP',
         '7k3qd-m2xrt-9vb4n-hj6wp',
+        'CIRRUS-7K3QD M2XRT-9VB4N-HJ6WP',
+        'cirrus 7k3qd m2xrt 9vb4n\thj6wp',
       ]) {
         expect(normalizeLicenseKey(input), linuxKey, reason: input);
       }
@@ -191,7 +193,6 @@ void main() {
         'CIRRUS-7K3QD-M2XRT-9VB4N',
         '$linuxKey-AAAAA',
         'CIRRUS-7K3QD-M2XRT-9VB4N-HJ6WU',
-        'CIRRUS-7K3QD M2XRT-9VB4N-HJ6WP',
         'CIRRUS_7K3QD_M2XRT_9VB4N_HJ6WP',
       ]) {
         expect(normalizeLicenseKey(input), isNull, reason: input);
