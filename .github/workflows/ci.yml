@@ -11,6 +11,10 @@ on:
         description: Also build macOS and iOS
         type: boolean
         default: true
+      store_build:
+        description: Paid builds (licence keys on Windows, Linux and the Android APKs; Play Billing in the AAB)
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -44,3 +48,4 @@ jobs:
       # macOS runners are expensive for private repositories: run the Apple
       # builds on demand, on pull requests, or when a commit says "[apple]".
       apple: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.apple) || contains(github.event.head_commit.message, '[apple]') }}
+      store_build: ${{ github.event_name == 'workflow_dispatch' && inputs.store_build }}

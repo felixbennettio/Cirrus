@@ -11,16 +11,35 @@ import 'package:dio/dio.dart';
 class OAuthConfig {
   const OAuthConfig({required this.clientId, required this.scopes});
 
-  /// The client built into this binary, from
+  /// The client built into this binary: Cirrus's public client, unless
   /// `--dart-define=CIRRUS_OAUTH_CLIENT_ID=...` and
-  /// `--dart-define=CIRRUS_OAUTH_SCOPES="account.read zone.read ..."`.
-  /// Null when the build has no client configured.
+  /// `--dart-define=CIRRUS_OAUTH_SCOPES="zone.read dns.write ..."` name
+  /// another (empty values keep the defaults).
   static OAuthConfig? get builtIn {
     const id = String.fromEnvironment('CIRRUS_OAUTH_CLIENT_ID');
     const scopes = String.fromEnvironment('CIRRUS_OAUTH_SCOPES');
-    if (id.trim().isEmpty) return null;
-    return OAuthConfig(clientId: id.trim(), scopes: parseScopes(scopes));
+    return OAuthConfig(
+      clientId: id.trim().isEmpty ? defaultClientId : id.trim(),
+      scopes: parseScopes(scopes.trim().isEmpty ? defaultScopes : scopes),
+    );
   }
+
+  /// Cirrus's OAuth client on Cloudflare.
+  static const defaultClientId = '9c147a5155baf903357222bd4d31ad50';
+
+  /// The scopes configured on [defaultClientId]: zone management (required)
+  /// and everything the Pro sections use (optional on the consent screen).
+  static const defaultScopes =
+      'zone.read zone.write zone_settings.read zone_settings.write dns.read dns.write '
+      'cache.purge ssl_and_certificates.read ssl_and_certificates.write analytics.read account_analytics.read '
+      'firewall_services.read firewall_services.write account_settings.read account_settings.write '
+      'memberships.read memberships.write user_details.read '
+      'workers_routes.read workers_routes.write workers_tail.read workers_kv_storage.read workers_kv_storage.write '
+      'workers_r2_storage.read workers_r2_storage.write pages.read pages.write queues.read queues.write '
+      'hyperdrive.read hyperdrive.write workers_ai.read workers_ai.write '
+      'access_apps_and_policies.read access_apps_and_policies.write '
+      'access_organizations_identity_providers_and_groups.read access_organizations_identity_providers_and_groups.write '
+      'cloudflare_tunnel.read cloudflare_tunnel.write zero_trust.read zero_trust.write';
 
   static const authorizeEndpoint = 'https://dash.cloudflare.com/oauth2/auth';
   static const tokenEndpoint = 'https://dash.cloudflare.com/oauth2/token';
