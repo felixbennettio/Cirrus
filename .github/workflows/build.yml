@@ -98,8 +98,13 @@ jobs:
       - name: Build APKs and App Bundle
         run: |
           ARGS="--release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}"
+          # Stop the Gradle and Kotlin daemons between builds: left running,
+          # they pile up until the runner runs out of memory and is shut down.
+          stop_daemons() { pkill -f org.gradle.launcher.daemon || true; pkill -f KotlinCompileDaemon || true; sleep 2; }
           flutter build apk $ARGS --dart-define-from-file=dart_defines.json --split-per-abi
+          stop_daemons
           flutter build apk $ARGS --dart-define-from-file=dart_defines.json
+          stop_daemons
           flutter build appbundle $ARGS --dart-define-from-file=dart_defines_play.json
       - name: Collect
         run: |
