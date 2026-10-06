@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/util/tr.dart';
 import '../generic/resource_specs.dart';
 
-/// What Cirrus Pro unlocks in store builds. Managing zones (DNS, SSL/TLS,
+/// What Cirrus Pro unlocks in store and licence builds. Managing zones (DNS, SSL/TLS,
 /// security, rules, caching, zone settings, analytics) stays free.
 enum ProFeature {
   compute(Icons.bolt, L10nText('Workers, Pages & Workers AI', 'Workers、Pages 与 Workers AI')),

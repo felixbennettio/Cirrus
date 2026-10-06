@@ -57,6 +57,7 @@ dependencies:
   basic_utils: ^5.8.2
   app_links: ^7.2.1
   in_app_purchase: ^3.3.1
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
