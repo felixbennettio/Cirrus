@@ -123,6 +123,26 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development"
+      - name: Unsign plugin resource bundles
+        if: matrix.platform == 'macos'
+        # Swift Package resource bundles (Contents/Resources/*.bundle) are signed
+        # with the development certificate during the archive, and the export
+        # leaves them alone, which App Store Connect rejects (ITMS-90284). They
+        # hold no code, so drop their signatures; the app's own signature seals
+        # them as resources.
+        run: |
+          APP=$(echo "$RUNNER_TEMP"/Cirrus.xcarchive/Products/Applications/*.app)
+          for b in "$APP"/Contents/Resources/*.bundle; do
+            [ -d "$b" ] || continue
+            if [ -d "$b/Contents/MacOS" ]; then
+              echo "::error::$(basename "$b") contains code; it needs a real signature"
+              exit 1
+            fi
+            codesign --remove-signature "$b" 2>/dev/null || true
+            rm -rf "$b/Contents/_CodeSignature"
+            xattr -cr "$b"
+            echo "unsigned $(basename "$b")"
+          done
       - name: Sign for the App Store${{ inputs.upload && ' and upload' || '' }}
         run: |
           /usr/libexec/PlistBuddy -c "Clear dict" \

@@ -27,19 +27,22 @@ class OAuthConfig {
   /// Cirrus's OAuth client on Cloudflare.
   static const defaultClientId = '9c147a5155baf903357222bd4d31ad50';
 
-  /// The scopes configured on [defaultClientId]: zone management (required)
-  /// and everything the Pro sections use (optional on the consent screen).
+  /// The scopes configured on [defaultClientId] (its `scopes` from
+  /// `GET /accounts/{id}/oauth_clients/{client_id}`): zone management is
+  /// required, the rest is optional on the consent screen.
   static const defaultScopes =
-      'zone.read zone.write zone_settings.read zone_settings.write dns.read dns.write '
-      'cache.purge ssl_and_certificates.read ssl_and_certificates.write analytics.read account_analytics.read '
-      'firewall_services.read firewall_services.write account_settings.read account_settings.write '
-      'memberships.read memberships.write user_details.read '
-      'workers_routes.read workers_routes.write workers_tail.read workers_kv_storage.read workers_kv_storage.write '
-      'workers_r2_storage.read workers_r2_storage.write pages.read pages.write queues.read queues.write '
-      'hyperdrive.read hyperdrive.write workers_ai.read workers_ai.write '
-      'access_apps_and_policies.read access_apps_and_policies.write '
-      'access_organizations_identity_providers_and_groups.read access_organizations_identity_providers_and_groups.write '
-      'cloudflare_tunnel.read cloudflare_tunnel.write zero_trust.read zero_trust.write';
+      'zone.read zone.write zone-settings.read zone-settings.write dns.read dns.write '
+      'ssl-and-certificates.read ssl-and-certificates.write cache.purge analytics.read account-analytics.read '
+      'firewall-services.read firewall-services.write account-settings.read account-settings.write '
+      'user-details.read user-details.write memberships.read memberships.write '
+      'account-api-gateway.read account-api-gateway.write '
+      'workers-scripts.edit workers-scripts.metadata_read workers-routes.read workers-routes.write workers-tail.read '
+      'workers-kv-storage.read workers-kv-storage.write workers-r2.read workers-r2.write '
+      'page.read page.write queues.read queues.write ai.read ai.write ai-model.read ai-model.write '
+      'query-cache.read query-cache.write '
+      'access.read access.write access-app.read access-app.write access-acct.read access-acct.write '
+      'access-service-token.read access-service-token.write zone-access.read zone-access.write '
+      'teams.read teams.write teams-networks.read teams-networks.write argotunnel.read argotunnel.write';
 
   static const authorizeEndpoint = 'https://dash.cloudflare.com/oauth2/auth';
   static const tokenEndpoint = 'https://dash.cloudflare.com/oauth2/token';
