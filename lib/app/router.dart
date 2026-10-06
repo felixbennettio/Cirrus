@@ -11,6 +11,7 @@ import '../features/generic/resource_page.dart';
 import '../features/generic/resource_specs.dart';
 import '../features/home/home_page.dart';
 import '../features/onboarding/add_profile_page.dart';
+import '../features/pro/pro_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/zones/domains_page.dart';
 import '../ui/shell/app_shell.dart';
@@ -54,7 +55,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(path: '/welcome', builder: (_, _) => const AddProfilePage(firstRun: true)),
-      GoRoute(path: '/profiles/add', parentNavigatorKey: _rootKey, builder: (_, _) => const AddProfilePage()),
+      GoRoute(
+        path: '/profiles/add',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const CredentialGate(child: AddProfilePage()),
+      ),
       ShellRoute(
         navigatorKey: _shellKey,
         builder: (context, state, child) => AppShell(location: state.matchedLocation, child: child),

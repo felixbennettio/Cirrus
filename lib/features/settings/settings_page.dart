@@ -11,6 +11,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/credential.dart';
+import '../../core/billing/billing.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/catalog/catalog.dart';
 import '../../core/catalog/catalog_builder.dart';
@@ -21,6 +22,7 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../onboarding/add_profile_page.dart';
+import '../pro/pro_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -33,11 +35,13 @@ class SettingsPage extends ConsumerWidget {
     final active = ref.watch(activeProfileProvider);
     final store = ref.watch(credentialStoreProvider);
     final catalog = ref.watch(catalogProvider);
+    final pro = ref.watch(proProvider);
     return PageScaffold(
       title: context.tr('Settings', '设置'),
       body: ContentList(
         maxWidth: 820,
         children: [
+          if (pro.enforced) _ProSection(pro: pro),
           SectionCard(
             title: context.tr('Credentials', '凭据'),
             subtitle: context.tr('Stored in the system keychain on this device.', '保存在本设备的系统钥匙串中。'),
@@ -351,6 +355,54 @@ class _AboutCard extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+/// Cirrus Pro status, purchase and restore (store builds only).
+class _ProSection extends ConsumerWidget {
+  const _ProSection({required this.pro});
+
+  final ProState pro;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ctl = ref.read(proProvider.notifier);
+    final scheme = Theme.of(context).colorScheme;
+    return SectionCard(
+      title: 'Cirrus Pro',
+      subtitle: pro.unlocked
+          ? context.tr('Unlocked on this device. Thank you!', '已在本设备解锁，感谢支持！')
+          : context.tr('A one-time purchase that unlocks every feature.', '一次性购买，解锁全部功能。'),
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(pro.unlocked ? Icons.verified : Icons.workspace_premium_outlined, color: scheme.primary),
+          title: Text(
+            pro.unlocked
+                ? context.tr('Cirrus Pro (lifetime)', 'Cirrus Pro（终身）')
+                : pro.product?.price ?? context.tr('Price unavailable', '价格暂不可用'),
+          ),
+          trailing: pro.unlocked
+              ? null
+              : Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton(onPressed: pro.busy ? null : ctl.restore, child: Text(context.tr('Restore', '恢复购买'))),
+                    FilledButton(
+                      onPressed: pro.busy
+                          ? null
+                          : () => showDialog<void>(
+                              context: context,
+                              builder: (ctx) => const Dialog(child: ProPaywall()),
+                            ),
+                      child: Text(context.tr('Unlock', '解锁')),
+                    ),
+                  ],
+                ),
+        ),
+        if (pro.error != null) Text(pro.error!, style: TextStyle(color: scheme.error)),
       ],
     );
   }

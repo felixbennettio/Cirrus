@@ -1,0 +1,149 @@
+# Builds the App Store version of Cirrus (Cirrus Pro sold through StoreKit),
+# signs it with the App Store Connect API key and uploads it to App Store
+# Connect, where it shows up in TestFlight. Run it from the Actions tab.
+#
+# Needs four repository secrets: APP_STORE_CONNECT_ISSUER_ID,
+# APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_PRIVATE_KEY (the .p8 file's
+# text) and APPLE_TEAM_ID. Signing is automatic: Xcode creates or reuses the
+# certificates and provisioning profiles through the API key (Admin role).
+name: App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: What to build
+        type: choice
+        options: [ios-and-macos, ios, macos, check-only]
+        default: ios-and-macos
+      upload:
+        description: Upload to App Store Connect (off = keep the signed files as workflow artifacts)
+        type: boolean
+        default: true
+  push:
+    # Re-check the Apple setup whenever this workflow changes (no builds).
+    paths: ['.github/workflows/appstore.yml', 'scripts/appstore_check.py']
+
+concurrency:
+  group: appstore-${{ github.ref }}
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+  BUNDLE_ID: io.felixbennett.cirrus
+
+jobs:
+  check:
+    name: Check Apple setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: pip install 'pyjwt[crypto]'
+      - id: check
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: python3 scripts/appstore_check.py
+      - name: Stop before building
+        if: steps.check.outputs.ready != 'true' && github.event_name == 'workflow_dispatch' && inputs.platforms != 'check-only'
+        run: |
+          echo "::error::Register the App ID and create the app in App Store Connect before building (see the run summary)."
+          exit 1
+
+  build:
+    name: ${{ matrix.platform == 'ios' && 'iOS' || 'macOS' }}
+    needs: check
+    if: needs.check.outputs.ready == 'true' && github.event_name == 'workflow_dispatch' && inputs.platforms != 'check-only'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms == 'ios' && '["ios"]' || inputs.platforms == 'macos' && '["macos"]' || '["ios","macos"]') }}
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Require the Pro branch
+        run: |
+          if [ ! -f lib/core/billing/billing.dart ]; then
+            echo "::error::This branch has no in-app purchase code. Run the workflow on claude/iap-pro-lifetime."
+            exit 1
+          fi
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Version
+        # Version name from pubspec.yaml. Build numbers must grow with every
+        # upload, so they come from this workflow's run counter.
+        run: |
+          echo "VERSION=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_ENV"
+      - name: Build configuration
+        shell: bash
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store appstore
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}' > dart_defines.json
+      - name: App Store Connect API key
+        env:
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "AUTH_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - name: Configure the Xcode project
+        run: >
+          flutter build "$PLATFORM" --config-only --release
+          --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+          --dart-define-from-file=dart_defines.json
+      - name: Archive
+        run: |
+          DEST=$([ "$PLATFORM" = ios ] && echo 'generic/platform=iOS' || echo 'generic/platform=macOS')
+          xcodebuild archive \
+            -workspace "$PLATFORM/Runner.xcworkspace" -scheme Runner -configuration Release \
+            -destination "$DEST" -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development"
+      - name: Sign for the App Store${{ inputs.upload && ' and upload' || '' }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Clear dict" \
+            -c "Add :method string app-store-connect" \
+            -c "Add :destination string ${{ inputs.upload && 'upload' || 'export' }}" \
+            -c "Add :teamID string $TEAM_ID" \
+            -c "Add :signingStyle string automatic" \
+            -c "Add :manageAppVersionAndBuildNumber bool false" \
+            -c "Add :uploadSymbols bool true" \
+            "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
+          ls -la "$RUNNER_TEMP/export"
+          echo "${{ inputs.upload && 'Uploaded' || 'Signed' }} Cirrus $VERSION ($BUILD_NUMBER) for $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: ${{ !inputs.upload }}
+        with:
+          name: appstore-${{ matrix.platform }}
+          path: ${{ runner.temp }}/export/*
+          if-no-files-found: error
+      - name: Remove the API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
