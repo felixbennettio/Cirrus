@@ -22,7 +22,7 @@ on:
         type: boolean
         default: false
       store_build:
-        description: Build for the App Store / Google Play (sells and enforces Cirrus Pro)
+        description: Paid builds (Cirrus Pro enforced) - App Store and Google Play use in-app purchase, Windows, Linux and the Android APKs use licence keys
         type: boolean
         default: false
 
@@ -53,10 +53,21 @@ jobs:
         env:
           CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
           SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
-          STORE: ${{ inputs.store_build && 'play' || '' }}
-        run: >
-          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store "$STORE"
-          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}' > dart_defines.json
+          STORE_BUILD: ${{ inputs.store_build }}
+        # Store builds: the APKs unlock Pro with a licence key, the App Bundle
+        # (Google Play) with Play Billing.
+        run: |
+          defines() {
+            jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store "$1" \
+              '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}'
+          }
+          if [ "$STORE_BUILD" = true ]; then
+            defines license > dart_defines.json
+            defines play > dart_defines_play.json
+          else
+            defines '' > dart_defines.json
+            cp dart_defines.json dart_defines_play.json
+          fi
       - name: Refresh API catalog
         if: inputs.refresh_catalog
         run: dart run tool/build_catalog.dart || echo "::warning::Catalog refresh failed; using the bundled catalog"
@@ -86,10 +97,10 @@ jobs:
           fi
       - name: Build APKs and App Bundle
         run: |
-          ARGS="--release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }} --dart-define-from-file=dart_defines.json"
-          flutter build apk $ARGS --split-per-abi
-          flutter build apk $ARGS
-          flutter build appbundle $ARGS
+          ARGS="--release --build-name=${{ inputs.version }} --build-number=${{ inputs.build_number }}"
+          flutter build apk $ARGS --dart-define-from-file=dart_defines.json --split-per-abi
+          flutter build apk $ARGS --dart-define-from-file=dart_defines.json
+          flutter build appbundle $ARGS --dart-define-from-file=dart_defines_play.json
       - name: Collect
         run: |
           V=${{ inputs.version }}
@@ -129,7 +140,7 @@ jobs:
         env:
           CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
           SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
-          STORE: ''
+          STORE: ${{ inputs.store_build && 'license' || '' }}
         run: >
           jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store "$STORE"
           '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}' > dart_defines.json
@@ -163,7 +174,7 @@ jobs:
         env:
           CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
           SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
-          STORE: ''
+          STORE: ${{ inputs.store_build && 'license' || '' }}
         run: >
           jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store "$STORE"
           '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}' > dart_defines.json
