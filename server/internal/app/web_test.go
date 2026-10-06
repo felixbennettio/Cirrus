@@ -10,7 +10,8 @@ import (
 
 func TestPagesRender(t *testing.T) {
 	h := newHarness(t, harnessOpt{})
-	pages := []string{"/", "/buy", "/buy?product=cirrus-android", "/buy?order=C261006000001", "/license", "/privacy", "/terms", "/support"}
+	pages := []string{"/", "/buy", "/buy?product=cirrus-android", "/buy?order=C261006000001", "/license", "/privacy", "/terms", "/support",
+		"/oauth/callback?code=abc&state=xyz"}
 	for _, p := range pages {
 		for _, lang := range []string{"zh", "en"} {
 			path := p
@@ -250,4 +251,24 @@ func TestAdminLicenseActions(t *testing.T) {
 		t.Fatalf("missing licence: %d", rec.Code)
 	}
 	h.app.Wait()
+}
+
+func TestOAuthCallbackPage(t *testing.T) {
+	h := newHarness(t, harnessOpt{})
+	rec := h.get("/oauth/callback?code=abc&state=xyz")
+	if rec.Code != 200 {
+		t.Fatalf("status %d", rec.Code)
+	}
+	hdr := rec.Header()
+	if hdr.Get("Cache-Control") != "no-store" || hdr.Get("Referrer-Policy") != "no-referrer" {
+		t.Errorf("headers: Cache-Control %q, Referrer-Policy %q", hdr.Get("Cache-Control"), hdr.Get("Referrer-Policy"))
+	}
+	body := rec.Body.String()
+	// The code only reaches the app through oauth.js; the page never echoes it.
+	if strings.Contains(body, "abc") || !strings.Contains(body, "/static/oauth.js") || !strings.Contains(body, `id="oauth-open"`) {
+		t.Errorf("unexpected page:\n%s", body)
+	}
+	if js := h.get("/static/oauth.js"); js.Code != 200 || !strings.Contains(js.Body.String(), "io.felixbennett.cirrus:/oauth/callback") {
+		t.Errorf("oauth.js: %d", js.Code)
+	}
 }

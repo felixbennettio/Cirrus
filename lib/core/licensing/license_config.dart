@@ -56,10 +56,14 @@ class LicenseConfig {
   /// `--dart-define=CIRRUS_LICENSE_PUBKEY=<base64>`.
   factory LicenseConfig.builtIn() => LicenseConfig.parse(
     server: const String.fromEnvironment('CIRRUS_LICENSE_SERVER'),
-    publicKey: const String.fromEnvironment('CIRRUS_LICENSE_PUBKEY'),
+    publicKey: const String.fromEnvironment('CIRRUS_LICENSE_PUBKEY', defaultValue: productionPublicKey),
   );
 
   static const defaultServer = 'https://cirrus.routeforge.zone';
+
+  /// The signing key of the production licence server at [defaultServer]
+  /// (`/api/v1/pubkey`). Changing it invalidates every activation.
+  static const productionPublicKey = '5LAn0sSBErnmOkjC7AwewzGzhLfpWtnlNfXx/VMCr3k=';
 
   /// Base URL, without a trailing slash.
   final String server;

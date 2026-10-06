@@ -150,6 +150,7 @@ func (a *App) routes() *http.ServeMux {
 	m.HandleFunc("GET /privacy", a.pageHandler("privacy"))
 	m.HandleFunc("GET /terms", a.pageHandler("terms"))
 	m.HandleFunc("GET /support", a.pageHandler("support"))
+	m.HandleFunc("GET /oauth/callback", a.oauthCallback)
 
 	m.HandleFunc("GET /admin", a.admin(a.adminOrders))
 	m.HandleFunc("GET /admin/licenses", a.admin(a.adminLicenses))

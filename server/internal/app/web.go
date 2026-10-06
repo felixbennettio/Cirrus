@@ -22,7 +22,7 @@ var templateFS embed.FS
 var staticFS embed.FS
 
 var pageNames = []string{
-	"index", "buy", "license", "privacy", "terms", "support", "notfound",
+	"index", "buy", "license", "privacy", "terms", "support", "notfound", "oauth",
 	"admin_orders", "admin_licenses", "admin_license",
 }
 
@@ -221,7 +221,9 @@ func (a *App) render(w http.ResponseWriter, name string, status int, p *page) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
+	if w.Header().Get("Cache-Control") == "" {
+		w.Header().Set("Cache-Control", "no-cache")
+	}
 	w.Header().Set("Vary", "Cookie")
 	w.WriteHeader(status)
 	w.Write(buf.Bytes())
@@ -235,6 +237,23 @@ func (a *App) pageHandler(name string) http.HandlerFunc {
 		}
 		a.render(w, name, http.StatusOK, p)
 	}
+}
+
+// oauthCallback is the redirect URL the iOS, Android and macOS apps register
+// with Cloudflare, which only accepts http(s) redirects. oauth.js hands the
+// authorization response (code and state, or an error) to the app through
+// io.felixbennett.cirrus:/oauth/callback. The code is useless without the
+// app's PKCE verifier; the page keeps nothing and is never cached.
+func (a *App) oauthCallback(w http.ResponseWriter, r *http.Request) {
+	h := w.Header()
+	h.Set("Cache-Control", "no-store")
+	h.Set("Referrer-Policy", "no-referrer")
+	h.Set("X-Robots-Tag", "noindex")
+	p := a.newPage(w, r)
+	// Never echo the code into the page; oauth.js carries it over on a
+	// language switch.
+	p.LangURL = r.URL.Path + "?lang=" + p.T("en", "zh")
+	a.render(w, "oauth", http.StatusOK, p)
 }
 
 func (a *App) notFound(w http.ResponseWriter, r *http.Request) {
