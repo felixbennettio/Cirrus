@@ -22,8 +22,9 @@ configuration, not in the app.
 
 `CIRRUS-XXXXX-XXXXX-XXXXX-XXXXX`: 20 random characters (100 bits) from the
 Crockford base32 alphabet `0123456789ABCDEFGHJKMNPQRSTVWXYZ`. Input is
-normalised before lookup: trim, upper-case, map `O`→`0` and `I`/`L`→`1`, and
-accept the key with or without dashes and the `CIRRUS` prefix.
+normalised before lookup: remove whitespace anywhere, upper-case, map `O`→`0`
+and `I`/`L`→`1`, and accept the key with or without dashes and the `CIRRUS`
+prefix.
 
 ## Device ids
 
@@ -68,9 +69,9 @@ Request: `{"license_key", "device_id", "device_name", "platform", "app_version"}
 | ------ | ---- |
 | 200 | `{"activation": "<token>", "license": {"product", "platform", "max_devices", "devices_used"}}` |
 | 404 | `invalid_key` |
-| 403 | `wrong_platform` (the licence is for another platform) |
+| 403 | `wrong_platform`, plus `"platform"`: the licence's platform (e.g. `"linux"`) |
 | 410 | `revoked` |
-| 409 | `activation_limit`, plus `"devices": [{"name", "activated_at"}]` |
+| 409 | `activation_limit`, plus `"devices": [{"name", "activated_at"}]` (`activated_at` in ISO 8601 UTC) |
 
 Activating a device that is already activated returns 200 with a fresh token
 and does not use another slot.
