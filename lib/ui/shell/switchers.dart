@@ -105,7 +105,7 @@ class _AccountPickerDialog extends ConsumerWidget {
               ListTile(
                 leading: Icon(p.id == active?.id ? Icons.radio_button_checked : Icons.radio_button_off),
                 title: Text(p.name),
-                subtitle: Text('${p.kind.name == 'apiToken' ? 'API Token' : 'Global API Key'} · ${p.secretHint}'),
+                subtitle: Text('${p.kindLabel} · ${p.secretHint}'),
                 onTap: () {
                   ref.read(settingsProvider.notifier).setActiveProfile(p.id);
                   Navigator.pop(context);

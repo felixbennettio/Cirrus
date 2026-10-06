@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/api/cf_client.dart';
 import '../../core/auth/credential.dart';
+import '../../core/auth/oauth.dart';
+import '../../core/auth/oauth_login.dart';
 import '../../core/auth/verify.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/session/session.dart';
@@ -29,17 +34,94 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
   late final _key = TextEditingController(text: widget.editing?.apiKey);
   late final _accountId = TextEditingController(text: widget.editing?.accountId);
   late final _originCa = TextEditingController(text: widget.editing?.originCaKey);
+  late final _clientId = TextEditingController(
+    text: widget.editing?.kind == AuthKind.oauth ? widget.editing?.oauthClientId : null,
+  );
+  late final _scopes = TextEditingController(
+    text: widget.editing?.kind == AuthKind.oauth ? widget.editing?.oauthScopes.join(' ') : null,
+  );
   bool _obscure = true;
   bool _busy = false;
+  Completer<void>? _oauthCancel;
   String? _error;
 
   @override
   void dispose() {
-    for (final c in [_name, _token, _email, _key, _accountId, _originCa]) {
+    _oauthCancel?.complete();
+    for (final c in [_name, _token, _email, _key, _accountId, _originCa, _clientId, _scopes]) {
       c.dispose();
     }
     super.dispose();
   }
+
+  /// The OAuth client to use: one entered under "Use your own OAuth client",
+  /// else the client built into this build.
+  OAuthConfig? get _oauthConfig {
+    final id = _clean(_clientId);
+    if (id != null) return OAuthConfig(clientId: id, scopes: OAuthConfig.parseScopes(_scopes.text));
+    return ref.read(oauthConfigProvider);
+  }
+
+  Future<void> _signInWithOAuth() async {
+    final config = _oauthConfig;
+    if (config == null) return;
+    final cancel = Completer<void>();
+    setState(() {
+      _busy = true;
+      _oauthCancel = cancel;
+      _error = null;
+    });
+    final sessions = ref.read(oauthSessionsProvider);
+    try {
+      final tokens = await signInWithCloudflare(config, cancel: cancel.future);
+      final previous = widget.editing?.kind == AuthKind.oauth ? widget.editing : null;
+      var profile = Profile(
+        id: previous?.id ?? Profile.newId(),
+        name: _clean(_name) ?? previous?.name ?? 'Cloudflare',
+        kind: AuthKind.oauth,
+        oauthClientId: config.clientId,
+        oauthScopes: config.scopes,
+        originCaKey: _clean(_originCa),
+        createdAt: previous?.createdAt ?? DateTime.now(),
+      );
+      // Re-authorizing replaces the old grant; revoke it once the new one works.
+      final oldGrant = previous == null ? null : await sessions.store.readTokens(previous.id);
+      final session = await sessions.adopt(profile, tokens);
+      final result = await verifyProfile(profile, client: CfClient(profile, tokens: session));
+      if (!mounted) return;
+      if (!result.ok) {
+        if (previous == null) await sessions.remove(profile);
+        if (!mounted) return;
+        setState(() => _error = result.error ?? context.tr('Verification failed', '验证失败'));
+        return;
+      }
+      final oldRefresh = oldGrant?.refreshToken;
+      if (previous != null && oldRefresh != null && oldRefresh != tokens.refreshToken) {
+        unawaited(session.api.revoke(previous.oauthClientId ?? config.clientId, oldRefresh));
+      }
+      if (result.email != null) profile = profile.copyWith(email: result.email);
+      await _save(profile, result);
+    } on OAuthException catch (e) {
+      if (mounted && e.code != 'cancelled') setState(() => _error = _oauthError(e));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _oauthCancel = null;
+        });
+      }
+    }
+  }
+
+  String _oauthError(OAuthException e) => switch (e.code) {
+    'access_denied' => context.tr('Authorization was declined.', '授权已被拒绝。'),
+    'timeout' => context.tr('No response from the browser. Try again.', '浏览器没有返回结果，请重试。'),
+    'invalid_scope' => context.tr(
+      'The OAuth client does not allow the requested scopes. ($e)',
+      'OAuth 客户端不允许请求的权限范围。（$e）',
+    ),
+    _ => context.tr('Sign-in failed: $e', '登录失败：$e'),
+  };
 
   String? _clean(TextEditingController c) {
     final v = c.text.trim();
@@ -52,6 +134,19 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
       _error = null;
     });
     final base = widget.editing;
+    if (base != null && base.kind == AuthKind.oauth) {
+      // Only the name and Origin CA key are editable; the grant stays as is.
+      final profile = base.copyWith(
+        name: _clean(_name) ?? base.name,
+        originCaKey: _clean(_originCa),
+        clearOriginCaKey: _clean(_originCa) == null,
+      );
+      await ref.read(profilesProvider.notifier).upsert(profile);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (context.canPop()) context.pop();
+      return;
+    }
     final profile = Profile(
       id: base?.id ?? Profile.newId(),
       name: _clean(_name) ?? (_kind == AuthKind.globalKey ? (_clean(_email) ?? 'Cloudflare') : 'Cloudflare'),
@@ -86,6 +181,13 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
       });
       return;
     }
+    await _save(profile, result);
+    if (mounted) setState(() => _busy = false);
+  }
+
+  /// Names [profile] after its first account (unless named), saves and
+  /// leaves the page.
+  Future<void> _save(Profile profile, VerifyResult result) async {
     var named = profile;
     if (_clean(_name) == null && result.accounts.isNotEmpty) {
       named = profile.copyWith(name: result.accounts.first['name'] as String? ?? profile.name);
@@ -93,7 +195,6 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
     await ref.read(profilesProvider.notifier).upsert(named);
     QueryCache.instance.clear();
     if (!mounted) return;
-    setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -111,9 +212,107 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
     }
   }
 
+  Widget _oauthSection(BuildContext context, ThemeData theme, bool editingOAuth) {
+    final config = _oauthConfig;
+    final hint = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          onPressed: _busy || config == null ? null : _signInWithOAuth,
+          icon: const Icon(Icons.login),
+          label: Text(
+            editingOAuth
+                ? context.tr('Sign in again', '重新登录')
+                : context.tr('Sign in with Cloudflare', '使用 Cloudflare 账户登录'),
+          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        ),
+        const SizedBox(height: 8),
+        if (_oauthCancel != null)
+          Row(
+            children: [
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(context.tr('Finish signing in in your browser…', '请在浏览器中完成授权…'), style: hint)),
+              TextButton(onPressed: () => _oauthCancel?.complete(), child: Text(context.tr('Cancel', '取消'))),
+            ],
+          )
+        else
+          Text(
+            config == null
+                ? context.tr(
+                    'This build has no built-in OAuth client. Enter your own client below, or use an API token.',
+                    '此版本没有内置 OAuth 客户端。可以在下面填写自己的 OAuth 客户端，或者使用 API Token。',
+                  )
+                : context.tr(
+                    'Opens Cloudflare in your browser: pick the account and approve the permissions. No token to copy.',
+                    '将在浏览器中打开 Cloudflare 授权页面，选择账户并同意授权即可，无需复制 Token。',
+                  ),
+            style: hint,
+          ),
+        Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text(context.tr('Use your own OAuth client', '使用自己的 OAuth 客户端'), style: theme.textTheme.bodyMedium),
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            children: [
+              TextField(
+                controller: _clientId,
+                autocorrect: false,
+                style: const TextStyle(fontFamily: 'monospace'),
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Client ID',
+                  helperMaxLines: 5,
+                  helperText: context.tr(
+                    'Create a client under Manage Account → OAuth clients (PKCE, no client secret) and register both redirect URLs: $loopbackRedirectTemplate and $appSchemeRedirect',
+                    '在「管理账户 → OAuth 客户端」中创建（PKCE，无需客户端密钥），并登记两个回调地址：$loopbackRedirectTemplate 和 $appSchemeRedirect',
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _scopes,
+                autocorrect: false,
+                style: const TextStyle(fontFamily: 'monospace'),
+                decoration: InputDecoration(
+                  labelText: context.tr('Scopes', '权限范围（Scope）'),
+                  helperMaxLines: 3,
+                  helperText: context.tr(
+                    'Space-separated scope IDs from the client, e.g. account.read zone.read',
+                    '客户端中的 Scope ID，用空格分隔，例如 account.read zone.read',
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _orDivider(BuildContext context, ThemeData theme) => Row(
+    children: [
+      const Expanded(child: Divider()),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          context.tr('or use an API token / Global API Key', '或使用 API Token / Global API Key'),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ),
+      const Expanded(child: Divider()),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final editingOAuth = widget.editing?.kind == AuthKind.oauth;
     final form = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -138,32 +337,43 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
           ),
           const SizedBox(height: 28),
         ],
-        SegmentedButton<AuthKind>(
-          segments: [
-            ButtonSegment(
-              value: AuthKind.apiToken,
-              label: const Text('API Token'),
-              icon: const Icon(Icons.vpn_key_outlined),
-            ),
-            ButtonSegment(value: AuthKind.globalKey, label: const Text('Global API Key'), icon: const Icon(Icons.key)),
-          ],
-          selected: {_kind},
-          onSelectionChanged: (s) => setState(() => _kind = s.first),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _kind == AuthKind.apiToken
-              ? context.tr(
-                  'Recommended. Create a token with the permissions you need under My Profile → API Tokens (or an account-owned token under Manage Account → API Tokens).',
-                  '推荐方式。在「我的个人资料 → API 令牌」中创建带所需权限的 Token（也可以在「管理账户 → API 令牌」中创建账户 Token）。',
-                )
-              : context.tr(
-                  'The legacy Global API Key has full access to everything your user can do. Prefer scoped API tokens when possible.',
-                  'Global API Key 拥有该用户的全部权限，请尽量使用有范围限制的 API Token。',
-                ),
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: 16),
+        if (widget.editing == null || editingOAuth) ...[
+          _oauthSection(context, theme, editingOAuth),
+          const SizedBox(height: 12),
+          if (!editingOAuth) ...[_orDivider(context, theme), const SizedBox(height: 16)],
+        ],
+        if (!editingOAuth) ...[
+          SegmentedButton<AuthKind>(
+            segments: [
+              ButtonSegment(
+                value: AuthKind.apiToken,
+                label: const Text('API Token'),
+                icon: const Icon(Icons.vpn_key_outlined),
+              ),
+              ButtonSegment(
+                value: AuthKind.globalKey,
+                label: const Text('Global API Key'),
+                icon: const Icon(Icons.key),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (s) => setState(() => _kind = s.first),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _kind == AuthKind.apiToken
+                ? context.tr(
+                    'Create a token with the permissions you need under My Profile → API Tokens (or an account-owned token under Manage Account → API Tokens).',
+                    '在「我的个人资料 → API 令牌」中创建带所需权限的 Token（也可以在「管理账户 → API 令牌」中创建账户 Token）。',
+                  )
+                : context.tr(
+                    'The legacy Global API Key has full access to everything your user can do. Prefer scoped API tokens when possible.',
+                    'Global API Key 拥有该用户的全部权限，请尽量使用有范围限制的 API Token。',
+                  ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+        ],
         TextField(
           controller: _name,
           decoration: InputDecoration(
@@ -190,7 +400,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
             ),
             onSubmitted: (_) => _submit(),
           )
-        else ...[
+        else if (_kind == AuthKind.globalKey) ...[
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
@@ -268,18 +478,20 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
           icon: _busy
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.verified_outlined),
-          label: Text(context.tr('Verify & save', '验证并保存')),
+          label: Text(editingOAuth ? context.tr('Save', '保存') : context.tr('Verify & save', '验证并保存')),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
         ),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: () => launchUrl(
-            Uri.parse('https://dash.cloudflare.com/profile/api-tokens'),
-            mode: LaunchMode.externalApplication,
+        if (!editingOAuth) ...[
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => launchUrl(
+              Uri.parse('https://dash.cloudflare.com/profile/api-tokens'),
+              mode: LaunchMode.externalApplication,
+            ),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: Text(context.tr('Create a token in the Cloudflare dashboard', '在 Cloudflare 面板中创建 Token')),
           ),
-          icon: const Icon(Icons.open_in_new, size: 18),
-          label: Text(context.tr('Create a token in the Cloudflare dashboard', '在 Cloudflare 面板中创建 Token')),
-        ),
+        ],
         const SizedBox(height: 12),
         Row(
           children: [
