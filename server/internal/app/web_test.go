@@ -272,3 +272,12 @@ func TestOAuthCallbackPage(t *testing.T) {
 		t.Errorf("oauth.js: %d", js.Code)
 	}
 }
+
+// /static/logo.png is the logo URL of the Cloudflare OAuth client.
+func TestLogoServed(t *testing.T) {
+	h := newHarness(t, harnessOpt{})
+	rec := h.get("/static/logo.png")
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/png" {
+		t.Fatalf("logo: %d %q", rec.Code, rec.Header().Get("Content-Type"))
+	}
+}
