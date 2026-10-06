@@ -6,6 +6,8 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/charts.dart';
 import '../../ui/widgets/common.dart';
+import '../pro/pro_features.dart';
+import '../pro/pro_page.dart';
 import 'analytics_api.dart';
 
 class ZoneAnalyticsPage extends ConsumerStatefulWidget {
@@ -32,7 +34,10 @@ class _ZoneAnalyticsPageState extends ConsumerState<ZoneAnalyticsPage> {
           selected: {_range},
           showSelectedIcon: false,
           style: const ButtonStyle(visualDensity: VisualDensity.compact),
-          onSelectionChanged: (s) => setState(() => _range = s.first),
+          onSelectionChanged: (s) async {
+            if (s.first == '30d' && !await requirePro(context, ref, ProFeature.longAnalytics)) return;
+            if (mounted) setState(() => _range = s.first);
+          },
         ),
       ],
       body: ZoneRequired(

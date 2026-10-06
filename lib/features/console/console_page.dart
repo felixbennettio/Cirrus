@@ -20,6 +20,8 @@ import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/files.dart';
 import '../../ui/widgets/json_view.dart';
 import '../../ui/widgets/schema_form.dart';
+import '../pro/pro_features.dart';
+import '../pro/pro_page.dart';
 
 /// Requests sent from the console during this session.
 class ConsoleHistoryEntry {
@@ -332,6 +334,8 @@ class _OperationRunnerState extends ConsumerState<OperationRunner> {
   }
 
   Future<void> _send() async {
+    if (op.isMutation && !await requirePro(context, ref, ProFeature.consoleWrites)) return;
+    if (!mounted) return;
     final missing = op.params
         .where((p) => p.required && _params['${p.location}:${p.name}']!.text.trim().isEmpty)
         .map((p) => p.name)

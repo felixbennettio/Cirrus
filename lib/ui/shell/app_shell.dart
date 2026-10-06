@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/billing/billing.dart';
 import '../../core/session/session.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/util/tr.dart';
+import '../../features/pro/pro_features.dart';
+import '../../features/pro/pro_page.dart';
 import '../widgets/common.dart';
 import 'command_palette.dart';
 import 'nav.dart';
@@ -27,15 +30,19 @@ class AppShell extends ConsumerWidget {
     final wide = isWide(context);
     final compact = ref.watch(settingsProvider.select((s) => s.compactSidebar));
     final sidebar = Sidebar(location: location, inDrawer: !wide);
+    // Pro sections show the paywall until Cirrus Pro is unlocked.
+    final hasPro = ref.watch(proProvider.select((s) => s.hasPro));
+    final locked = hasPro ? null : proFeatureFor(location);
+    final page = locked == null ? child : ProPaywallPage(feature: locked);
     final body = wide
         ? Row(
             children: [
               SizedBox(width: compact ? 248 : 288, child: sidebar),
               const VerticalDivider(width: 1),
-              Expanded(child: child),
+              Expanded(child: page),
             ],
           )
-        : child;
+        : page;
     return Shortcuts(
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.keyK, control: true): OpenPaletteIntent(),
@@ -79,6 +86,7 @@ class Sidebar extends ConsumerWidget {
     final selectedPath = _selectedPath;
     final zone = ref.watch(currentZoneProvider);
     final accountId = ref.watch(currentAccountIdProvider);
+    final hasPro = ref.watch(proProvider.select((s) => s.hasPro));
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: Column(
@@ -139,6 +147,7 @@ class Sidebar extends ConsumerWidget {
                         _NavTile(
                           item: item,
                           selected: item.path == selectedPath,
+                          pro: !hasPro && proFeatureFor(item.path) != null,
                           onTap: () {
                             if (inDrawer) Navigator.of(context).pop();
                             context.go(item.path);
@@ -155,11 +164,14 @@ class Sidebar extends ConsumerWidget {
 }
 
 class _NavTile extends StatelessWidget {
-  const _NavTile({required this.item, required this.selected, required this.onTap});
+  const _NavTile({required this.item, required this.selected, required this.onTap, this.pro = false});
 
   final NavItem item;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Shows a "PRO" badge (the page needs Cirrus Pro).
+  final bool pro;
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +200,20 @@ class _NavTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (pro)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(6)),
+                    child: Text(
+                      'PRO',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
