@@ -1,0 +1,153 @@
+# Manages the licence server and website on the Tencent Cloud host over SSH
+# (Actions → Server → Run workflow).
+#
+# inspect: read-only report of the host (OS, memory, disk, Docker, 1Panel).
+# deploy:  builds server/ into a Docker image here, copies it to the host and
+#          (re)starts it with docker compose in /opt/cirrus-license.
+#
+# Secrets: SERVER_SSH_KEY (private key), LICENSE_ADMIN_PASSWORD, and optionally
+# ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY / ALIPAY_PUBLIC_KEY and SMTP_PASS.
+# Variables (optional): SERVER_HOST, SERVER_USER, LICENSE_CONTACT_EMAIL,
+# LICENSE_OPERATOR_NAME, LICENSE_ICP_NUMBER, SMTP_HOST, SMTP_USER, SMTP_FROM.
+name: Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        options: [inspect, deploy]
+        default: inspect
+
+concurrency:
+  group: server
+
+env:
+  HOST: ${{ vars.SERVER_HOST || '203.0.113.10' }}
+  APP_DIR: /opt/cirrus-license
+
+jobs:
+  server:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Connect
+        env:
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+          USER_HINT: ${{ vars.SERVER_USER }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Add the SERVER_SSH_KEY secret (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id
+          chmod 600 ~/.ssh/id
+          ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          for u in $USER_HINT root ubuntu lighthouse; do
+            if ssh -i ~/.ssh/id -o BatchMode=yes -o ConnectTimeout=15 "$u@$HOST" true 2>/dev/null; then
+              echo "SSH_USER=$u" >> "$GITHUB_ENV"
+              echo "Connected as $u"
+              exit 0
+            fi
+          done
+          echo "::error::Could not log in to $HOST with SERVER_SSH_KEY (tried: $USER_HINT root ubuntu lighthouse). Check the key, the user, and that port 22 is open."
+          exit 1
+
+      - name: Inspect the host
+        if: inputs.action == 'inspect'
+        run: |
+          ssh -i ~/.ssh/id "$SSH_USER@$HOST" "APP_DIR=$APP_DIR bash -s" <<'EOF'
+          S=""; [ "$(id -u)" -ne 0 ] && S="sudo -n"
+          section() { echo; echo "== $1"; }
+          section system;  uname -srm; . /etc/os-release && echo "$PRETTY_NAME"; uptime
+          section cpu-mem; nproc; free -m
+          section disk;    df -h / /opt 2>/dev/null | sort -u
+          section docker;  $S docker version --format 'docker {{.Server.Version}}' 2>&1; $S docker compose version 2>&1 || $S docker-compose version 2>&1
+          section containers; $S docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' 2>&1
+          section usage;   $S docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}' 2>&1
+          section listening; $S ss -ltn 2>&1 | awk 'NR==1 || /LISTEN/' | head -40
+          section 1panel;  $S ls /opt/1panel/apps 2>&1 | head; $S ls /opt/1panel/apps/openresty/openresty/conf/conf.d 2>&1 | head -30
+          section app;     $S ls -la "$APP_DIR" 2>&1 | head
+          EOF
+
+      - name: Build the image
+        if: inputs.action == 'deploy'
+        run: |
+          ARCH=$(ssh -i ~/.ssh/id "$SSH_USER@$HOST" uname -m)
+          case "$ARCH" in
+            x86_64) PLATFORM=linux/amd64 ;;
+            aarch64) PLATFORM=linux/arm64 ;;
+            *) echo "::error::Unsupported host architecture $ARCH"; exit 1 ;;
+          esac
+          docker buildx build --platform "$PLATFORM" -t cirrus-license:latest --load server
+          docker save cirrus-license:latest | gzip > "$RUNNER_TEMP/image.tar.gz"
+          ls -lh "$RUNNER_TEMP/image.tar.gz"
+
+      - name: Configuration
+        if: inputs.action == 'deploy'
+        env:
+          ADMIN_PASSWORD: ${{ secrets.LICENSE_ADMIN_PASSWORD }}
+          CONTACT_EMAIL: ${{ vars.LICENSE_CONTACT_EMAIL }}
+          OPERATOR_NAME: ${{ vars.LICENSE_OPERATOR_NAME }}
+          ICP_NUMBER: ${{ vars.LICENSE_ICP_NUMBER }}
+          ALIPAY_APP_ID: ${{ secrets.ALIPAY_APP_ID }}
+          ALIPAY_PRIVATE_KEY: ${{ secrets.ALIPAY_PRIVATE_KEY }}
+          ALIPAY_PUBLIC_KEY: ${{ secrets.ALIPAY_PUBLIC_KEY }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_USER: ${{ vars.SMTP_USER }}
+          SMTP_FROM: ${{ vars.SMTP_FROM }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        # The .env on the host is rebuilt from repository secrets and variables on
+        # every deploy, so GitHub settings are the single place to change them.
+        run: |
+          if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "::warning::LICENSE_ADMIN_PASSWORD is not set; /admin stays disabled."
+          fi
+          python3 - > "$RUNNER_TEMP/env" <<'EOF'
+          import json, os
+          keys = ["ADMIN_PASSWORD", "CONTACT_EMAIL", "OPERATOR_NAME", "ICP_NUMBER",
+                  "ALIPAY_APP_ID", "ALIPAY_PRIVATE_KEY", "ALIPAY_PUBLIC_KEY",
+                  "SMTP_HOST", "SMTP_USER", "SMTP_FROM", "SMTP_PASS"]
+          print("PUBLIC_URL=https://cirrus.routeforge.zone")
+          for k in keys:
+              v = os.environ.get(k, "")
+              if v:
+                  # Quote so PEM keys and special characters survive docker compose.
+                  print(f"{k}={json.dumps(v)}")
+          EOF
+          chmod 600 "$RUNNER_TEMP/env"
+
+      - name: Deploy
+        if: inputs.action == 'deploy'
+        run: |
+          S=""; [ "$SSH_USER" != root ] && S="sudo -n"
+          R="ssh -i $HOME/.ssh/id $SSH_USER@$HOST"
+          DC="$S docker compose"
+          $R "$DC version" >/dev/null 2>&1 || DC="$S docker-compose"
+          $R "$S mkdir -p $APP_DIR/data && $S chown -R \$(id -u):\$(id -g) $APP_DIR"
+          scp -i ~/.ssh/id server/docker-compose.yml "$RUNNER_TEMP/image.tar.gz" "$SSH_USER@$HOST:$APP_DIR/"
+          scp -i ~/.ssh/id "$RUNNER_TEMP/env" "$SSH_USER@$HOST:$APP_DIR/.env"
+          $R "cd $APP_DIR && chmod 600 .env && gunzip -c image.tar.gz | $S docker load && rm image.tar.gz && $DC up -d --remove-orphans"
+          for i in $(seq 1 20); do
+            if $R "curl -fsS http://127.0.0.1:8790/healthz" >/dev/null 2>&1; then break; fi
+            sleep 3
+          done
+          $R "curl -fsS http://127.0.0.1:8790/healthz && echo && curl -fsS http://127.0.0.1:8790/api/v1/pubkey && echo"
+          $R "$S docker image prune -f" >/dev/null
+          {
+            echo "### Licence server deployed"
+            echo
+            echo "Public key (app build variable CIRRUS_LICENSE_PUBKEY):"
+            echo '```'
+            $R "curl -fsS http://127.0.0.1:8790/api/v1/pubkey"
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up
+        if: always()
+        run: rm -f ~/.ssh/id "$RUNNER_TEMP/env"
