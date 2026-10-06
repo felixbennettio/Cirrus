@@ -7,6 +7,10 @@ enum AuthKind {
 
   /// `X-Auth-Email` + `X-Auth-Key` — legacy Global API Key.
   globalKey,
+
+  /// `Authorization: Bearer <access token>` from Cloudflare OAuth. The
+  /// tokens live in an `OAuthSession`, not in the profile.
+  oauth,
 }
 
 /// A saved set of credentials. Everything here is stored in the platform's
@@ -21,6 +25,8 @@ class Profile {
     this.apiKey,
     this.originCaKey,
     this.accountId,
+    this.oauthClientId,
+    this.oauthScopes = const [],
     this.createdAt,
   });
 
@@ -33,6 +39,8 @@ class Profile {
     apiKey: json['apiKey'] as String?,
     originCaKey: json['originCaKey'] as String?,
     accountId: json['accountId'] as String?,
+    oauthClientId: json['oauthClientId'] as String?,
+    oauthScopes: ((json['oauthScopes'] as List?) ?? const []).map((e) => '$e').toList(),
     createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
   );
 
@@ -61,9 +69,23 @@ class Profile {
   /// `/accounts/{id}/tokens/verify`.
   final String? accountId;
 
+  /// OAuth client the session was issued to (for [AuthKind.oauth]).
+  final String? oauthClientId;
+
+  /// Scopes requested at sign-in (for [AuthKind.oauth]).
+  final List<String> oauthScopes;
+
   final DateTime? createdAt;
 
-  /// Headers that authenticate a request.
+  /// Human-readable credential type.
+  String get kindLabel => switch (kind) {
+    AuthKind.apiToken => 'API Token',
+    AuthKind.globalKey => 'Global API Key',
+    AuthKind.oauth => 'OAuth',
+  };
+
+  /// Headers that authenticate a request. OAuth profiles get their bearer
+  /// token from the client's `AccessTokenSource` instead.
   Map<String, String> authHeaders({bool originCa = false}) {
     if (originCa && (originCaKey?.isNotEmpty ?? false)) {
       return {'X-Auth-User-Service-Key': originCaKey!};
@@ -71,11 +93,13 @@ class Profile {
     return switch (kind) {
       AuthKind.apiToken => {'Authorization': 'Bearer ${token ?? ''}'},
       AuthKind.globalKey => {'X-Auth-Email': email ?? '', 'X-Auth-Key': apiKey ?? ''},
+      AuthKind.oauth => const {},
     };
   }
 
   /// A short, non-secret hint such as `abcd…wxyz` for display.
   String get secretHint {
+    if (kind == AuthKind.oauth) return email ?? 'Cloudflare';
     final s = kind == AuthKind.apiToken ? token : apiKey;
     if (s == null || s.length < 10) return '••••';
     return '${s.substring(0, 4)}…${s.substring(s.length - 4)}';
@@ -100,6 +124,8 @@ class Profile {
     apiKey: apiKey ?? this.apiKey,
     originCaKey: clearOriginCaKey ? null : (originCaKey ?? this.originCaKey),
     accountId: clearAccountId ? null : (accountId ?? this.accountId),
+    oauthClientId: oauthClientId,
+    oauthScopes: oauthScopes,
     createdAt: createdAt,
   );
 
@@ -112,6 +138,8 @@ class Profile {
     if (apiKey != null) 'apiKey': apiKey,
     if (originCaKey != null) 'originCaKey': originCaKey,
     if (accountId != null) 'accountId': accountId,
+    if (oauthClientId != null) 'oauthClientId': oauthClientId,
+    if (oauthScopes.isNotEmpty) 'oauthScopes': oauthScopes,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
   };
 }

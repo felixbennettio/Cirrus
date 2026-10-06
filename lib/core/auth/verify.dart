@@ -24,7 +24,8 @@ class VerifyResult {
 }
 
 /// Verifies a profile. API tokens use the token verify endpoints (user
-/// tokens first, then account-owned tokens); global keys use `/user`.
+/// tokens first, then account-owned tokens); global keys use `/user`; OAuth
+/// profiles must pass a [client] that carries their session.
 Future<VerifyResult> verifyProfile(Profile profile, {CfClient? client}) async {
   final c = client ?? CfClient(profile);
   try {
@@ -55,6 +56,15 @@ Future<VerifyResult> verifyProfile(Profile profile, {CfClient? client}) async {
       if (status != null && status != 'active') {
         return VerifyResult(ok: false, status: status, tokenId: tokenId, error: 'Token status: $status');
       }
+    } else if (profile.kind == AuthKind.oauth) {
+      // OAuth grants may not include user details; only an auth failure is fatal.
+      try {
+        final user = await c.get('/user') as Map?;
+        email = user?['email'] as String?;
+      } on CfApiException catch (e) {
+        if (e.isAuthError) rethrow;
+      }
+      status = 'active';
     } else {
       final user = await c.get('/user') as Map?;
       email = user?['email'] as String?;

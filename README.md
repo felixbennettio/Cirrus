@@ -70,7 +70,8 @@
 
 ### 凭据与权限
 
-- **推荐使用 API Token**：在 [My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens) 创建，按需勾选权限。如果用的是账户 Token，验证失败时可以在"高级选项"里填写账户 ID。
+- **推荐使用 Cloudflare 账户登录（OAuth）**：点击"使用 Cloudflare 账户登录"，在浏览器里选择账户并同意授权即可，不用复制任何 Token。Cirrus 采用授权码 + PKCE 方式，不内置客户端密钥；访问令牌会自动续期，移除凭据时会撤销授权。
+- **API Token**：在 [My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens) 创建，按需勾选权限。如果用的是账户 Token，验证失败时可以在"高级选项"里填写账户 ID。
 - 也支持 **Global API Key + 邮箱**，以及专门用于 `/certificates` 接口的 **Origin CA Key**。
 - 可以保存多套凭据并随时切换。凭据只保存在本机系统钥匙串中：Keychain、Android Keystore、Windows Credential Manager 或 libsecret。
 - 某个页面提示"权限不足"时，会同时列出该接口需要的 Token 权限组，这些信息来自官方 OpenAPI 规范的 `x-api-token-group` 字段。
@@ -113,12 +114,28 @@ base64 -w0 release.jks   # 把输出填进 ANDROID_KEYSTORE_BASE64
 
 如果没有配置这些 secrets，APK 会用 CI 临时生成的调试密钥签名，每次构建的签名都不同，升级前需要先卸载旧版。
 
+### 配置 OAuth 客户端
+
+"使用 Cloudflare 账户登录"需要先在 Cloudflare 创建一个 OAuth 客户端，再把客户端 ID 写进构建：
+
+1. 在 Cloudflare 面板打开 **Manage Account → OAuth clients → Create client**：
+   - Response type：`code`；Grant types：`authorization_code`、`refresh_token`
+   - Token authentication method：`none`（PKCE，无需客户端密钥）
+   - Redirect URLs 两个都要填：`http://127.0.0.1/oauth/callback`（Windows/Linux，端口任意）和 `io.felixbennett.cirrus:/oauth/callback`（iOS/Android/macOS）
+   - Scopes：勾选 Cirrus 需要的权限。可用 Scope 的 ID 可以在 Cirrus 的 API 控制台里调用 `GET /oauth/scopes` 查看
+2. 新建的客户端默认是**私有**的，只有本账户成员能授权。要给所有用户使用，需要补全 Logo 和客户端网址，通过域名 TXT 验证后改为**公开**（改为公开后不能改回私有）。
+3. 在 GitHub 仓库的 *Settings → Secrets and variables → Actions → Variables* 中添加：
+   - `CIRRUS_OAUTH_CLIENT_ID`：客户端 ID
+   - `CIRRUS_OAUTH_SCOPES`：Scope ID，用空格分隔（不需要写 `offline_access`，应用会自动加上）
+
+本地构建时，用 `--dart-define=CIRRUS_OAUTH_CLIENT_ID=... --dart-define=CIRRUS_OAUTH_SCOPES="..."` 传入。没有配置时，"使用 Cloudflare 账户登录"按钮不可用，用户也可以在"使用自己的 OAuth 客户端"中填写自己创建的私有客户端。
+
 ### 架构
 
 ```
 lib/
   core/api        Cloudflare 客户端：解析返回结构、分页、重试、GraphQL、导出 cURL、解析 multipart
-  core/auth       凭据配置与验证（API Token、Global Key、Origin CA Key）
+  core/auth       凭据配置与验证（OAuth、API Token、Global Key、Origin CA Key）
   core/catalog    由 OpenAPI 规范生成的接口目录：解析 $ref、搜索、生成请求体模板
   core/session    当前凭据、账户、域名（Riverpod）
   ui/             自适应外壳、命令面板，以及根据 schema 自动生成表单、JSON 树、代码编辑器等组件
@@ -139,5 +156,7 @@ Cirrus is a fast, native client for the Cloudflare API on **Linux, Windows, macO
 - **Native**: sidebar on desktop, drawer on phones, dark mode, English and Simplified Chinese, credentials in the system keychain, and an optional biometric app lock.
 
 **Install:** grab a build from [Releases](../../releases). Desktop and iOS builds are unsigned; see the table in the Chinese section above for per-platform notes. Android release signing uses the `ANDROID_*` repository secrets described above.
+
+**Sign-in:** "Sign in with Cloudflare" uses Cloudflare OAuth (authorization code + PKCE, no client secret): pick the account in the browser and approve; tokens refresh automatically and the grant is revoked when the credential is removed. To enable it, create an OAuth client under *Manage Account → OAuth clients* with grant types `authorization_code` + `refresh_token`, token auth method `none`, redirect URLs `http://127.0.0.1/oauth/callback` and `io.felixbennett.cirrus:/oauth/callback`, then set the repository variables `CIRRUS_OAUTH_CLIENT_ID` and `CIRRUS_OAUTH_SCOPES` (space-separated scope IDs). API tokens and the Global API Key still work.
 
 **Build:** `flutter pub get && flutter run`. Regenerate the API catalog with `dart run tool/build_catalog.dart`. Push a `v*` tag to build all platforms and publish a release.

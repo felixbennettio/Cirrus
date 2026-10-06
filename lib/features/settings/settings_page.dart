@@ -69,7 +69,9 @@ class SettingsPage extends ConsumerWidget {
                   leading: Icon(p.id == active?.id ? Icons.check_circle : Icons.person_outline),
                   title: Text(p.name),
                   subtitle: Text(
-                    '${p.kind == AuthKind.apiToken ? 'API Token' : 'Global API Key · ${p.email ?? ''}'} · ${p.secretHint}',
+                    p.kind == AuthKind.globalKey
+                        ? 'Global API Key · ${p.email ?? ''} · ${p.secretHint}'
+                        : '${p.kindLabel} · ${p.secretHint}',
                   ),
                   onTap: () => ctl.setActiveProfile(p.id),
                   trailing: PopupMenuButton<String>(
@@ -80,10 +82,15 @@ class SettingsPage extends ConsumerWidget {
                         final ok = await confirmDanger(
                           context,
                           title: context.tr('Remove credential?', '移除凭据？'),
-                          message: context.tr(
-                            '"${p.name}" will be removed from this device. The token itself is not revoked.',
-                            '“${p.name}” 将从本设备移除，Token 本身不会被吊销。',
-                          ),
+                          message: p.kind == AuthKind.oauth
+                              ? context.tr(
+                                  '"${p.name}" will be signed out and Cirrus\'s access to the account revoked.',
+                                  '“${p.name}” 将退出登录，并撤销 Cirrus 对该账户的授权。',
+                                )
+                              : context.tr(
+                                  '"${p.name}" will be removed from this device. The token itself is not revoked.',
+                                  '“${p.name}” 将从本设备移除，Token 本身不会被吊销。',
+                                ),
                           confirmLabel: context.tr('Remove', '移除'),
                         );
                         if (ok) {

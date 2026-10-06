@@ -2,6 +2,7 @@ import 'package:cirrus/app/app.dart';
 import 'package:cirrus/app/router.dart';
 import 'package:cirrus/core/api/cf_client.dart';
 import 'package:cirrus/core/auth/credential.dart';
+import 'package:cirrus/core/auth/oauth.dart';
 import 'package:cirrus/core/cache/query_cache.dart';
 import 'package:cirrus/core/auth/credential_store.dart';
 import 'package:cirrus/core/session/session.dart';
@@ -68,7 +69,12 @@ const _zone = {
   return null;
 }
 
-Future<ProviderContainer> _pumpApp(WidgetTester tester, {required List<Profile> profiles, FakeApi? api}) async {
+Future<ProviderContainer> _pumpApp(
+  WidgetTester tester, {
+  required List<Profile> profiles,
+  FakeApi? api,
+  OAuthConfig? oauth,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   tester.view.physicalSize = const Size(1400, 900);
@@ -79,6 +85,7 @@ Future<ProviderContainer> _pumpApp(WidgetTester tester, {required List<Profile> 
     overrides: [
       sharedPrefsProvider.overrideWithValue(prefs),
       credentialStoreProvider.overrideWithValue(MemoryCredentialStore(profiles)),
+      oauthConfigProvider.overrideWithValue(oauth),
       clientProvider.overrideWith((ref) {
         final p = ref.watch(activeProfileProvider);
         return p == null ? null : CfClient(p, dio: Dio()..httpClientAdapter = fake);
@@ -104,6 +111,30 @@ void main() {
     expect(find.text('Cirrus'), findsWidgets);
     expect(find.text('Verify & save'), findsOneWidget);
     expect(find.text('API Token'), findsWidgets);
+  });
+
+  testWidgets('first run offers Cloudflare sign-in when a client is built in', (tester) async {
+    await _pumpApp(
+      tester,
+      profiles: [],
+      oauth: const OAuthConfig(clientId: 'c1', scopes: ['account.read']),
+    );
+    final button = find.widgetWithText(FilledButton, 'Sign in with Cloudflare');
+    expect(button, findsOneWidget);
+    expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+    expect(find.text('or use an API token / Global API Key'), findsOneWidget);
+  });
+
+  testWidgets('without a built-in client, sign-in waits for a custom client ID', (tester) async {
+    await _pumpApp(tester, profiles: []);
+    final button = find.widgetWithText(FilledButton, 'Sign in with Cloudflare');
+    expect(tester.widget<FilledButton>(button).onPressed, isNull);
+    expect(find.textContaining('no built-in OAuth client'), findsOneWidget);
+    await tester.tap(find.text('Use your own OAuth client'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Client ID'), 'my-private-client');
+    await tester.pump();
+    expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
   });
 
   testWidgets('home lists account and zones', (tester) async {
