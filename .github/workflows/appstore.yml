@@ -107,8 +107,11 @@ jobs:
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
           echo "AUTH_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
       - name: Configure the Xcode project
+        # --no-codesign skips Flutter's local certificate check on iOS; xcodebuild
+        # signs the archive below through the API key.
         run: >
           flutter build "$PLATFORM" --config-only --release
+          $([ "$PLATFORM" = ios ] && echo --no-codesign)
           --build-name="$VERSION" --build-number="$BUILD_NUMBER"
           --dart-define-from-file=dart_defines.json
       - name: Archive
@@ -136,7 +139,7 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
-          ls -la "$RUNNER_TEMP/export"
+          ls -la "$RUNNER_TEMP/export" 2>/dev/null || true  # nothing is kept when uploading
           echo "${{ inputs.upload && 'Uploaded' || 'Signed' }} Cirrus $VERSION ($BUILD_NUMBER) for $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         if: ${{ !inputs.upload }}
