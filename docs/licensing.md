@@ -112,3 +112,9 @@ Request: `{"license_key", "email"}`. 200 `{"ok": true}`; 403
   The licence key is only included once paid and only with the order token.
 
 The purchase page links from the app as `/buy?product=cirrus-windows`.
+
+## Test vector
+
+`docs/licensing_test_vector.json` holds a test-only key pair, a machine id,
+its device id and a signed token. Both the server and the app tests check
+against it, so the two sides agree on encoding and signing.

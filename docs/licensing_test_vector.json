@@ -1,0 +1,9 @@
+{
+  "_comment": "Test-only Ed25519 key (seed bytes 00..1f). Never use it in production.",
+  "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key_base64": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+  "machine_id": "0123456789abcdef0123456789abcdef",
+  "device_id": "f0372c7a89ac3fdac8d43338ac9fa763681ff633b3e6aec1801a6254374ca350",
+  "payload": "{\"v\":1,\"lic\":\"lic_test0001\",\"product\":\"cirrus-linux\",\"platform\":\"linux\",\"device\":\"f0372c7a89ac3fdac8d43338ac9fa763681ff633b3e6aec1801a6254374ca350\",\"iat\":1767225600,\"owner\":\"q***@example.com\"}",
+  "token": "eyJ2IjoxLCJsaWMiOiJsaWNfdGVzdDAwMDEiLCJwcm9kdWN0IjoiY2lycnVzLWxpbnV4IiwicGxhdGZvcm0iOiJsaW51eCIsImRldmljZSI6ImYwMzcyYzdhODlhYzNmZGFjOGQ0MzMzOGFjOWZhNzYzNjgxZmY2MzNiM2U2YWVjMTgwMWE2MjU0Mzc0Y2EzNTAiLCJpYXQiOjE3NjcyMjU2MDAsIm93bmVyIjoicSoqKkBleGFtcGxlLmNvbSJ9.d--yiTUZ1hQK98B7Wm1PWiqwlc0wUbbWWntaISXASIKhhbJ7QsgvKLMerugrr9_Vx15PO6TA9qBlhCk_UiNXAA"
+}
