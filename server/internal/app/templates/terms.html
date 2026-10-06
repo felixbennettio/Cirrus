@@ -1,0 +1,105 @@
+{{define "title"}}{{.T "用户协议与许可条款" "Terms & EULA"}}{{end}}
+{{define "content"}}
+<article class="doc">
+{{if .EN}}
+<h1>Terms of Use and End User Licence Agreement</h1>
+<p class="muted">Effective date: {{.Site.PolicyDate}}. Operator: {{if .Site.Operator}}{{.Site.Operator}}{{else}}the developer of Cirrus{{end}}{{if .Site.Contact}} ({{.Site.Contact}}){{end}}. This English text is a translation; if it differs from the Chinese version, the Chinese version prevails.</p>
+
+<h2>1. Agreement</h2>
+<p>These terms are an agreement between you and the operator named above about the Cirrus (卷云) app and the licences sold on this website. By buying a licence or using Cirrus you accept them.</p>
+
+<h2>2. The software</h2>
+<p>Cirrus is a client for the Cloudflare API. Zone management is free. Cirrus Pro unlocks the additional features described on the home page.</p>
+
+<h2>3. Licence grant</h2>
+<p>When your payment is confirmed you receive a licence key. It grants you a personal, non-exclusive, non-transferable licence to use Cirrus Pro on the platform of the product you bought, on up to the following number of devices at the same time:</p>
+<ul>
+{{range .Products}} <li>{{.NameEN}} licence: {{.MaxDevices}} device(s)</li>
+{{end}}</ul>
+<p>The licence is a one-time purchase with no subscription. It does not expire and includes all future updates of Cirrus.</p>
+
+<h2>4. Devices and transfer</h2>
+<p>To move the licence to another device, deactivate it in the app on the old device. If that device is lost or was reinstalled, you can release all devices yourself on the <a href="/license">Licence page</a> with your key and purchase email, once every 30 days; contact support if you need more. You may not share, resell, publish or otherwise distribute your licence key.</p>
+
+<h2>5. Restrictions</h2>
+<p>You may not circumvent, disable or tamper with the licence checks, generate or distribute keys, or use Cirrus in breach of the law or of Cloudflare's terms of service.</p>
+
+<h2>6. Payment and refunds</h2>
+<p>Prices are shown in Chinese yuan (CNY) on this website. Payments by static collection code are confirmed by hand, usually within a few hours. A licence is a digital good delivered immediately, so it is generally not refundable once issued. However, if the licence cannot be used for technical reasons that support cannot solve, we refund it on request within 14 days of purchase. Duplicate payments are always refunded. Your statutory rights as a consumer are not affected.</p>
+
+<h2>7. App Store and Google Play copies</h2>
+<p>Copies of Cirrus obtained from the Apple App Store are also subject to Apple's <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" rel="noopener">Licensed Application End User License Agreement</a>. Purchases in the App Store or Google Play are made under Apple's or Google's terms, and refunds for them are handled by Apple or Google.</p>
+
+<h2>8. Unofficial client</h2>
+<p>Cirrus is an unofficial client. It is not affiliated with, endorsed or sponsored by Cloudflare, Inc. Cloudflare is a trademark of Cloudflare, Inc.</p>
+
+<h2>9. Your Cloudflare account</h2>
+<p>Cirrus acts on your Cloudflare account with the credentials you provide. You are responsible for every action taken on your account through Cirrus, such as deleting DNS records, changing security settings or deploying code; many such actions cannot be undone. Keep your credentials and devices secure and give tokens only the permissions you need.</p>
+
+<h2>10. Disclaimer of warranties</h2>
+<p>To the extent permitted by law, Cirrus is provided "as is" and "as available", without warranties of any kind, express or implied, including fitness for a particular purpose and non-infringement. We do not warrant that Cirrus is error-free or uninterrupted, or that Cloudflare's API will remain compatible with it.</p>
+
+<h2>11. Limitation of liability</h2>
+<p>To the extent permitted by law, we are not liable for indirect, incidental or consequential losses, including lost profits, data or business, arising from the use of Cirrus or of your Cloudflare account, and our total liability is limited to the amount you paid for the licence. Nothing in these terms excludes liability that cannot be excluded by law.</p>
+
+<h2>12. Revocation and termination</h2>
+<p>We may revoke a licence obtained by fraud, reversed payment or in breach of these terms. The licence ends automatically if you breach these terms.</p>
+
+<h2>13. Governing law and disputes</h2>
+<p>These terms are governed by the laws of the People's Republic of China (for this purpose excluding Hong Kong, Macao and Taiwan). Disputes are first resolved by negotiation; failing that, either party may bring them before the competent people's court at the operator's place of business.</p>
+
+<h2>14. Changes and contact</h2>
+<p>We may update these terms and will post changes on this page with a new effective date. Changes do not reduce the licence you have already bought. Questions: {{if .Site.Contact}}<a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{else}}see the <a href="/support">Support page</a>{{end}}.</p>
+{{else}}
+<h1>用户协议与许可条款</h1>
+<p class="muted">生效日期：{{.Site.PolicyDate}}。运营者：{{if .Site.Operator}}{{.Site.Operator}}{{else}}Cirrus 开发者{{end}}{{if .Site.Contact}}（{{.Site.Contact}}）{{end}}。</p>
+
+<h2>一、协议的成立</h2>
+<p>本协议是你与上述运营者之间关于卷云 Cirrus 应用及本网站所售许可证的协议。购买许可证或使用 Cirrus，即表示你同意本协议。</p>
+
+<h2>二、软件说明</h2>
+<p>Cirrus 是 Cloudflare API 的客户端。域名管理功能免费使用；Cirrus Pro 解锁首页所列的其他功能。</p>
+
+<h2>三、许可授予</h2>
+<p>付款确认后，你会获得一个许可证。我们授予你个人的、非独占的、不可转让的许可，在所购产品对应的平台上使用 Cirrus Pro，同时使用的设备数量不超过：</p>
+<ul>
+{{range .Products}} <li>{{.NameZH}}许可证：{{.MaxDevices}} 台设备</li>
+{{end}}</ul>
+<p>许可证为一次性购买，不是订阅，长期有效，并包含 Cirrus 今后的全部更新。</p>
+
+<h2>四、设备与转移</h2>
+<p>更换设备时，请先在旧设备的应用中停用许可证。旧设备丢失或已重装时，可以在<a href="/license">许可证页面</a>用许可证和购买邮箱自助释放全部设备，每 30 天一次；需要更多次数请联系客服。你不得分享、转售、公开或以其他方式传播你的许可证。</p>
+
+<h2>五、限制</h2>
+<p>你不得规避、禁用或篡改许可证校验，不得生成或传播许可证，不得违反法律或 Cloudflare 服务条款使用 Cirrus。</p>
+
+<h2>六、付款与退款</h2>
+<p>本网站价格以人民币标示。通过静态收款码付款的订单由人工确认，通常在数小时内完成。许可证属于即时交付的数字商品，签发后一般不予退款；但如果许可证因技术原因无法使用、且客服无法解决，你可以在购买之日起 14 天内申请退款。重复付款一律退还。本条不影响你依法享有的消费者权利。</p>
+
+<h2>七、App Store 与 Google Play 版本</h2>
+<p>从 Apple App Store 获得的 Cirrus 同时适用 Apple 的<a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" rel="noopener">《许可应用程序最终用户许可协议》（Licensed Application EULA）</a>。在 App Store 或 Google Play 内的购买适用 Apple 或 Google 的条款，相关退款由 Apple 或 Google 处理。</p>
+
+<h2>八、非官方客户端</h2>
+<p>Cirrus 是非官方客户端，与 Cloudflare, Inc. 没有任何关联，也未获其认可或赞助。Cloudflare 是 Cloudflare, Inc. 的商标。</p>
+
+<h2>九、你的 Cloudflare 账户</h2>
+<p>Cirrus 使用你提供的凭据操作你的 Cloudflare 账户。你需要对通过 Cirrus 在自己账户上进行的全部操作负责，例如删除 DNS 记录、修改安全设置或部署代码，其中很多操作无法撤销。请妥善保管凭据和设备，并只为 Token 授予必要的权限。</p>
+
+<h2>十、免责声明</h2>
+<p>在法律允许的范围内，Cirrus 按“现状”和“现有”提供，不附带任何明示或默示的保证，包括对特定用途适用性和不侵权的保证。我们不保证 Cirrus 没有错误或不会中断，也不保证 Cloudflare API 将始终与之兼容。</p>
+
+<h2>十一、责任限制</h2>
+<p>在法律允许的范围内，对于因使用 Cirrus 或你的 Cloudflare 账户而产生的任何间接、附带或后果性损失（包括利润、数据或业务损失），我们不承担责任；我们的全部责任以你为许可证支付的金额为限。本协议不排除依法不能排除的责任。</p>
+
+<h2>十二、吊销与终止</h2>
+<p>对于通过欺诈、撤销付款或违反本协议获得的许可证，我们可以将其吊销。你违反本协议时，许可自动终止。</p>
+
+<h2>十三、法律适用与争议解决</h2>
+<p>本协议适用中华人民共和国法律（为本协议之目的，不包括香港、澳门和台湾地区法律）。因本协议产生的争议，双方应先协商解决；协商不成的，任何一方均可向运营者所在地有管辖权的人民法院提起诉讼。</p>
+
+<h2>十四、协议变更与联系</h2>
+<p>我们可能更新本协议，并会在本页面公布新版本和生效日期。变更不会减损你已购买的许可。如有疑问，请联系 {{if .Site.Contact}}<a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{else}}<a href="/support">支持页面</a>所列的联系方式{{end}}。</p>
+<p class="muted">本协议有中英文两个版本，如有不一致，以中文版本为准。</p>
+{{end}}
+</article>
+{{end}}
