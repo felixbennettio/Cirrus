@@ -1,0 +1,23 @@
+# Deployment bundle: builds a small runtime image from the prebuilt binary
+# in bin/ (see Dockerfile.runtime). Nothing is compiled on the server.
+services:
+  cirrus-license:
+    image: cirrus-license:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.runtime
+      args:
+        ALPINE_MIRROR: ${ALPINE_MIRROR:-}
+    container_name: cirrus-license
+    ports:
+      - "127.0.0.1:8790:8080"
+    env_file: .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

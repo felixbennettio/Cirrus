@@ -1,0 +1,49 @@
+{{define "title"}}{{.T "许可证自助服务" "Licence self-service"}}{{end}}
+{{define "content"}}
+<h1>{{.T "许可证自助服务" "Licence self-service"}}</h1>
+<noscript><p class="error">{{.T "本页面需要启用 JavaScript。" "This page needs JavaScript."}}</p></noscript>
+
+<section class="panel">
+ <h2>{{.T "重置设备" "Reset devices"}}</h2>
+ <p>{{.T "电脑丢失、重装系统或更换设备，无法在旧设备上停用时，可以在这里释放这个许可证的全部设备，然后在新设备上重新激活。为防止滥用，每个许可证每 30 天可以自助重置一次。" "If a device was lost or reinstalled and you cannot deactivate it there, release all devices of the licence here, then activate on the new device. To prevent abuse, each licence can be reset once every 30 days."}}</p>
+ <form id="reset-form">
+  <label class="field"><span>{{.T "许可证" "Licence key"}}</span><input name="license_key" required autocomplete="off" spellcheck="false" placeholder="CIRRUS-XXXXX-XXXXX-XXXXX-XXXXX"></label>
+  <label class="field"><span>{{.T "购买时填写的邮箱" "Email used to buy"}}</span><input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+  <button class="btn primary" type="submit">{{.T "释放全部设备" "Release all devices"}}</button>
+  <p class="result" id="reset-result" hidden></p>
+ </form>
+</section>
+
+<section class="panel">
+ <h2>{{.T "查询订单" "Look up an order"}}</h2>
+ <p>{{.T "使用下单时显示的订单号和查询凭证，查看付款状态和许可证。" "Use the order number and token shown when you ordered to see the status and your key."}}</p>
+ <form id="lookup-form">
+  <label class="field"><span>{{.T "订单号" "Order number"}}</span><input name="order_no" required autocomplete="off" spellcheck="false" placeholder="C261006123456"></label>
+  <label class="field"><span>{{.T "查询凭证" "Token"}}</span><input name="token" required autocomplete="off" spellcheck="false"></label>
+  <button class="btn" type="submit">{{.T "查询" "Look up"}}</button>
+  <div class="result" id="lookup-result" hidden>
+   <p id="lookup-status"></p>
+   <p class="key" id="lookup-keyline" hidden><code id="lookup-key"></code> <button type="button" class="copy" data-copy="lookup-key">{{.T "复制" "Copy"}}</button></p>
+  </div>
+ </form>
+</section>
+
+{{if .Site.SMTP}}
+<section class="panel">
+ <h2>{{.T "找回许可证" "Lost your key?"}}</h2>
+ <p>{{.T "把用这个邮箱购买的全部许可证重新发送到该邮箱。" "We will email every licence key bought with this address to it."}}</p>
+ <form id="resend-form">
+  <label class="field"><span>{{.T "邮箱" "Email"}}</span><input type="email" name="email" required maxlength="254" autocomplete="email"></label>
+  <button class="btn" type="submit">{{.T "发送到我的邮箱" "Email my keys"}}</button>
+  <p class="result" id="resend-result" hidden></p>
+ </form>
+</section>
+{{else}}
+<section class="panel">
+ <h2>{{.T "找回许可证" "Lost your key?"}}</h2>
+ <p>{{.T "请联系客服并提供购买邮箱和订单号。" "Contact support with the email address and order number you used."}}{{if .Site.Contact}} <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{end}}</p>
+</section>
+{{end}}
+<script type="application/json" id="i18n">{{.I18N}}</script>
+{{end}}
+{{define "scripts"}}<script src="{{asset "site.js"}}"></script><script src="{{asset "license.js"}}"></script>{{end}}

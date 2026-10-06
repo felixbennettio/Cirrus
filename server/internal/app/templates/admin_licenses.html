@@ -1,0 +1,44 @@
+{{define "title"}}许可证{{end}}
+{{define "content"}}
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+<h1>许可证</h1>
+<form class="search" method="get" action="/admin/licenses">
+ <input name="q" value="{{.Data.Q}}" placeholder="许可证（可部分）、邮箱、订单号或 lic_ ID" autofocus>
+ <button class="btn">搜索</button>
+</form>
+<div class="table">
+<table>
+ <thead><tr><th>许可证</th><th>产品</th><th>邮箱</th><th>设备</th><th>状态</th><th>创建时间</th><th>备注</th></tr></thead>
+ <tbody>
+ {{range .Data.Licenses}}
+  <tr>
+   <td><a href="/admin/licenses/{{.ID}}"><code>{{.Key}}</code></a></td>
+   <td>{{product .Product}}</td>
+   <td>{{.Email}}</td>
+   <td>{{.DevicesUsed}} / {{.MaxDevices}}</td>
+   <td>{{if .Revoked}}<span class="bad">已吊销</span>{{else}}有效{{end}}</td>
+   <td>{{time .CreatedAt}}</td>
+   <td>{{short .Note 40}}</td>
+  </tr>
+ {{else}}
+  <tr><td colspan="7" class="muted">没有找到许可证</td></tr>
+ {{end}}
+ </tbody>
+</table>
+</div>
+
+<section class="panel">
+ <h2>手动签发许可证</h2>
+ <p class="muted">用于赠送、补发或线下收款。签发不会创建订单。</p>
+ <form method="post" action="/admin/issue" class="issue">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label class="field"><span>产品</span>
+   <select name="product">{{range .Products}}<option value="{{.ID}}">{{.NameZH}}（{{.MaxDevices}} 台设备）</option>{{end}}</select>
+  </label>
+  <label class="field"><span>邮箱（自助重置和找回需要）</span><input type="email" name="email" maxlength="254"></label>
+  <label class="field"><span>备注</span><input name="note" maxlength="500"></label>
+  {{if .Site.SMTP}}<label class="agree"><input type="checkbox" name="send" value="1" checked> <span>把许可证发送到该邮箱</span></label>{{end}}
+  <button class="btn primary">签发</button>
+ </form>
+</section>
+{{end}}
