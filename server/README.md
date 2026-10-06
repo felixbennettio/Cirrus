@@ -1,0 +1,168 @@
+# 卷云 Cirrus 许可证服务器与销售网站
+
+为 Windows、Linux 和直接下载安装的 Android 版 Cirrus 出售并校验 Pro 许可证。App Store 和 Google Play 版本仍使用应用内购买，与本服务无关。
+
+与 App 之间的约定（产品、许可证格式、设备标识、激活令牌、全部 API）见仓库根目录的 [`docs/licensing.md`](../docs/licensing.md)，两边必须一起修改。
+
+**部署请直接看 [DEPLOY.md](DEPLOY.md)**：那是给有 SSH 权限的人或 AI 助手逐步执行的部署手册。
+
+## 架构
+
+```
+浏览器 / Cirrus App
+        │ HTTPS
+        ▼
+1Panel OpenResty（cirrus.routeforge.zone，证书、HTTP→HTTPS）
+        │ http://127.0.0.1:8790
+        ▼
+cirrus-license 容器（:8080，非 root，内存上限 128 MB）
+  ├─ 网站：/  /buy  /license  /privacy  /terms  /support（中英双语，无外部 CDN）
+  ├─ API：/api/v1/…（激活、校验、停用、重置、订单）
+  ├─ 管理后台：/admin（HTTP Basic）
+  └─ 支付宝异步通知：/pay/alipay/notify
+        │
+        ▼
+./data（挂载到 /data）
+  ├─ signing.key   Ed25519 签名私钥（务必备份）
+  ├─ cirrus.db     SQLite（WAL）：licenses、activations、orders、events
+  ├─ pay/alipay.png、pay/wechat.png   静态收款码
+  └─ backups/      cirrus-license backup 生成的数据库备份
+```
+
+- 单个 Go 静态二进制（约 13 MB），纯 Go SQLite，无 CGO；运行时内存约 20 MB。
+- 网站的 CSS、JS、图标全部内置，字体使用系统字体，不加载任何外部资源。
+- 每个 POST 接口按 IP 限流（令牌桶，内存有上限，空闲自动清理），`/reset`、`/orders`、`/resend` 更严格；IP 取自反向代理的 `X-Real-IP` / `X-Forwarded-For`。
+
+### 收款方式
+
+| 方式 | 说明 | 确认收款 |
+| --- | --- | --- |
+| 静态收款码（默认） | 页面显示你的支付宝/微信收款码、准确金额和订单号，买家付款时在备注里填订单号 | 你在 `/admin` 点“确认收款”，立即签发许可证 |
+| 支付宝电脑网站支付（`ALIPAY_MODE=page`） | 跳转到支付宝收银台；手机浏览器自动使用手机网站支付（`alipay.trade.wap.pay`） | 支付宝异步通知，自动签发 |
+| 支付宝当面付（`ALIPAY_MODE=precreate`） | 页面显示动态付款二维码 | 支付宝异步通知，自动签发 |
+
+微信支付 API 暂未接入（代码里留有 `pay.Provider` 接口）。启用支付宝 API 后，如果调用失败且存在 `data/pay/alipay.png`，会自动退回静态收款码。
+
+订单有效期：静态收款码 24 小时，支付宝 API 2 小时。过期后买家页面显示“已过期”；如果确实收到了款，仍然可以在后台确认。
+
+## 配置
+
+全部通过环境变量（`.env` 文件）配置，示例和说明见 [`.env.example`](.env.example)。
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `LISTEN` | `:8080` | 监听地址。Docker 部署时不要改 |
+| `DATA_DIR` | `/data` | 数据目录。Docker 部署时不要改 |
+| `PUBLIC_URL` | `https://cirrus.routeforge.zone` | 对外网址，用于支付宝通知地址、邮件链接、后台同源检查 |
+| `TRUST_PROXY` | `true` | 采信 `X-Real-IP` / `X-Forwarded-For`（仅当直接连接来自本机或内网地址） |
+| `ADMIN_PASSWORD` | 空 | `/admin` 密码，用户名 `admin`；为空则关闭后台 |
+| `SITE_NAME` | `卷云 Cirrus` | 网站名称 |
+| `OPERATOR_NAME` | 空 | 运营者（个体户名称），显示在页脚和法律文本中 |
+| `CONTACT_EMAIL` | 空 | 客服邮箱 |
+| `ICP_NUMBER` | 空 | ICP 备案号，显示在每页页脚并链接到 beian.miit.gov.cn |
+| `POLICY_EFFECTIVE_DATE` | `2026-10-06` | 隐私政策和用户协议的生效日期 |
+| `DOWNLOAD_URL` | 空 | 可选，首页“下载”按钮 |
+| `APP_STORE_URL` | 空 | 可选，首页 App Store 链接 |
+| `PRICE_CNY` | `198` | 默认人民币价格 |
+| `PRICE_USD` | `39.99` | 美元参考价（仅显示） |
+| `PRICE_CNY_WINDOWS` / `_LINUX` / `_ANDROID` | 同 `PRICE_CNY` | 按产品覆盖价格 |
+| `PRICE_USD_WINDOWS` / `_LINUX` / `_ANDROID` | 同 `PRICE_USD` | 按产品覆盖美元参考价 |
+| `MAX_DEVICES_WINDOWS` / `_LINUX` / `_ANDROID` | `1` / `1` / `3` | 每个许可证的设备数，只影响之后签发的许可证 |
+| `PAY_METHODS` | `alipay,wechat` | 购买页提供的付款方式 |
+| `ALIPAY_APP_ID` | 空 | 支付宝开放平台 APPID |
+| `ALIPAY_PRIVATE_KEY` | 空 | **应用私钥** |
+| `ALIPAY_PUBLIC_KEY` | 空 | **支付宝公钥**（不是应用公钥） |
+| `ALIPAY_MODE` | `precreate` | `page` = 电脑网站支付，`precreate` = 当面付 |
+| `ALIPAY_GATEWAY` | `https://openapi.alipay.com/gateway.do` | 沙箱：`https://openapi-sandbox.dl.alipaydev.com/gateway.do` |
+| `SMTP_HOST` | 空 | 填写后启用邮件 |
+| `SMTP_PORT` | `465` | 465 = SSL（隐式 TLS）；其他端口用 STARTTLS。腾讯云封禁 25 端口 |
+| `SMTP_USER` / `SMTP_PASS` | 空 | SMTP 账号密码 |
+| `SMTP_FROM` | 同 `SMTP_USER` | 发件人，如 `卷云 Cirrus <noreply@routeforge.zone>` |
+
+构建参数（由 docker compose 读取，不传给程序）：`ALPINE_MIRROR`（如 `mirrors.tencent.com`），`GOPROXY`（仅源码构建，国内用 `https://goproxy.cn,direct`）。镜像内固定 `TZ=Asia/Shanghai`、`GOMEMLIMIT=96MiB`。
+
+### 支付宝的三个密钥值不要填错
+
+- `ALIPAY_PRIVATE_KEY` = **应用私钥**：用“支付宝开放平台密钥工具”生成，只保存在服务器上。
+- `ALIPAY_PUBLIC_KEY` = **支付宝公钥**：把“应用公钥”上传到开放平台后，平台显示的“支付宝公钥”。**不是应用公钥。**
+- 只支持“公钥模式”加签（不是“证书模式”），RSA2。
+- 两个值都可以直接粘贴密钥工具导出的一整行 base64（不带 `-----BEGIN` 头），也可以是 PEM（多行时用字面量 `\n` 连成一行）。
+
+应该开通哪个产品：网站销售对应的正规产品是 **电脑网站支付**（再加开手机网站支付，手机用户体验更好）；**当面付** 通常更容易审核通过，可以作为备选。两者使用同一个异步通知地址 `https://cirrus.routeforge.zone/pay/alipay/notify`（每次下单时自动传给支付宝，无需在后台配置）。开通步骤见 DEPLOY.md 第 12 节。
+
+## 收款码图片
+
+把收款码保存为 PNG，放到：
+
+- `data/pay/alipay.png`：支付宝收款码
+- `data/pay/wechat.png`：微信收款码
+
+无需重启。缺少图片的方式在购买页显示为“暂不可用”。请确认收款码付款时可以填写备注。
+
+## 管理后台
+
+打开 `https://cirrus.routeforge.zone/admin`，用户名 `admin`，密码为 `ADMIN_PASSWORD`。
+
+- **订单**：待付款订单排在最前。核对手机上的收款记录（金额和备注里的订单号）后点“确认收款”，系统签发许可证，配置了邮件时同时发给买家；也可以取消订单。
+- **许可证**：按许可证（可只输入一部分）、邮箱、订单号搜索；查看设备、事件记录；吊销/恢复、释放全部设备、移除单台设备、重新发送邮件、备注。
+- **手动签发**：选择产品、填写邮箱和备注即可签发，用于赠送或补发。
+
+后台的每个 POST 都有 CSRF 保护（同源检查 + Cookie 令牌）。连续输错密码 10 次后，该 IP 会被暂时拒绝。
+
+## 签名密钥：务必备份
+
+首次启动时程序会生成 `data/signing.key`（Ed25519 种子，hex，权限 0600），并在日志中打印公钥。公钥同时可以通过 `/api/v1/pubkey` 或 `cirrus-license pubkey` 获得，需要写进 App 构建（`CIRRUS_LICENSE_PUBKEY`）。
+
+**一定要把 `data/signing.key` 备份到服务器以外的安全位置。** 丢失后，服务器会生成新的密钥，已经发布的 App 无法验证新签发的激活令牌，所有用户都无法激活，只能发布内置新公钥的 App 版本。程序永远不会覆盖已存在的密钥文件；文件损坏时会拒绝启动。
+
+## 备份
+
+- `data/signing.key`：只需备份一次（不会变）。
+- 数据库：可以在服务运行时执行
+  `docker compose exec -T cirrus-license cirrus-license backup`
+  生成 `data/backups/cirrus-时间.db`（一致性快照，基于 SQLite `VACUUM INTO`）。建议每天执行并复制到服务器以外，见 DEPLOY.md 第 9 节。
+- `.env`：包含密码和密钥，单独妥善保存。
+
+恢复：停止服务，把备份文件复制为 `data/cirrus.db`（同时删除 `cirrus.db-wal` 和 `cirrus.db-shm`），`chown 10001:10001`，再启动。
+
+## 升级
+
+用新的部署包替换 `bin/` 等文件（保留 `.env` 和 `data/`），然后 `docker compose up -d --build`。数据库结构会自动迁移。升级前先备份数据库；详细步骤和回滚见 DEPLOY.md 第 10 节。
+
+## API 概览
+
+完整约定见 `docs/licensing.md`。
+
+| 方法与路径 | 说明 |
+| --- | --- |
+| `POST /api/v1/activate` | 激活 |
+| `POST /api/v1/deactivate` | 停用 |
+| `POST /api/v1/validate` | 校验（`active` / `not_activated` / `revoked`） |
+| `POST /api/v1/reset` | 自助释放全部设备（邮箱验证，30 天一次） |
+| `GET /api/v1/pubkey` | Ed25519 公钥 |
+| `POST /api/v1/orders` | 创建订单 |
+| `GET /api/v1/orders/{order_no}?token=` | 查询订单 |
+| `GET /api/v1/orders/{order_no}/qr.png?token=` | 当面付动态二维码图片 |
+| `POST /api/v1/resend` | 把该邮箱的全部许可证重新发到邮箱（需 SMTP；无论邮箱是否存在都返回相同结果） |
+| `POST /pay/alipay/notify` | 支付宝异步通知（表单，验签后返回 `success`） |
+| `GET /healthz` | 健康检查 |
+
+## 开发
+
+```bash
+cd server
+go test ./...                 # 单元测试与 HTTP 测试（含测试向量、支付宝签名、管理后台）
+go vet ./...
+./build-bundle.sh             # 交叉编译 amd64/arm64 静态二进制并打包到 dist/
+```
+
+本地运行：
+
+```bash
+DATA_DIR=./data LISTEN=127.0.0.1:8080 PUBLIC_URL=http://127.0.0.1:8080 ADMIN_PASSWORD=dev go run ./cmd/cirrus-license
+./deploy/smoke-test.sh http://127.0.0.1:8080 dev   # 需要 data/pay/alipay.png
+```
+
+源码构建镜像：`docker compose up -d --build`（使用多阶段 `Dockerfile`；国内可在 `.env` 中设置 `GOPROXY=https://goproxy.cn,direct`）。
+
+目录：`cmd/cirrus-license`（入口）、`internal/license`（许可证格式与令牌）、`internal/store`（SQLite）、`internal/pay`（收款）、`internal/app`（HTTP、网站、后台）、`internal/ratelimit`、`internal/mailer`、`internal/config`、`deploy/`（部署包文件）。

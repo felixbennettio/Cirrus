@@ -1,0 +1,60 @@
+{{define "title"}}订单{{end}}
+{{define "content"}}
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{with .Data.Stats}}
+<div class="stats">
+ <div><strong>{{.PendingOrders}}</strong><span>待付款订单</span></div>
+ <div><strong>{{.PaidOrders}}</strong><span>已付款订单</span></div>
+ <div><strong>¥{{money .RevenueCents}}</strong><span>收入</span></div>
+ <div><strong>{{.Licenses}}</strong><span>许可证</span></div>
+ <div><strong>{{.Activations}}</strong><span>已激活设备</span></div>
+</div>
+{{end}}
+<h1>订单</h1>
+<p class="filters">
+ <a class="{{if eq .Data.Status ""}}active{{end}}" href="/admin">全部</a>
+ <a class="{{if eq .Data.Status "pending"}}active{{end}}" href="/admin?status=pending">待付款</a>
+ <a class="{{if eq .Data.Status "paid"}}active{{end}}" href="/admin?status=paid">已付款</a>
+ <a class="{{if eq .Data.Status "expired"}}active{{end}}" href="/admin?status=expired">已过期</a>
+ <a class="{{if eq .Data.Status "cancelled"}}active{{end}}" href="/admin?status=cancelled">已取消</a>
+</p>
+<p class="muted">核对收款时，以付款备注中的订单号和金额为准。确认后会立即签发许可证{{if .Site.SMTP}}并发送邮件{{end}}。已过期的订单如果确实收到了款，也可以确认。</p>
+<div class="table">
+<table>
+ <thead><tr><th>订单号</th><th>创建时间</th><th>产品</th><th>金额</th><th>方式</th><th>邮箱</th><th>状态</th><th>操作</th></tr></thead>
+ <tbody>
+ {{range .Data.Orders}}
+  <tr class="st-{{.Effective}}">
+   <td><code>{{.No}}</code></td>
+   <td>{{time .CreatedAt}}</td>
+   <td>{{product .Product}}</td>
+   <td>¥{{money .AmountCents}}</td>
+   <td>{{if eq .Method "wechat"}}微信{{else}}支付宝{{end}}{{if ne .Provider "manual"}} <span class="muted">{{.Provider}}</span>{{end}}</td>
+   <td>{{.Email}}</td>
+   <td>{{if eq .Effective "pending"}}待付款{{else if eq .Effective "paid"}}已付款 {{time .PaidAt}}{{else if eq .Effective "expired"}}已过期{{else}}已取消{{end}}{{if .PayRef}}<br><span class="muted">{{short .PayRef 40}}</span>{{end}}</td>
+   <td class="actions">
+   {{if eq .Status "paid"}}
+    <a href="/admin/licenses/{{.LicenseID}}">查看许可证</a>
+   {{else}}
+    <form method="post" action="/admin/orders/{{.No}}/confirm" data-confirm="确认已收到订单 {{.No}} 的 ¥{{money .AmountCents}} 付款，并签发许可证？">
+     <input type="hidden" name="csrf" value="{{$.CSRF}}">
+     <input name="pay_ref" placeholder="付款备注/流水号（可选）" maxlength="100">
+     <button class="btn small primary">确认收款</button>
+    </form>
+    {{if ne .Status "cancelled"}}
+    <form method="post" action="/admin/orders/{{.No}}/cancel" data-confirm="取消订单 {{.No}}？">
+     <input type="hidden" name="csrf" value="{{$.CSRF}}">
+     <button class="btn small">取消</button>
+    </form>
+    {{end}}
+   {{end}}
+   </td>
+  </tr>
+ {{else}}
+  <tr><td colspan="8" class="muted">没有订单</td></tr>
+ {{end}}
+ </tbody>
+</table>
+</div>
+{{end}}
+{{define "scripts"}}<script src="{{asset "admin.js"}}"></script>{{end}}

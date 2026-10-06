@@ -1,0 +1,28 @@
+# Optional: run the static binary with systemd instead of Docker.
+# See DEPLOY.md, appendix B. Install to /etc/systemd/system/.
+[Unit]
+Description=Cirrus licence server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cirrus
+Group=cirrus
+WorkingDirectory=/opt/cirrus-license
+EnvironmentFile=/opt/cirrus-license/.env
+Environment=DATA_DIR=/opt/cirrus-license/data
+Environment=LISTEN=127.0.0.1:8790
+Environment=TZ=Asia/Shanghai
+Environment=GOMEMLIMIT=96MiB
+ExecStart=/opt/cirrus-license/cirrus-license
+Restart=on-failure
+RestartSec=3
+MemoryMax=128M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/cirrus-license/data
+
+[Install]
+WantedBy=multi-user.target
