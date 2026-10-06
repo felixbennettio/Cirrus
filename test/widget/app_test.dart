@@ -6,6 +6,7 @@ import 'package:cirrus/core/auth/oauth.dart';
 import 'package:cirrus/core/billing/billing.dart';
 import 'package:cirrus/core/cache/query_cache.dart';
 import 'package:cirrus/core/auth/credential_store.dart';
+import 'package:cirrus/core/licensing/license_controller.dart';
 import 'package:cirrus/core/session/session.dart';
 import 'package:cirrus/core/settings/app_settings.dart';
 import 'package:dio/dio.dart';
@@ -16,6 +17,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/fake_api.dart';
+import '../support/fake_license.dart';
 import '../support/fake_store.dart';
 
 class MemoryCredentialStore extends CredentialStore {
@@ -78,8 +80,10 @@ Future<ProviderContainer> _pumpApp(
   FakeApi? api,
   OAuthConfig? oauth,
   FakeStore? store,
+  FakeLicenseServer? license,
 }) async {
   SharedPreferences.setMockInitialValues({});
+  if (license != null) mockAppVersion();
   final prefs = await SharedPreferences.getInstance();
   tester.view.physicalSize = const Size(1400, 900);
   tester.view.devicePixelRatio = 1;
@@ -94,6 +98,7 @@ Future<ProviderContainer> _pumpApp(
         storeChannelProvider.overrideWithValue(StoreChannel.appStore),
         storeGatewayProvider.overrideWithValue(store),
       ],
+      if (license != null) ...licenseOverrides(license, store: MemoryLicenseStore()),
       clientProvider.overrideWith((ref) {
         final p = ref.watch(activeProfileProvider);
         return p == null ? null : CfClient(p, dio: Dio()..httpClientAdapter = fake);
@@ -107,6 +112,12 @@ Future<ProviderContainer> _pumpApp(
     await tester.pump(const Duration(milliseconds: 50));
   }
   return container;
+}
+
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 const _profile = Profile(id: 'p1', name: 'Demo', kind: AuthKind.apiToken, token: 'tok_1234567890abcdef');
@@ -172,6 +183,53 @@ void main() {
     }
     expect(find.text('Cirrus Pro'), findsNothing);
     expect(find.text('PRO'), findsNothing);
+  });
+
+  testWidgets('licence builds unlock Pro with a key bought on the website', (tester) async {
+    final server = FakeLicenseServer()..licences[linuxKey] = FakeLicence(platform: 'linux');
+    final container = await _pumpApp(tester, profiles: [_profile], license: server);
+    container.read(routerProvider).go('/workers');
+    await _settle(tester);
+    expect(find.text('Cirrus Pro'), findsOneWidget);
+    expect(find.text('Buy a licence'), findsOneWidget);
+    expect(find.text('Restore purchase'), findsNothing);
+    // Pasted as it might come from an email.
+    await tester.enterText(find.widgetWithText(TextField, 'Licence key'), ' cirrus-7k3qd-m2xrt-9vb4n-hj6wp ');
+    await tester.tap(find.text('Activate'));
+    await _settle(tester);
+    expect(server.licences[linuxKey]!.devices, hasLength(1));
+    expect(container.read(licenseProvider).isActive, isTrue);
+    // The Pro page itself is shown now.
+    expect(find.text('Cirrus Pro'), findsNothing);
+    expect(find.text('PRO'), findsNothing);
+    // Settings shows the activation and releases it.
+    container.read(routerProvider).go('/settings');
+    await _settle(tester);
+    expect(find.text('Activated on this device. Thank you!'), findsOneWidget);
+    expect(find.text('CIRRUS-XXXXX-…-HJ6WP'), findsOneWidget);
+    expect(find.text('q***@example.com'), findsOneWidget);
+    await tester.tap(find.text('Deactivate on this device'));
+    await _settle(tester);
+    await tester.tap(find.text('Deactivate'));
+    await _settle(tester);
+    expect(server.licences[linuxKey]!.devices, isEmpty);
+    expect(find.text('Not activated'), findsOneWidget);
+    expect(find.text('PRO'), findsWidgets);
+  });
+
+  testWidgets('the licence paywall lists the devices using up the licence', (tester) async {
+    final server = FakeLicenseServer()
+      ..licences[linuxKey] = (FakeLicence(platform: 'linux')..devices['elsewhere'] = "Felix's ThinkPad");
+    final container = await _pumpApp(tester, profiles: [_profile], license: server);
+    container.read(routerProvider).go('/workers');
+    await _settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Licence key'), linuxKey);
+    await tester.tap(find.text('Activate'));
+    await _settle(tester);
+    expect(find.textContaining('already active on as many devices'), findsOneWidget);
+    expect(find.text("Felix's ThinkPad"), findsOneWidget);
+    expect(find.text('Lost or reinstalled a device? Reset it on the website'), findsOneWidget);
+    expect(container.read(proProvider).hasPro, isFalse);
   });
 
   testWidgets('home lists account and zones', (tester) async {
