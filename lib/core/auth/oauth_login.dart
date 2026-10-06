@@ -6,9 +6,17 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'oauth.dart';
 
-/// Custom scheme used on iOS, Android and macOS (RFC 8252 §7.1). It must be
-/// registered as a redirect URL on the OAuth client, together with
+/// Redirect URL sent from iOS, Android and macOS. Cloudflare only accepts
+/// http(s) redirect URLs, so the authorization response lands on this page of
+/// the Cirrus website (`server/`, `/oauth/callback`), which passes it on to
+/// the app as [appSchemeRedirect]. PKCE keeps the code useless to anyone
+/// without this app's verifier. Register it on the OAuth client together with
 /// [loopbackRedirectTemplate].
+final webRedirect = Uri.parse(
+  const String.fromEnvironment('CIRRUS_OAUTH_REDIRECT', defaultValue: 'https://cirrus.routeforge.zone/oauth/callback'),
+);
+
+/// Custom scheme the website's callback page opens (RFC 8252 §7.1).
 const oauthAppScheme = 'io.felixbennett.cirrus';
 final appSchemeRedirect = Uri.parse('$oauthAppScheme:/oauth/callback');
 
@@ -67,28 +75,34 @@ class LoopbackReceiver implements OAuthRedirectReceiver {
   }
 }
 
-/// Waits for the `io.felixbennett.cirrus:/oauth/callback` deep link.
+/// Sends [redirect] (the website's callback page) and waits for the
+/// `io.felixbennett.cirrus:/oauth/callback` deep link it opens. The same
+/// https URL opening the app directly (a universal / app link) also counts.
 class AppLinkReceiver implements OAuthRedirectReceiver {
-  AppLinkReceiver({this.links});
+  AppLinkReceiver({this.links, Uri? redirect}) : redirect = redirect ?? webRedirect;
 
   /// Overrides the platform link stream (tests).
   final Stream<Uri>? links;
+
+  /// The redirect URL registered on the OAuth client.
+  final Uri redirect;
   StreamSubscription<Uri>? _sub;
   final _result = Completer<Uri>();
+
+  bool _isCallback(Uri uri) =>
+      (uri.scheme == appSchemeRedirect.scheme && uri.path == appSchemeRedirect.path) ||
+      (uri.scheme == redirect.scheme && uri.host == redirect.host && uri.path == redirect.path);
 
   @override
   Future<Uri> start({required String state}) async {
     _sub = (links ?? AppLinks().uriLinkStream).listen((uri) {
       // The stream replays the link that launched the app, which may be the
       // callback of an earlier, abandoned sign-in: only accept this request's.
-      if (uri.scheme == appSchemeRedirect.scheme &&
-          uri.path == appSchemeRedirect.path &&
-          uri.queryParameters['state'] == state &&
-          !_result.isCompleted) {
+      if (_isCallback(uri) && uri.queryParameters['state'] == state && !_result.isCompleted) {
         _result.complete(uri);
       }
     });
-    return appSchemeRedirect;
+    return redirect;
   }
 
   @override

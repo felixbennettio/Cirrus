@@ -121,7 +121,7 @@ base64 -w0 release.jks   # 把输出填进 ANDROID_KEYSTORE_BASE64
 1. 在 Cloudflare 面板打开 **Manage Account → OAuth clients → Create client**：
    - Response type：`code`；Grant types：`authorization_code`、`refresh_token`
    - Token authentication method：`none`（PKCE，无需客户端密钥）
-   - Redirect URLs 两个都要填：`http://127.0.0.1/oauth/callback`（Windows/Linux，端口任意）和 `io.felixbennett.cirrus:/oauth/callback`（iOS/Android/macOS）
+   - Redirect URLs 两个都要填：`http://127.0.0.1/oauth/callback`（Windows/Linux，端口任意）和 `https://cirrus.routeforge.zone/oauth/callback`（iOS/Android/macOS：Cloudflare 只接受 http(s) 回调，这个网页再把授权结果交回 App）
    - Scopes：勾选 Cirrus 需要的权限。可用 Scope 的 ID 可以在 Cirrus 的 API 控制台里调用 `GET /oauth/scopes` 查看
 2. 新建的客户端默认是**私有**的，只有本账户成员能授权。要给所有用户使用，需要补全 Logo 和客户端网址，通过域名 TXT 验证后改为**公开**（改为公开后不能改回私有）。
 3. 在 GitHub 仓库的 *Settings → Secrets and variables → Actions → Variables* 中添加：
@@ -154,7 +154,7 @@ base64 -w0 release.jks   # 把输出填进 ANDROID_KEYSTORE_BASE64
 
 - **实现**：使用 `in_app_purchase`（iOS/macOS 上是 StoreKit 2，Android 上是 Play Billing）。应用启动时会静默恢复已购项目，购买完成后在本机记住，离线也能用。设置页和付费墙都提供"恢复购买"。
 - **什么时候生效**：只有在构建时设置 `--dart-define=CIRRUS_STORE=appstore`（iOS/macOS）或 `play`（Android）才会启用 Pro。CI 中对应的是 `build.yml` 的 `store_build: true`。GitHub Releases 和 Windows/Linux 版本不设置，所有功能直接可用。
-- **许可证版本**：在应用商店以外销售的 Windows、Linux、Android 版本用 `--dart-define=CIRRUS_STORE=license` 构建，Pro 通过在网站购买的许可证密钥激活（`lib/core/licensing`，协议见 `docs/licensing.md`）。还需要 `CIRRUS_LICENSE_PUBKEY`（服务器 Ed25519 公钥，标准 base64），可选 `CIRRUS_LICENSE_SERVER`（默认 `https://cirrus.routeforge.zone`）。没有公钥时无法激活。
+- **许可证版本**：在应用商店以外销售的 Windows、Linux、Android 版本用 `--dart-define=CIRRUS_STORE=license` 构建，Pro 通过在网站购买的许可证密钥激活（`lib/core/licensing`，协议见 `docs/licensing.md`）。正式服务器 `https://cirrus.routeforge.zone` 的 Ed25519 公钥已内置；换服务器时用 `CIRRUS_LICENSE_SERVER` 和 `CIRRUS_LICENSE_PUBKEY`（标准 base64）覆盖。
 - **测试**：
   - Apple：在 App Store Connect 添加沙盒测试员，用 TestFlight 或开发版本购买。
   - Google：在 Play Console 中添加许可测试人员，并把应用上传到内部测试轨道。
@@ -186,8 +186,8 @@ Cirrus is a fast, native client for the Cloudflare API on **Linux, Windows, macO
 
 **Install:** grab a build from [Releases](../../releases). Desktop and iOS builds are unsigned; see the table in the Chinese section above for per-platform notes. Android release signing uses the `ANDROID_*` repository secrets described above.
 
-**Sign-in:** "Sign in with Cloudflare" uses Cloudflare OAuth (authorization code + PKCE, no client secret): pick the account in the browser and approve; tokens refresh automatically and the grant is revoked when the credential is removed. To enable it, create an OAuth client under *Manage Account → OAuth clients* with grant types `authorization_code` + `refresh_token`, token auth method `none`, redirect URLs `http://127.0.0.1/oauth/callback` and `io.felixbennett.cirrus:/oauth/callback`, then set the repository variables `CIRRUS_OAUTH_CLIENT_ID` and `CIRRUS_OAUTH_SCOPES` (space-separated scope IDs). API tokens and the Global API Key still work.
+**Sign-in:** "Sign in with Cloudflare" uses Cloudflare OAuth (authorization code + PKCE, no client secret): pick the account in the browser and approve; tokens refresh automatically and the grant is revoked when the credential is removed. To enable it, create an OAuth client under *Manage Account → OAuth clients* with grant types `authorization_code` + `refresh_token`, token auth method `none`, redirect URLs `http://127.0.0.1/oauth/callback` and `https://cirrus.routeforge.zone/oauth/callback` (the website page hands the result to the iOS/Android/macOS app), then set the repository variables `CIRRUS_OAUTH_CLIENT_ID` and `CIRRUS_OAUTH_SCOPES` (space-separated scope IDs). API tokens and the Global API Key still work.
 
-**Cirrus Pro:** store builds (`--dart-define=CIRRUS_STORE=appstore|play`, or `store_build: true` in `build.yml`) sell a one-time, non-consumable `cirrus_pro_lifetime` (US$39.99 / ¥198) through StoreKit 2 and Play Billing. Zone management stays free. Workers, Pages, AI, storage, Zero Trust, account administration, GraphQL, console writes, 30-day analytics and multiple credentials need Pro. Purchases are restored silently on launch. Builds without a store flag (GitHub Releases, Windows, Linux) have everything unlocked. Windows, Linux and Android builds sold outside the stores use `CIRRUS_STORE=license`: Pro is unlocked with a licence key bought on the website (`lib/core/licensing`, contract in `docs/licensing.md`). They also need `CIRRUS_LICENSE_PUBKEY` (the server's Ed25519 public key, standard base64) and optionally `CIRRUS_LICENSE_SERVER` (default `https://cirrus.routeforge.zone`); without the key, activation is disabled.
+**Cirrus Pro:** store builds (`--dart-define=CIRRUS_STORE=appstore|play`, or `store_build: true` in `build.yml`) sell a one-time, non-consumable `cirrus_pro_lifetime` (US$39.99 / ¥198) through StoreKit 2 and Play Billing. Zone management stays free. Workers, Pages, AI, storage, Zero Trust, account administration, GraphQL, console writes, 30-day analytics and multiple credentials need Pro. Purchases are restored silently on launch. Builds without a store flag (GitHub Releases, Windows, Linux) have everything unlocked. Windows, Linux and Android builds sold outside the stores use `CIRRUS_STORE=license`: Pro is unlocked with a licence key bought on the website (`lib/core/licensing`, contract in `docs/licensing.md`). The public key of the production server (`https://cirrus.routeforge.zone`) is built in; override both with `CIRRUS_LICENSE_SERVER` and `CIRRUS_LICENSE_PUBKEY` (standard base64) for another server.
 
 **Build:** `flutter pub get && flutter run`. Regenerate the API catalog with `dart run tool/build_catalog.dart`. Push a `v*` tag to build all platforms and publish a release.

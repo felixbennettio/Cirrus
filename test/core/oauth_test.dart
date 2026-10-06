@@ -294,11 +294,28 @@ void main() {
         api: api,
         receiver: AppLinkReceiver(links: links.stream),
         launch: (url) async {
-          expect(url.queryParameters['redirect_uri'], 'io.felixbennett.cirrus:/oauth/callback');
+          expect(url.queryParameters['redirect_uri'], 'https://cirrus.routeforge.zone/oauth/callback');
           links.add(Uri.parse('https://example.com/other'));
           // A replayed callback from an earlier, abandoned attempt is ignored.
           links.add(Uri.parse('io.felixbennett.cirrus:/oauth/callback?code=old&state=stale'));
           links.add(Uri.parse('io.felixbennett.cirrus:/oauth/callback?code=xyz&state=${url.queryParameters['state']}'));
+        },
+      );
+      expect(t.accessToken, 'access-1');
+      await links.close();
+    });
+
+    test('also completes when the callback page opens the app directly', () async {
+      final links = StreamController<Uri>();
+      final (api, _) = tokenServer();
+      final t = await signInWithCloudflare(
+        config,
+        api: api,
+        receiver: AppLinkReceiver(links: links.stream),
+        launch: (url) async {
+          final state = url.queryParameters['state'];
+          links.add(Uri.parse('https://cirrus.routeforge.zone/elsewhere?code=no&state=$state'));
+          links.add(Uri.parse('https://cirrus.routeforge.zone/oauth/callback?code=xyz&state=$state'));
         },
       );
       expect(t.accessToken, 'access-1');

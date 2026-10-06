@@ -267,8 +267,8 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
                   labelText: 'Client ID',
                   helperMaxLines: 5,
                   helperText: context.tr(
-                    'Create a client under Manage Account → OAuth clients (PKCE, no client secret) and register both redirect URLs: $loopbackRedirectTemplate and $appSchemeRedirect',
-                    '在「管理账户 → OAuth 客户端」中创建（PKCE，无需客户端密钥），并登记两个回调地址：$loopbackRedirectTemplate 和 $appSchemeRedirect',
+                    'Create a client under Manage Account → OAuth clients (PKCE, no client secret) and register both redirect URLs: $loopbackRedirectTemplate and $webRedirect',
+                    '在「管理账户 → OAuth 客户端」中创建（PKCE，无需客户端密钥），并登记两个回调地址：$loopbackRedirectTemplate 和 $webRedirect',
                   ),
                   border: const OutlineInputBorder(),
                 ),
