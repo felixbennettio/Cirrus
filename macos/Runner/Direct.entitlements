@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The Developer ID build sold on the website (.github/workflows/mac-direct.yml):
+  no App Sandbox, so the licence check can read the hardware UUID. It runs
+  with the hardened runtime, which notarization requires.
+-->
+<plist version="1.0">
+<dict>
+</dict>
+</plist>

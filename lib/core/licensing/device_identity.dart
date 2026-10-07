@@ -34,6 +34,7 @@ abstract interface class DeviceIdentitySource {
 /// - Windows: `MachineGuid` under `HKLM\SOFTWARE\Microsoft\Cryptography`
 /// - Linux: `/etc/machine-id`, falling back to `/var/lib/dbus/machine-id`
 /// - Android: `Settings.Secure.ANDROID_ID`, through [channel]
+/// - macOS: the hardware UUID (`IOPlatformUUID`), from `ioreg`
 class PlatformDeviceIdentity implements DeviceIdentitySource {
   PlatformDeviceIdentity();
 
@@ -58,6 +59,10 @@ class PlatformDeviceIdentity implements DeviceIdentitySource {
     } else if (Platform.isLinux) {
       raw = await readLinuxMachineId();
       name = Platform.localHostname;
+    } else if (Platform.isMacOS) {
+      final res = await Process.run('/usr/sbin/ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice']);
+      raw = res.exitCode == 0 ? parseIoPlatformUuid('${res.stdout}') : null;
+      name = Platform.localHostname.replaceFirst(RegExp(r'\.local$'), '');
     } else if (Platform.isAndroid) {
       raw = await channel.invokeMethod<String>('androidId');
       name = await channel.invokeMethod<String>('deviceName') ?? 'Android';
@@ -73,6 +78,10 @@ class PlatformDeviceIdentity implements DeviceIdentitySource {
 /// `reg query HKLM\SOFTWARE\Microsoft\Cryptography /v MachineGuid`.
 String? parseMachineGuid(String output) =>
     RegExp(r'^\s*MachineGuid\s+REG_SZ\s+(\S+)\s*$', multiLine: true).firstMatch(output)?.group(1);
+
+/// The IOPlatformUUID in the output of `ioreg -rd1 -c IOPlatformExpertDevice`.
+String? parseIoPlatformUuid(String output) =>
+    RegExp(r'"IOPlatformUUID"\s*=\s*"([0-9A-Fa-f-]+)"').firstMatch(output)?.group(1);
 
 const linuxMachineIdPaths = ['/etc/machine-id', '/var/lib/dbus/machine-id'];
 

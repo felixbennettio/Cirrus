@@ -32,7 +32,7 @@ final storeChannelProvider = Provider<StoreChannel>((ref) {
     StoreChannel.none => true,
     StoreChannel.appStore => Platform.isIOS || Platform.isMacOS,
     StoreChannel.googlePlay => Platform.isAndroid,
-    StoreChannel.license => Platform.isWindows || Platform.isLinux || Platform.isAndroid,
+    StoreChannel.license => Platform.isWindows || Platform.isLinux || Platform.isAndroid || Platform.isMacOS,
   };
   return supported ? channel : StoreChannel.none;
 });
