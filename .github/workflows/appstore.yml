@@ -84,7 +84,7 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          cache: true
+          cache: ${{ runner.environment == 'github-hosted' }}  # self-hosted runners keep Flutter and the pub cache on disk
       - run: flutter pub get
       - name: Version
         # Version name from pubspec.yaml. Build numbers must grow with every
