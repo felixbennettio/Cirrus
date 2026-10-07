@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../licensing/license_config.dart';
+import '../net/secure_dns.dart';
 import '../settings/app_settings.dart';
 import 'oauth.dart';
 
@@ -60,7 +61,8 @@ class HttpOAuthConfigFetcher implements OAuthConfigFetcher {
   HttpOAuthConfigFetcher(this.server, {Dio? dio})
     : _dio =
           dio ??
-          Dio(BaseOptions(connectTimeout: const Duration(seconds: 4), receiveTimeout: const Duration(seconds: 4)));
+          (Dio(BaseOptions(connectTimeout: const Duration(seconds: 6), receiveTimeout: const Duration(seconds: 4)))
+            ..httpClientAdapter = secureDnsAdapter());
 
   /// Base URL of the Cirrus website, without a trailing slash.
   final String server;
@@ -85,7 +87,7 @@ class HttpOAuthConfigFetcher implements OAuthConfigFetcher {
 /// server's list when it describes the same client, else the last good list
 /// (when offline), else [OAuthConfig.defaultScopes].
 class OAuthScopeResolver {
-  OAuthScopeResolver({required this.fetcher, required this.prefs, this.timeout = const Duration(seconds: 4)});
+  OAuthScopeResolver({required this.fetcher, required this.prefs, this.timeout = const Duration(seconds: 8)});
 
   static const cacheKey = 'cirrus.oauth.remoteConfig.v1';
 

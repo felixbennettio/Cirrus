@@ -176,7 +176,7 @@ class SecureDns {
     required List<String> domains,
     required this.sources,
     Map<String, List<InternetAddress>> fixed = const {},
-    this.timeout = const Duration(seconds: 4),
+    this.timeout = const Duration(seconds: 3),
     this.connectTimeout = const Duration(seconds: 6),
     this.maxStale = const Duration(days: 1),
     Future<List<InternetAddress>> Function(String host)? systemLookup,
