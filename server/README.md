@@ -56,6 +56,7 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `DATA_DIR` | `/data` | 数据目录。Docker 部署时不要改 |
 | `PUBLIC_URL` | `https://cirrus.routeforge.zone` | 对外网址，用于支付宝通知地址、邮件链接、后台同源检查 |
 | `TRUST_PROXY` | `true` | 采信 `X-Real-IP` / `X-Forwarded-For`（仅当直接连接来自本机或内网地址） |
+| `CLIENT_IP_HEADER` | 空 | 网站前还有 CDN 时，CDN 放客户端 IP 的请求头（EdgeOne：`EO-Connecting-IP`），优先于 `X-Real-IP`；同样只在 `TRUST_PROXY` 开启且直接连接来自本机或内网时采信 |
 | `ADMIN_PASSWORD` | 空 | `/admin` 密码，用户名 `admin`；为空则关闭后台 |
 | `SITE_NAME` | `卷云 Cirrus` | 网站名称 |
 | `OPERATOR_NAME` | 空 | 运营者（个体户名称），显示在页脚和法律文本中 |

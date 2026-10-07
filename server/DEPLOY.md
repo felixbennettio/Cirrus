@@ -553,6 +553,38 @@ docker compose -f /opt/cirrus-license/docker-compose.yml logs cirrus-license | g
 - 同步在第一次请求时才进行，所以日志要在第一次 `curl` 之后才出现。
 - 在 Cloudflare 修改权限范围后，最迟约 1 小时 5 分钟 App 会用上新的权限；要立刻生效：`docker compose restart cirrus-license`。
 
+## 15. 网站前面有 CDN（腾讯云 EdgeOne）时
+
+`cirrus.routeforge.zone` 接入 EdgeOne 后，请求经过 EdgeOne → 1Panel 的 OpenResty → 本服务。需要做三件事，否则限流会把所有用户当成少数几个 CDN 节点，支付通知也可能被拦截。
+
+1. **采信 EdgeOne 的客户端 IP 头**。EdgeOne 回源时总会带 `EO-Connecting-IP`（客户端 IP）：
+
+   ```bash
+   cd /opt/cirrus-license && cp .env .env.bak.$(date +%Y%m%d%H%M%S)
+   grep -q '^CLIENT_IP_HEADER=' .env && sed -i 's|^CLIENT_IP_HEADER=.*|CLIENT_IP_HEADER=EO-Connecting-IP|' .env || echo 'CLIENT_IP_HEADER=EO-Connecting-IP' >> .env
+   docker compose up -d
+   ```
+
+   这个头只在 `TRUST_PROXY=true` 且请求来自本机反向代理时采信。有人绕过 EdgeOne 直连源站并伪造它，最多只能绕开限流，拿不到许可证。
+
+2. **EdgeOne 规则引擎：这些路径不缓存**（“节点缓存 TTL”设为“不缓存”，或“遵循源站”——本服务对它们返回 `no-store`）：
+   `/api/*`、`/pay/*`、`/admin*`、`/license*`、`/buy*`、`/oauth/*`。`/static/*` 可以缓存。
+   `/api/v1/oauth/config` 返回 `public, max-age=300`，遵循源站即可。
+
+3. **支付通知不能被安全防护拦下**。支付宝和微信的服务器会 POST `/pay/alipay/notify`、`/pay/wechat/notify`，它们不会通过 JS 质询或验证码。在 EdgeOne 的 Web 防护 / Bot 管理 / CC 防护中，为这两个路径设置例外（跳过 Bot 和 CC 质询）。
+
+验证：
+
+```bash
+# 经过 EdgeOne 访问，日志里的 ip 应为你自己的公网 IP，而不是 43.x 等 EdgeOne 节点：
+curl -s https://cirrus.routeforge.zone/api/v1/pubkey >/dev/null
+docker compose -f /opt/cirrus-license/docker-compose.yml logs --tail=5 cirrus-license
+# 通知地址能到达本服务：未配置该支付方式时返回 404，配置后返回 400（签名不对），都说明没被 EdgeOne 拦下：
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://cirrus.routeforge.zone/pay/wechat/notify -d '{}'
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://cirrus.routeforge.zone/pay/alipay/notify -d 'a=b'
+# 不应出现 EdgeOne 的拦截页（403/429 带 HTML 质询页）。
+```
+
 ## 附录 A：手动执行购买流程（无法运行 smoke-test.sh 时）
 
 ```bash
