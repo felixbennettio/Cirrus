@@ -15,6 +15,7 @@ import '../../ui/widgets/json_view.dart';
 import '../generic/resource_page.dart';
 import '../generic/resource_specs.dart';
 import '../zone_settings/zone_settings.dart';
+import '../../ui/widgets/glass.dart';
 
 const _customCertsSpec = ResourceSpec(
   id: 'custom_certificates',
@@ -416,7 +417,7 @@ class _EdgeCertificates extends ConsumerWidget {
     var ca = 'lets_encrypt';
     var validation = 'txt';
     var days = 90;
-    final ok = await showDialog<bool>(
+    final ok = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
@@ -599,7 +600,7 @@ Future<bool> _createOriginCert(BuildContext context, WidgetRef ref, String zoneN
   final csrController = TextEditingController();
   var validity = 5475;
   var ownCsr = false;
-  final ok = await showDialog<bool>(
+  final ok = await showAppDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
@@ -689,7 +690,7 @@ Future<bool> _createOriginCert(BuildContext context, WidgetRef ref, String zoneN
   });
   if (res == null || !context.mounted) return false;
   final cert = (res.result as Map?)?['certificate'] as String? ?? '';
-  await showDialog<void>(
+  await showAppDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(

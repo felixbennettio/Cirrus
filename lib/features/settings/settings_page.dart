@@ -20,11 +20,13 @@ import '../../core/session/session.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/util/format.dart';
 import '../../core/util/tr.dart';
+import '../../ui/cirrus_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../onboarding/add_profile_page.dart';
 import '../pro/license_panel.dart';
 import '../pro/pro_page.dart';
+import '../../ui/widgets/glass.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -142,7 +144,20 @@ class SettingsPage extends ConsumerWidget {
                 selected: {settings.themeMode},
                 onSelectionChanged: (s) => ctl.setThemeMode(s.first),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              _DynamicColorTile(enabled: settings.dynamicColor),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(context.tr('Liquid glass', '液态玻璃效果')),
+                subtitle: Text(
+                  MediaQuery.highContrastOf(context)
+                      ? context.tr('Off while high contrast is on.', '高对比度模式下不使用。')
+                      : context.tr('Translucent, blurred app bars, sidebar and dialogs.', '半透明、带模糊效果的标题栏、侧边栏和对话框。'),
+                ),
+                value: settings.glassEnabled,
+                onChanged: ctl.setLiquidGlass,
+              ),
+              const SizedBox(height: 8),
               Text(context.tr('Language', '语言')),
               const SizedBox(height: 8),
               SegmentedButton<String>(
@@ -249,6 +264,33 @@ class SettingsPage extends ConsumerWidget {
       return true;
     }, success: context.tr('API catalog updated', 'API 目录已更新'));
     if (ok == true) ref.invalidate(catalogProvider);
+  }
+}
+
+/// Dynamic colour can only be switched on where the platform offers it; the
+/// tile stays visible (disabled, with a hint) everywhere else.
+class _DynamicColorTile extends ConsumerWidget {
+  const _DynamicColorTile({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = CirrusTheme.of(context).dynamicColorAvailable;
+    final android = Theme.of(context).platform == TargetPlatform.android;
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(context.tr('Dynamic colour', '动态取色')),
+      subtitle: Text(
+        !available
+            ? context.tr('Not available on this device: Cirrus uses its own colours.', '此设备不支持，使用 Cirrus 默认配色。')
+            : android
+            ? context.tr('Colours from your wallpaper.', '使用壁纸颜色。')
+            : context.tr('Colours from the system accent colour.', '使用系统强调色。'),
+      ),
+      value: enabled && available,
+      onChanged: available ? ref.read(settingsProvider.notifier).setDynamicColor : null,
+    );
   }
 }
 
@@ -396,7 +438,7 @@ class _ProSection extends ConsumerWidget {
                     FilledButton(
                       onPressed: pro.busy
                           ? null
-                          : () => showDialog<void>(
+                          : () => showAppDialog<void>(
                               context: context,
                               builder: (ctx) => const Dialog(child: ProPaywall()),
                             ),
@@ -466,7 +508,7 @@ class _LicenseSection extends ConsumerWidget {
             trailing: FilledButton(
               onPressed: license.busy
                   ? null
-                  : () => showDialog<void>(
+                  : () => showAppDialog<void>(
                       context: context,
                       builder: (ctx) => const Dialog(child: ProPaywall()),
                     ),

@@ -10,6 +10,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../rules/phases.dart';
 import '../rules/ruleset_view.dart';
+import '../../ui/widgets/glass.dart';
 
 String _lists(String accountId) => '/accounts/$accountId/rules/lists';
 
@@ -94,7 +95,7 @@ class _ListsView extends ConsumerWidget {
                     icon: const Icon(Icons.add),
                     label: Text(context.tr('Create list', '创建列表')),
                     onPressed: () async {
-                      final r = await showDialog<Map<String, dynamic>>(
+                      final r = await showAppDialog<Map<String, dynamic>>(
                         context: context,
                         builder: (_) => const _CreateListDialog(),
                       );

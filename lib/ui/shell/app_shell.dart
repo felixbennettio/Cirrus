@@ -10,6 +10,7 @@ import '../../core/util/tr.dart';
 import '../../features/pro/pro_features.dart';
 import '../../features/pro/pro_page.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 import 'command_palette.dart';
 import 'nav.dart';
 import 'switchers.dart';
@@ -18,7 +19,9 @@ class OpenPaletteIntent extends Intent {
   const OpenPaletteIntent();
 }
 
-/// Root layout: persistent sidebar on wide screens, drawer on phones.
+/// Root layout: persistent sidebar on wide screens, drawer on phones. With
+/// liquid glass on, the sidebar floats as a glass panel and the drawer is
+/// glass too.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.location});
 
@@ -34,15 +37,41 @@ class AppShell extends ConsumerWidget {
     final hasPro = ref.watch(proProvider.select((s) => s.hasPro));
     final locked = hasPro ? null : proFeatureFor(location);
     final page = locked == null ? child : ProPaywallPage(feature: locked);
-    final body = wide
-        ? Row(
-            children: [
-              SizedBox(width: compact ? 248 : 288, child: sidebar),
-              const VerticalDivider(width: 1),
-              Expanded(child: page),
-            ],
-          )
-        : page;
+    final glass = glassActive(context);
+    final scheme = Theme.of(context).colorScheme;
+    final sidebarWidth = compact ? 248.0 : 288.0;
+    final Widget body;
+    if (!wide) {
+      body = page;
+    } else if (glass) {
+      body = AmbientBackground(
+        child: Row(
+          children: [
+            SizedBox(
+              width: sidebarWidth,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(8, 8 + MediaQuery.paddingOf(context).top, 0, 8),
+                child: GlassSurface(radius: 20, shadow: true, child: sidebar),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: page),
+          ],
+        ),
+      );
+    } else {
+      body = Row(
+        children: [
+          SizedBox(
+            width: sidebarWidth,
+            child: GlassSurface(opaqueColor: scheme.surfaceContainerLow, child: sidebar),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(child: page),
+        ],
+      );
+    }
+    const drawerShape = BorderRadius.horizontal(right: Radius.circular(16));
     return Shortcuts(
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.keyK, control: true): OpenPaletteIntent(),
@@ -54,7 +83,24 @@ class AppShell extends ConsumerWidget {
           autofocus: true,
           child: Scaffold(
             key: shellScaffoldKey,
-            drawer: wide ? null : Drawer(width: 300, child: SafeArea(child: sidebar)),
+            // A lighter scrim lets the glass drawer show the page it blurs.
+            drawerScrimColor: glass
+                ? Colors.black.withValues(alpha: scheme.brightness == Brightness.dark ? 0.32 : 0.16)
+                : null,
+            drawer: wide
+                ? null
+                : Drawer(
+                    width: 300,
+                    backgroundColor: glass ? Colors.transparent : null,
+                    surfaceTintColor: glass ? Colors.transparent : null,
+                    elevation: glass ? 0 : null,
+                    child: GlassSurface(
+                      borderRadius: drawerShape,
+                      blur: 30,
+                      opaqueColor: scheme.surfaceContainerLow,
+                      child: SafeArea(child: sidebar),
+                    ),
+                  ),
             body: body,
           ),
         ),
@@ -87,8 +133,9 @@ class Sidebar extends ConsumerWidget {
     final zone = ref.watch(currentZoneProvider);
     final accountId = ref.watch(currentAccountIdProvider);
     final hasPro = ref.watch(proProvider.select((s) => s.hasPro));
+    // The surface comes from the panel around it (a GlassSurface).
     return Material(
-      color: theme.colorScheme.surfaceContainerLow,
+      type: MaterialType.transparency,
       child: Column(
         children: [
           Padding(
