@@ -10,13 +10,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum LicensePlatform {
   windows('Windows'),
   linux('Linux'),
-  android('Android');
+  android('Android'),
+
+  /// The Developer ID build sold on the website, not the Mac App Store one.
+  macos('macOS');
 
   const LicensePlatform(this.label);
 
   final String label;
 
-  /// `cirrus-windows`, `cirrus-linux` or `cirrus-android`.
+  /// `cirrus-windows`, `cirrus-linux`, `cirrus-android` or `cirrus-macos`.
   String get productId => 'cirrus-$name';
 
   static LicensePlatform? fromName(String name) => values.firstWhereOrNull((p) => p.name == name);
@@ -27,6 +30,7 @@ enum LicensePlatform {
     if (Platform.isWindows) return windows;
     if (Platform.isLinux) return linux;
     if (Platform.isAndroid) return android;
+    if (Platform.isMacOS) return macos;
     return null;
   }
 }

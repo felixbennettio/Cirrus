@@ -13,7 +13,7 @@ env:
 jobs:
   preview:
     name: ${{ matrix.platform }}
-    runs-on: macos-latest
+    runs-on: ${{ fromJSON(vars.RUNNER_MAC || '"macos-latest"') }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -35,11 +35,15 @@ jobs:
         run: |
           mkdir -p shots
           if [ "$PLATFORM" = ios ]; then
-            UDID=$(xcrun simctl list devices available -j | python3 -c '
+            # A clean simulator of the newest iOS, deleted afterwards.
+            read -r RUNTIME TYPE < <(xcrun simctl list runtimes -j | python3 -c '
           import json, sys
-          d = json.load(sys.stdin)["devices"]
-          runtimes = sorted((r for r in d if "iOS" in r), key=lambda r: [int(x) for x in r.rsplit("iOS-", 1)[1].split("-")], reverse=True)
-          print(next(x["udid"] for r in runtimes for x in d[r] if x["name"].startswith("iPhone")))')
+          rs = [r for r in json.load(sys.stdin)["runtimes"] if r["platform"] == "iOS" and r["isAvailable"]]
+          r = max(rs, key=lambda r: [int(p) for p in r["version"].split(".")])
+          phones = [t["identifier"] for t in r["supportedDeviceTypes"] if t["name"].startswith("iPhone")]
+          print(r["identifier"], phones[-1])')
+            UDID=$(xcrun simctl create cirrus-glass-preview "$TYPE" "$RUNTIME")
+            trap 'xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl delete "$UDID"' EXIT
             xcrun simctl boot "$UDID"
             xcrun simctl bootstatus "$UDID" -b
           fi
@@ -54,10 +58,13 @@ jobs:
               xcrun simctl terminate "$UDID" io.felixbennett.cirrus || true
             else
               flutter build macos --debug -t tool/glass_preview.dart --dart-define=PREVIEW_DARK=$dark
-              open build/macos/Build/Products/Debug/Cirrus.app
-              sleep 9;  screencapture -x "shots/macos-$mode-1.png"
-              sleep 12; screencapture -x "shots/macos-$mode-2.png"
-              pkill -x Cirrus || true
+              APP="$PWD/build/macos/Build/Products/Debug/Cirrus.app"
+              open "$APP"
+              # Only the preview's own window: on a self-hosted Mac the rest
+              # of the screen is the owner's.
+              sleep 9;  screencapture -x -o -l"$(swift scripts/window_id.swift "$APP")" "shots/macos-$mode-1.png"
+              sleep 12; screencapture -x -o -l"$(swift scripts/window_id.swift "$APP")" "shots/macos-$mode-2.png"
+              pkill -f "$APP/Contents/MacOS/" || true
               sleep 2
             fi
           done

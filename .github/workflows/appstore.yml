@@ -6,6 +6,11 @@
 # APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_PRIVATE_KEY (the .p8 file's
 # text) and APPLE_TEAM_ID. Signing is automatic: Xcode creates or reuses the
 # certificates and provisioning profiles through the API key (Admin role).
+#
+# Runs on the self-hosted Mac named by the RUNNER_MAC repository variable
+# (ci/RUNNERS.md), else on GitHub's macOS runners. A self-hosted Mac keeps
+# its development certificate; after GitHub-hosted runs the one Xcode had to
+# create is revoked again (scripts/appstore_certs.py).
 name: App Store
 
 on:
@@ -34,16 +39,17 @@ env:
 jobs:
   check:
     name: Check Apple setup
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
     timeout-minutes: 10
     outputs:
       ready: ${{ steps.check.outputs.ready }}
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-      - run: pip install 'pyjwt[crypto]'
+      - name: Python
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install -q 'pyjwt[crypto]'
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
       - id: check
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -61,7 +67,7 @@ jobs:
     name: ${{ matrix.platform == 'ios' && 'iOS' || 'macOS' }}
     needs: check
     if: needs.check.outputs.ready == 'true' && github.event_name == 'workflow_dispatch' && inputs.platforms != 'check-only'
-    runs-on: macos-latest
+    runs-on: ${{ fromJSON(vars.RUNNER_MAC || '"macos-latest"') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -74,12 +80,6 @@ jobs:
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v5
-      - name: Require the Pro branch
-        run: |
-          if [ ! -f lib/core/billing/billing.dart ]; then
-            echo "::error::This branch has no in-app purchase code. Run the workflow on claude/iap-pro-lifetime."
-            exit 1
-          fi
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -167,6 +167,16 @@ jobs:
           name: appstore-${{ matrix.platform }}
           path: ${{ runner.temp }}/export/*
           if-no-files-found: error
+      - name: Revoke unusable development certificates
+        if: always()
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install -q 'pyjwt[crypto]'
+          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune ${{ runner.environment == 'github-hosted' && '--ephemeral' || '' }}
       - name: Remove the API key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8"

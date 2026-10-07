@@ -1,0 +1,157 @@
+# Builds the Mac version sold on the website: Developer ID signed, outside
+# the App Sandbox, notarized by Apple, Cirrus Pro unlocked with a licence key
+# (CIRRUS_STORE=license). The DMG is a workflow artifact; publish it on the
+# website with server/scripts/publish_download.sh (server/DEPLOY.md).
+#
+# Needs the App Store Connect API key secrets (see appstore.yml) and a
+# "Developer ID Application" certificate: in the keychain of the self-hosted
+# Mac (ci/RUNNERS.md), or cloud-managed when the API key may use it.
+name: Mac direct
+
+on:
+  workflow_dispatch:
+    inputs:
+      notarize:
+        description: Notarize with Apple (off = only signed, for a quick look)
+        type: boolean
+        default: true
+
+concurrency:
+  group: mac-direct-${{ github.ref }}
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+
+jobs:
+  build:
+    name: macOS (Developer ID)
+    runs-on: ${{ fromJSON(vars.RUNNER_MAC || '"macos-latest"') }}
+    timeout-minutes: 90
+    env:
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Version
+        run: |
+          echo "VERSION=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_ENV"
+      - name: Build configuration
+        env:
+          CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
+          SCOPES: ${{ vars.CIRRUS_OAUTH_SCOPES }}
+        run: >
+          jq -n --arg id "$CLIENT_ID" --arg scopes "$SCOPES" --arg store license
+          '{CIRRUS_OAUTH_CLIENT_ID: $id, CIRRUS_OAUTH_SCOPES: $scopes, CIRRUS_STORE: $store}' > dart_defines.json
+      - name: App Store Connect API key
+        env:
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "AUTH_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - name: Configure the Xcode project
+        run: >
+          flutter build macos --config-only --release
+          --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+          --dart-define-from-file=dart_defines.json
+      - name: Archive
+        # No App Sandbox (Runner/Direct.entitlements), hardened runtime on.
+        run: |
+          xcodebuild archive \
+            -workspace macos/Runner.xcworkspace -scheme Runner -configuration Release \
+            -destination 'generic/platform=macOS' -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development" \
+            CODE_SIGN_ENTITLEMENTS=Runner/Direct.entitlements ENABLE_HARDENED_RUNTIME=YES
+      - name: Unsign plugin resource bundles
+        # Same as appstore.yml: resource bundles hold no code and must not
+        # keep the development signature.
+        run: |
+          APP=$(echo "$RUNNER_TEMP"/Cirrus.xcarchive/Products/Applications/*.app)
+          for b in "$APP"/Contents/Resources/*.bundle; do
+            [ -d "$b" ] || continue
+            if [ -d "$b/Contents/MacOS" ]; then
+              echo "::error::$(basename "$b") contains code; it needs a real signature"
+              exit 1
+            fi
+            codesign --remove-signature "$b" 2>/dev/null || true
+            rm -rf "$b/Contents/_CodeSignature"
+            xattr -cr "$b"
+          done
+      - name: Sign with Developer ID
+        run: |
+          /usr/libexec/PlistBuddy -c "Clear dict" \
+            -c "Add :method string developer-id" \
+            -c "Add :destination string export" \
+            -c "Add :teamID string $TEAM_ID" \
+            -c "Add :signingStyle string automatic" \
+            "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
+          APP="$RUNNER_TEMP/export/Cirrus.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dv "$APP" 2>&1 | grep -E 'Authority=Developer ID|flags=.*runtime'
+          echo "APP=$APP" >> "$GITHUB_ENV"
+      - name: Notarize the app
+        if: inputs.notarize
+        run: |
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Cirrus.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/Cirrus.zip" --wait --timeout 45m \
+            --key "$AUTH_KEY" --key-id "$KEY_ID" --issuer "$ISSUER_ID"
+          xcrun stapler staple "$APP"
+          spctl --assess --type execute --verbose=2 "$APP"
+      - name: DMG
+        run: |
+          NAME="Cirrus-$VERSION-macos"
+          mkdir -p "$RUNNER_TEMP/dmg" dist
+          cp -R "$APP" "$RUNNER_TEMP/dmg/"
+          ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
+          hdiutil create -volname "Cirrus $VERSION" -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "dist/$NAME.dmg"
+          IDENTITY=$(security find-identity -v -p codesigning | sed -n "s/.*\"\(Developer ID Application: .*($TEAM_ID)\)\"/\1/p" | head -1)
+          if [ -n "$IDENTITY" ]; then
+            codesign --sign "$IDENTITY" --timestamp "dist/$NAME.dmg"
+          else
+            echo "::notice::No Developer ID certificate in this keychain (cloud signing); the DMG is notarized but not signed"
+          fi
+          echo "DMG=dist/$NAME.dmg" >> "$GITHUB_ENV"
+      - name: Notarize the DMG
+        if: inputs.notarize
+        run: |
+          xcrun notarytool submit "$DMG" --wait --timeout 45m \
+            --key "$AUTH_KEY" --key-id "$KEY_ID" --issuer "$ISSUER_ID"
+          xcrun stapler staple "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG" || true
+      - name: Checksum
+        run: |
+          shasum -a 256 "$DMG" | tee "$DMG.sha256"
+          echo "Cirrus $VERSION ($BUILD_NUMBER) for macOS, Developer ID: \`$(cut -d' ' -f1 "$DMG.sha256")\`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mac-direct
+          path: dist/*
+          if-no-files-found: error
+      - name: Revoke unusable development certificates
+        if: always()
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install -q 'pyjwt[crypto]'
+          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune ${{ runner.environment == 'github-hosted' && '--ephemeral' || '' }}
+      - name: Remove the API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/Cirrus.zip"

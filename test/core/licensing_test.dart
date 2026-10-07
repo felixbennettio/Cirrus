@@ -155,6 +155,17 @@ void main() {
       expect(parseMachineGuid('ERROR: The system was unable to find the specified registry key or value.'), isNull);
     });
 
+    test('reads IOPlatformUUID from ioreg output', () {
+      const out =
+          '+-o J316sAP  <class IOPlatformExpertDevice, id 0x100000243, registered, matched, active, busy 0 (0 ms), retain 39>\n'
+          '    {\n'
+          '      "IOPlatformSerialNumber" = "C02XXXXXXXXX"\n'
+          '      "IOPlatformUUID" = "8D3B5B9C-6E1A-4E37-9C1F-2B7A1D2E3F40"\n'
+          '    }\n';
+      expect(parseIoPlatformUuid(out), '8D3B5B9C-6E1A-4E37-9C1F-2B7A1D2E3F40');
+      expect(parseIoPlatformUuid(''), isNull);
+    });
+
     test('falls back to the D-Bus machine id', () async {
       final dir = await Directory.systemTemp.createTemp('cirrus-machine-id');
       addTearDown(() => dir.delete(recursive: true));

@@ -1,0 +1,20 @@
+# docker compose up -d --build   (first start: RUNNER_TOKEN=... in .env)
+services:
+  runner:
+    build: .
+    image: cirrus-runner-linux
+    container_name: cirrus-runner-linux
+    restart: unless-stopped
+    environment:
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      RUNNER_NAME: ${RUNNER_NAME:-cirrus-linux}
+      RUNNER_LABELS: cirrus-linux
+    volumes:
+      # The registration, Flutter/Gradle/pub caches and work directory.
+      - runner-home:/home/runner
+    # Android release builds need several GB; leave the host some room.
+    mem_limit: ${RUNNER_MEMORY:-10g}
+    shm_size: 2g
+
+volumes:
+  runner-home:

@@ -15,7 +15,7 @@ permissions:
 jobs:
   meta:
     name: Version
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
     outputs:
       tag: ${{ steps.v.outputs.tag }}
       version: ${{ steps.v.outputs.version }}
@@ -40,7 +40,7 @@ jobs:
   publish:
     name: Publish release
     needs: [meta, build]
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v8
