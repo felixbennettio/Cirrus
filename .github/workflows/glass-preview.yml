@@ -1,0 +1,77 @@
+# Runs tool/glass_preview.dart in the iOS simulator and on macOS and takes
+# screenshots, to check the system glass material (lib/ui/widgets/native_glass.dart).
+# The screenshots are workflow artifacts, and also printed (JPEG, base64) at
+# the end of each job's log.
+name: Glass preview
+
+on:
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+
+jobs:
+  preview:
+    name: ${{ matrix.platform }}
+    runs-on: macos-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, macos]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: System
+        run: sw_vers; xcodebuild -version; xcrun simctl list runtimes | grep -i ios || true
+      - name: Screenshots
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p shots
+          if [ "$PLATFORM" = ios ]; then
+            UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          runtimes = sorted((r for r in d if "iOS" in r), key=lambda r: [int(x) for x in r.rsplit("iOS-", 1)[1].split("-")], reverse=True)
+          print(next(x["udid"] for r in runtimes for x in d[r] if x["name"].startswith("iPhone")))')
+            xcrun simctl boot "$UDID"
+            xcrun simctl bootstatus "$UDID" -b
+          fi
+          for mode in light dark; do
+            dark=$([ "$mode" = dark ] && echo true || echo false)
+            if [ "$PLATFORM" = ios ]; then
+              flutter build ios --simulator --debug -t tool/glass_preview.dart --dart-define=PREVIEW_DARK=$dark
+              xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+              xcrun simctl launch "$UDID" io.felixbennett.cirrus
+              sleep 9;  xcrun simctl io "$UDID" screenshot "shots/ios-$mode-1.png"
+              sleep 12; xcrun simctl io "$UDID" screenshot "shots/ios-$mode-2.png"
+              xcrun simctl terminate "$UDID" io.felixbennett.cirrus || true
+            else
+              flutter build macos --debug -t tool/glass_preview.dart --dart-define=PREVIEW_DARK=$dark
+              open build/macos/Build/Products/Debug/Cirrus.app
+              sleep 9;  screencapture -x "shots/macos-$mode-1.png"
+              sleep 12; screencapture -x "shots/macos-$mode-2.png"
+              pkill -x Cirrus || true
+              sleep 2
+            fi
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: glass-${{ matrix.platform }}
+          path: shots/
+      - name: Print screenshots
+        if: always()
+        run: |
+          for f in shots/*.png; do
+            sips -Z 900 -s format jpeg -s formatOptions 50 "$f" --out "${f%.png}.jpg" >/dev/null
+            echo "=== BEGIN $(basename "${f%.png}.jpg")"
+            base64 -i "${f%.png}.jpg" | fold -w 1000
+            echo "=== END"
+          done

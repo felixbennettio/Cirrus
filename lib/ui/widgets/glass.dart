@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../cirrus_theme.dart';
+import 'native_glass.dart';
 
 /// Whether glass surfaces render as glass here: the theme has it on and the
 /// platform does not ask for high contrast.
@@ -23,9 +24,11 @@ enum GlassEdge {
   none,
 }
 
-/// A cross-platform "liquid glass" material: the content behind is blurred,
-/// tinted with a translucent surface colour and lit by a faint specular
-/// gradient, inside a hairline that is bright at the top and fades lower.
+/// A "liquid glass" material. On iOS and macOS it is Apple's own
+/// ([NativeGlassView]: Liquid Glass on iOS 26 / macOS 26). Elsewhere the
+/// content behind is blurred, tinted with a translucent surface colour and
+/// lit by a faint specular gradient, inside a hairline that is bright at the
+/// top and fades lower.
 ///
 /// When glass is off (setting, or high contrast) it is a plain opaque
 /// surface, so callers need not branch. Never nest one inside another, and
@@ -83,6 +86,26 @@ class GlassSurface extends StatelessWidget {
           boxShadow: shadow ? [BoxShadow(color: scheme.shadow.withValues(alpha: 0.12), blurRadius: 12)] : null,
         ),
         child: rounded ? ClipRRect(borderRadius: br, child: content) : content,
+      );
+    }
+    if (nativeGlassAvailable) {
+      final r = [
+        br.topLeft,
+        br.topRight,
+        br.bottomLeft,
+        br.bottomRight,
+      ].map((c) => c.x).reduce((a, b) => a > b ? a : b);
+      return Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned.fill(
+            child: NativeGlassView(
+              cornerRadius: r,
+              kind: edge == GlassEdge.all ? NativeGlassKind.panel : NativeGlassKind.bar,
+            ),
+          ),
+          if (rounded) ClipRRect(borderRadius: br, child: content) else content,
+        ],
       );
     }
     final fill = (tint ?? scheme.surface).withValues(alpha: dark ? 0.45 : 0.55);
@@ -323,6 +346,20 @@ Future<T?> showAppDialog<T>({
   RouteSettings? routeSettings,
 }) {
   final glass = glassActive(context);
+  if (glass && nativeGlassAvailable) {
+    // Apple's glass behind the dialog itself; the page behind is only dimmed,
+    // as with system alerts.
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierColor: barrierColor,
+      barrierLabel: barrierLabel,
+      useSafeArea: useSafeArea,
+      useRootNavigator: useRootNavigator,
+      routeSettings: routeSettings,
+      builder: (ctx) => NativeGlassDialog(child: Builder(builder: builder)),
+    );
+  }
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,

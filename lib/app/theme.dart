@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart' as mui show ColorScheme;
 
 import '../ui/cirrus_theme.dart';
 import '../ui/widgets/glass.dart';
+import '../ui/widgets/native_glass.dart';
 
 const cirrusSeed = Color(0xFFF2701B);
 
@@ -113,10 +114,15 @@ ThemeData buildTheme(
     dialogTheme: glass
         // Translucent over the frosted backdrop of `showAppDialog`.
         ? DialogThemeData(
-            backgroundColor: scheme.surfaceContainerHigh.withValues(alpha: dark ? 0.70 : 0.74),
+            // On iOS and macOS the glass is the system's, behind the dialog.
+            backgroundColor: nativeGlassAvailable
+                ? Colors.transparent
+                : scheme.surfaceContainerHigh.withValues(alpha: dark ? 0.70 : 0.74),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
-            shape: GlassRoundedBorder(borderRadius: BorderRadius.circular(28), scheme: scheme),
+            shape: nativeGlassAvailable
+                ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))
+                : GlassRoundedBorder(borderRadius: BorderRadius.circular(28), scheme: scheme),
             barrierColor: Colors.black.withValues(alpha: dark ? 0.32 : 0.16),
           )
         : null,
