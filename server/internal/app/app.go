@@ -191,7 +191,8 @@ const ipKey ctxKey = 0
 
 // clientIP is the address the request came from. With TRUST_PROXY, and only
 // when the direct peer is a loopback or private address (the reverse
-// proxy), X-Real-IP and then the last X-Forwarded-For entry are used.
+// proxy), CLIENT_IP_HEADER (set by a CDN in front of that proxy), X-Real-IP
+// and then the last X-Forwarded-For entry are used.
 func (a *App) clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -200,6 +201,11 @@ func (a *App) clientIP(r *http.Request) string {
 	peer := net.ParseIP(host)
 	if !a.cfg.TrustProxy || peer == nil || !(peer.IsLoopback() || peer.IsPrivate()) {
 		return host
+	}
+	if h := a.cfg.ClientIPHeader; h != "" {
+		if v := strings.TrimSpace(r.Header.Get(h)); net.ParseIP(v) != nil {
+			return v
+		}
 	}
 	if v := strings.TrimSpace(r.Header.Get("X-Real-IP")); net.ParseIP(v) != nil {
 		return v

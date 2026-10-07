@@ -104,6 +104,9 @@ type Config struct {
 	DataDir    string
 	PublicURL  string
 	TrustProxy bool
+	// ClientIPHeader names the header a CDN in front of the reverse proxy
+	// puts the client's address in (e.g. EO-Connecting-IP for EdgeOne).
+	ClientIPHeader string
 
 	AdminPassword string
 
@@ -228,6 +231,12 @@ func Load(getenv func(string) string) (*Config, error) {
 		fail("TRUST_PROXY: %v", err)
 	}
 	c.TrustProxy = tp
+	c.ClientIPHeader = strings.TrimSpace(env("CLIENT_IP_HEADER", ""))
+	if strings.IndexFunc(c.ClientIPHeader, func(r rune) bool {
+		return r != '-' && (r > unicode.MaxASCII || !unicode.IsLetter(r) && !unicode.IsDigit(r))
+	}) >= 0 {
+		fail("CLIENT_IP_HEADER is not a header name: %q", c.ClientIPHeader)
+	}
 
 	if c.ContactEmail != "" {
 		if _, err := mail.ParseAddress(c.ContactEmail); err != nil {

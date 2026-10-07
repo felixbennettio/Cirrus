@@ -206,10 +206,35 @@ func TestClientIP(t *testing.T) {
 			t.Errorf("clientIP(%s %v) = %s, want %s", c.remote, c.hdr, got, c.want)
 		}
 	}
+
+	// Behind a CDN: its header wins over the reverse proxy's X-Real-IP (the
+	// CDN node), but only from the reverse proxy and only when it parses.
+	h.cfg.ClientIPHeader = "EO-Connecting-IP"
+	cdn := []struct {
+		remote string
+		hdr    map[string]string
+		want   string
+	}{
+		{"127.0.0.1:1", map[string]string{"EO-Connecting-IP": "8.8.8.8", "X-Real-IP": "43.174.246.1"}, "8.8.8.8"},
+		{"127.0.0.1:1", map[string]string{"EO-Connecting-IP": "x", "X-Real-IP": "43.174.246.1"}, "43.174.246.1"},
+		{"203.0.113.9:1", map[string]string{"EO-Connecting-IP": "8.8.8.8"}, "203.0.113.9"},
+	}
+	for _, c := range cdn {
+		r, _ := http.NewRequest("GET", "/", nil)
+		r.RemoteAddr = c.remote
+		for k, v := range c.hdr {
+			r.Header.Set(k, v)
+		}
+		if got := h.app.clientIP(r); got != c.want {
+			t.Errorf("CLIENT_IP_HEADER: clientIP(%s %v) = %s, want %s", c.remote, c.hdr, got, c.want)
+		}
+	}
+
 	h.cfg.TrustProxy = false
 	r, _ := http.NewRequest("GET", "/", nil)
 	r.RemoteAddr = "127.0.0.1:1"
 	r.Header.Set("X-Real-IP", "1.1.1.1")
+	r.Header.Set("EO-Connecting-IP", "8.8.8.8")
 	if got := h.app.clientIP(r); got != "127.0.0.1" {
 		t.Errorf("TRUST_PROXY off: %s", got)
 	}
