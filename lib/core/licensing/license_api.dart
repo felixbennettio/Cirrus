@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../net/secure_dns.dart';
 import '../util/format.dart';
 import 'license_config.dart';
 
@@ -89,7 +90,8 @@ class LicenseApi {
   LicenseApi(this.baseUrl, {Dio? dio})
     : _dio =
           dio ??
-          Dio(BaseOptions(connectTimeout: const Duration(seconds: 15), receiveTimeout: const Duration(seconds: 20)));
+          (Dio(BaseOptions(connectTimeout: const Duration(seconds: 15), receiveTimeout: const Duration(seconds: 20)))
+            ..httpClientAdapter = secureDnsAdapter());
 
   final String baseUrl;
   final Dio _dio;
