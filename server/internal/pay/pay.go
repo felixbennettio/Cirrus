@@ -1,10 +1,10 @@
 // Package pay holds the payment providers. A provider turns an order into
 // instructions for the buyer (the "pay" object of POST /api/v1/orders).
 //
-// Two providers exist: Static (the merchant's static collection QR code,
-// confirmed by hand in /admin) and Alipay (Face-to-Face 当面付 or website
-// payment 电脑网站支付, confirmed by Alipay's notification). WeChat Pay's API can be added later as another
-// Provider.
+// Three providers exist: Static (the merchant's static collection QR code,
+// confirmed by hand in /admin), Alipay (Face-to-Face 当面付 or website
+// payment 电脑网站支付, confirmed by Alipay's notification) and WeChat (WeChat
+// Pay Native 支付 over APIv3, confirmed by WeChat Pay's notification).
 package pay
 
 import (
@@ -35,13 +35,14 @@ type Order struct {
 type Info struct {
 	Type    string // TypeStaticQR, TypeQR or TypeRedirect
 	QRImage string // static_qr: URL path of the collection QR image
-	QRText  string // qr: text to encode as a QR code (https://qr.alipay.com/…)
+	QRText  string // qr: text to encode as a QR code (https://qr.alipay.com/…, weixin://wxpay/…)
 	URL     string // redirect: the cashier URL
 }
 
 // Provider starts payments for one payment method.
 type Provider interface {
-	// Name is stored with the order: "manual" or "alipay_f2f".
+	// Name is stored with the order: "manual", "alipay_f2f", "alipay_page"
+	// or "wechat_native".
 	Name() string
 	// Method is the buyer-facing method: "alipay" or "wechat".
 	Method() string

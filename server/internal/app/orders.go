@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -33,15 +34,18 @@ func (a *App) productInfo(id string) (string, int, bool) {
 	return p.Platform, p.MaxDevices, ok
 }
 
-// provider picks how a payment method is collected: Alipay Face-to-Face
-// when configured, otherwise the static collection QR code if its image
-// exists. nil means the method is unavailable.
+// provider picks how a payment method is collected: the Alipay or WeChat
+// Pay API when configured, otherwise the static collection QR code if its
+// image exists. nil means the method is unavailable.
 func (a *App) provider(method string) pay.Provider {
 	if !a.cfg.MethodEnabled(method) {
 		return nil
 	}
 	if method == "alipay" && a.alipay != nil {
 		return a.alipay
+	}
+	if method == "wechat" && a.wechat != nil {
+		return a.wechat
 	}
 	if s := a.static[method]; s != nil && s.Available() {
 		return s
@@ -94,7 +98,7 @@ func (a *App) apiCreateOrder(w http.ResponseWriter, r *http.Request) {
 		no := a.newOrderNo()
 		info, err := prov.Create(r.Context(), a.payOrderFor(r, no, p.ID))
 		if err != nil && prov != a.static[method] && a.static[method].Available() {
-			// Face-to-Face is down: fall back to the static collection code.
+			// The payment API is down: fall back to the static collection code.
 			a.log.Error("payment provider failed, using static QR", "provider", prov.Name(), "err", err)
 			prov = a.static[method]
 			info, err = prov.Create(r.Context(), pay.Order{No: no})
@@ -155,7 +159,7 @@ func isMobile(ua string) bool {
 func (a *App) payJSON(r *http.Request, o store.Order, token string) map[string]any {
 	amount := money.Format(o.AmountCents)
 	switch o.Provider {
-	case "alipay_f2f":
+	case "alipay_f2f", "wechat_native":
 		return map[string]any{
 			"type":     pay.TypeQR,
 			"qr_text":  o.PayData,
@@ -235,7 +239,7 @@ func (a *App) apiGetOrder(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) apiOrderQR(w http.ResponseWriter, r *http.Request) {
 	o, _, ok := a.orderWithToken(r)
-	if !ok || o.Provider != "alipay_f2f" || o.PayData == "" || o.EffectiveStatus(a.now()) != store.StatusPending {
+	if !ok || (o.Provider != "alipay_f2f" && o.Provider != "wechat_native") || o.PayData == "" || o.EffectiveStatus(a.now()) != store.StatusPending {
 		http.NotFound(w, r)
 		return
 	}
@@ -300,6 +304,63 @@ func (a *App) alipayNotify(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte("success"))
+}
+
+// wechatNotify handles WeChat Pay's payment notification (APIv3, JSON).
+// WeChat Pay retries until it gets a 2xx.
+func (a *App) wechatNotify(w http.ResponseWriter, r *http.Request) {
+	if a.wechat == nil {
+		http.NotFound(w, r)
+		return
+	}
+	ip := ipFrom(r)
+	no := ""
+	reply := func(status int, msg string) {
+		writeJSON(w, status, map[string]string{"code": "FAIL", "message": msg})
+	}
+	fail := func(reason string) {
+		a.log.Warn("wechat notify rejected", "reason", reason, "out_trade_no", no, "ip", ip)
+		a.event(r.Context(), "notify_rejected", "", no, ip, "wechat: "+reason)
+		reply(http.StatusBadRequest, reason)
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 64<<10))
+	if err != nil {
+		fail("cannot read body")
+		return
+	}
+	tx, err := a.wechat.VerifyNotify(r.Header, body)
+	if err != nil {
+		fail("signature: " + err.Error())
+		return
+	}
+	no = tx.OutTradeNo
+	if tx.MchID != a.wechat.MchID {
+		fail("mchid " + tx.MchID)
+		return
+	}
+	if tx.AppID != a.wechat.AppID {
+		fail("appid " + tx.AppID)
+		return
+	}
+	if tx.TradeState != "SUCCESS" {
+		fail("trade_state " + tx.TradeState)
+		return
+	}
+	o, err := a.st.Order(r.Context(), no)
+	if err != nil {
+		fail("unknown order")
+		return
+	}
+	if tx.Amount.Total != o.AmountCents {
+		fail(fmt.Sprintf("amount %d", tx.Amount.Total))
+		return
+	}
+	if _, _, _, err := a.payOrder(r.Context(), no, tx.TransactionID, ip, "wechat"); err != nil {
+		a.log.Error("wechat notify: pay order", "out_trade_no", no, "err", err)
+		reply(http.StatusInternalServerError, "internal error") // WeChat Pay retries
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // payOrder marks the order paid, issues the licence and emails it. It is

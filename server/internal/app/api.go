@@ -19,9 +19,13 @@ import (
 
 func itoa(n int) string { return strconv.Itoa(n) }
 
+// writeJSON writes v as JSON. Responses are not cached unless the handler
+// set Cache-Control first.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
+	if w.Header().Get("Cache-Control") == "" {
+		w.Header().Set("Cache-Control", "no-store")
+	}
 	w.WriteHeader(status)
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)

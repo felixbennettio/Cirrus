@@ -72,7 +72,10 @@ type harnessOpt struct {
 	env    map[string]string
 	noMail bool
 	alipay *pay.Alipay
-	noQR   []string // static QR images not to create
+	wechat *pay.WeChat
+	noQR   []string             // static QR images not to create
+	cfg    func(*config.Config) // adjusts the loaded configuration
+	log    io.Writer            // server log (default: discarded)
 }
 
 func newHarness(t *testing.T, o harnessOpt) *harness {
@@ -92,6 +95,12 @@ func newHarness(t *testing.T, o harnessOpt) *harness {
 	cfg, err := config.Load(func(k string) string { return env[k] })
 	if err != nil {
 		t.Fatal(err)
+	}
+	if o.cfg != nil {
+		o.cfg(cfg)
+	}
+	if o.log == nil {
+		o.log = io.Discard
 	}
 	os.MkdirAll(filepath.Join(dir, "pay"), 0o755)
 	for _, m := range []string{"alipay", "wechat"} {
@@ -113,9 +122,12 @@ func newHarness(t *testing.T, o harnessOpt) *harness {
 	if o.alipay != nil {
 		o.alipay.Now = h.clock
 	}
+	if o.wechat != nil {
+		o.wechat.Now = h.clock
+	}
 	opts := Options{
-		Config: cfg, Store: st, Key: ed25519.NewKeyFromSeed(seed), Alipay: o.alipay,
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: h.clock,
+		Config: cfg, Store: st, Key: ed25519.NewKeyFromSeed(seed), Alipay: o.alipay, WeChat: o.wechat,
+		Logger: slog.New(slog.NewTextHandler(o.log, nil)), Now: h.clock,
 	}
 	if !o.noMail {
 		h.mail = &fakeMailer{}

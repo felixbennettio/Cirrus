@@ -41,9 +41,14 @@
         status(t('waiting_man'));
       } else if (pay.type === 'qr') {
         setSrc($('p-qr'), pay.qr_image);
-        $('p-scan').textContent = t('scan_dynamic');
-        $('p-open').href = pay.qr_text;
-        $('p-open').textContent = t('open_app');
+        // WeChat Native codes can only be scanned, not opened as a link.
+        var wx = (data.method || o.method) === 'wechat';
+        $('p-scan').textContent = t('scan_dynamic', { m: method }) + (wx ? ' ' + t('scan_wechat_phone') : '');
+        $('p-open-row').hidden = wx;
+        if (!wx) {
+          $('p-open').href = pay.qr_text;
+          $('p-open').textContent = t('open_app');
+        }
         status(t('waiting'));
       } else {
         status(t('waiting'));
