@@ -7,6 +7,7 @@ import '../../core/catalog/catalog.dart';
 import '../../core/util/format.dart';
 import '../../core/util/tr.dart';
 import 'code_editor.dart';
+import 'glass.dart';
 
 /// Renders a form for a JSON schema from the API catalog and writes the
 /// entered values into [value]. Only fields the user sets are included,
@@ -618,7 +619,7 @@ Future<Map<String, dynamic>?> showSchemaEditor(
   String? submitLabel,
   Set<String> hiddenFields = const {},
 }) {
-  return showDialog<Map<String, dynamic>>(
+  return showAppDialog<Map<String, dynamic>>(
     context: context,
     builder: (ctx) => _SchemaEditorDialog(
       title: title,

@@ -9,9 +9,10 @@ import '../../core/util/tr.dart';
 import '../../features/generic/resource_specs.dart';
 import '../widgets/common.dart';
 import 'nav.dart';
+import '../widgets/glass.dart';
 
 Future<void> showCommandPalette(BuildContext context) {
-  return showDialog<void>(context: context, builder: (_) => const _CommandPalette());
+  return showAppDialog<void>(context: context, builder: (_) => const _CommandPalette());
 }
 
 class _Entry {

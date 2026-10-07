@@ -7,6 +7,7 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/common.dart';
 import 'license_panel.dart';
 import 'pro_features.dart';
+import '../../ui/widgets/glass.dart';
 
 /// Explains Cirrus Pro and offers the purchase (or, in licence builds, the
 /// licence key activation). [feature] is what the user just tried to open,
@@ -148,7 +149,7 @@ class ProPaywallPage extends StatelessWidget {
 /// afterwards (it may have just been bought).
 Future<bool> requirePro(BuildContext context, WidgetRef ref, ProFeature feature) async {
   if (ref.read(proProvider).hasPro) return true;
-  await showDialog<void>(
+  await showAppDialog<void>(
     context: context,
     builder: (ctx) => Dialog(
       child: ConstrainedBox(

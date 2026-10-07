@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,8 @@ class AppSettings {
     this.favoriteOps = const [],
     this.compactSidebar = false,
     this.confirmMutations = true,
+    this.dynamicColor = true,
+    this.liquidGlass,
   });
 
   final ThemeMode themeMode;
@@ -41,6 +44,21 @@ class AppSettings {
   /// Ask before sending POST/PUT/PATCH/DELETE from the API console.
   final bool confirmMutations;
 
+  /// Build the colour scheme from the wallpaper (Android 12+) or the system
+  /// accent colour (desktop) where the platform offers one; otherwise, and
+  /// when off, from the brand seed.
+  final bool dynamicColor;
+
+  /// Translucent, blurred "liquid glass" bars, panels and dialogs. `null`
+  /// follows the platform default ([glassDefault]).
+  final bool? liquidGlass;
+
+  /// Glass is on by default on Apple platforms only.
+  static bool get glassDefault =>
+      !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS);
+
+  bool get glassEnabled => liquidGlass ?? glassDefault;
+
   Locale? get locale => localeCode == null ? null : Locale(localeCode!);
 
   AppSettings copyWith({
@@ -54,6 +72,8 @@ class AppSettings {
     List<String>? favoriteOps,
     bool? compactSidebar,
     bool? confirmMutations,
+    bool? dynamicColor,
+    bool? liquidGlass,
   }) => AppSettings(
     themeMode: themeMode ?? this.themeMode,
     localeCode: clearLocale ? null : (localeCode ?? this.localeCode),
@@ -64,6 +84,8 @@ class AppSettings {
     favoriteOps: favoriteOps ?? this.favoriteOps,
     compactSidebar: compactSidebar ?? this.compactSidebar,
     confirmMutations: confirmMutations ?? this.confirmMutations,
+    dynamicColor: dynamicColor ?? this.dynamicColor,
+    liquidGlass: liquidGlass ?? this.liquidGlass,
   );
 
   Map<String, dynamic> toJson() => {
@@ -76,6 +98,8 @@ class AppSettings {
     'favoriteOps': favoriteOps,
     'compactSidebar': compactSidebar,
     'confirmMutations': confirmMutations,
+    'dynamicColor': dynamicColor,
+    'liquidGlass': ?liquidGlass,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
@@ -88,6 +112,8 @@ class AppSettings {
     favoriteOps: (j['favoriteOps'] as List?)?.cast<String>() ?? const [],
     compactSidebar: j['compactSidebar'] == true,
     confirmMutations: j['confirmMutations'] != false,
+    dynamicColor: j['dynamicColor'] != false,
+    liquidGlass: j['liquidGlass'] as bool?,
   );
 }
 
@@ -114,6 +140,10 @@ class SettingsController extends Notifier<AppSettings> {
   void update(AppSettings Function(AppSettings) fn) => _save(fn(state));
 
   void setThemeMode(ThemeMode m) => _save(state.copyWith(themeMode: m));
+
+  void setDynamicColor(bool on) => _save(state.copyWith(dynamicColor: on));
+
+  void setLiquidGlass(bool on) => _save(state.copyWith(liquidGlass: on));
 
   void setLocale(String? code) =>
       _save(code == null ? state.copyWith(clearLocale: true) : state.copyWith(localeCode: code));

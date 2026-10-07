@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/api/cf_exception.dart';
 import '../../core/util/tr.dart';
+import 'glass.dart';
 
 void showToast(BuildContext context, String message, {bool error = false}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
@@ -39,7 +40,7 @@ Future<T?> runAction<T>(
   var dialogShown = false;
   if (blocking) {
     dialogShown = true;
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       barrierDismissible: false,
       useRootNavigator: true,
@@ -72,7 +73,7 @@ Future<bool> confirm(
   String? confirmLabel,
   bool destructive = false,
 }) async {
-  final r = await showDialog<bool>(
+  final r = await showAppDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
@@ -105,7 +106,7 @@ Future<bool> confirmDanger(
   String? confirmLabel,
 }) async {
   final controller = TextEditingController();
-  final r = await showDialog<bool>(
+  final r = await showAppDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
@@ -174,7 +175,7 @@ Future<String?> promptText(
   String? confirmLabel,
 }) async {
   final controller = TextEditingController(text: initial);
-  final r = await showDialog<String>(
+  final r = await showAppDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
@@ -217,7 +218,7 @@ Future<void> showSecretDialog(
   required Map<String, String> values,
   String? note,
 }) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(

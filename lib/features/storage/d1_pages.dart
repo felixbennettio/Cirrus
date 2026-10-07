@@ -12,6 +12,7 @@ import '../../ui/widgets/code_editor.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 String _dbs(String accountId) => '/accounts/$accountId/d1/database';
 
@@ -305,7 +306,7 @@ class _D1ConsolePageState extends ConsumerState<D1ConsolePage> {
           IconButton(
             tooltip: context.tr('Tables', '表'),
             icon: const Icon(Icons.table_view),
-            onPressed: () => showModalBottomSheet<void>(
+            onPressed: () => showAppSheet<void>(
               context: context,
               builder: (_) => SizedBox(height: 420, child: _tablesPanel(context)),
             ),

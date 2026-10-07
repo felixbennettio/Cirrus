@@ -12,6 +12,7 @@ import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/files.dart';
 import '../../ui/widgets/json_view.dart';
 import 'dns_record_form.dart';
+import '../../ui/widgets/glass.dart';
 
 const _cfOrange = Color(0xFFF38020);
 
@@ -143,7 +144,7 @@ class _DnsViewState extends ConsumerState<_DnsView> {
     final f = await pickFile();
     if (f == null || !mounted) return;
     var proxied = false;
-    final go = await showDialog<bool>(
+    final go = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
@@ -247,12 +248,12 @@ class _DnsViewState extends ConsumerState<_DnsView> {
                         case 'export':
                           _export();
                         case 'dnssec':
-                          showDialog<void>(
+                          showAppDialog<void>(
                             context: context,
                             builder: (_) => _DnssecDialog(zoneId: widget.zoneId),
                           );
                         case 'settings':
-                          showDialog<void>(
+                          showAppDialog<void>(
                             context: context,
                             builder: (_) => _DnsSettingsDialog(zoneId: widget.zoneId),
                           );

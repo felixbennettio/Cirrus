@@ -19,6 +19,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
 import 'workers_api.dart';
+import '../../ui/widgets/glass.dart';
 
 class WorkerDetailPage extends ConsumerWidget {
   const WorkerDetailPage({super.key, required this.name});
@@ -437,7 +438,7 @@ class _SettingsTab extends ConsumerWidget {
   ]) async {
     final name = TextEditingController(text: existing?['name'] as String?);
     final value = TextEditingController(text: existing?['text'] as String?);
-    final ok = await showDialog<bool>(
+    final ok = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(existing == null ? ctx.tr('Add variable', '添加变量') : ctx.tr('Edit variable', '编辑变量')),
@@ -699,7 +700,7 @@ class _SecretsTab extends ConsumerWidget {
         Future<void> put([String? existing]) async {
           final name = TextEditingController(text: existing);
           final value = TextEditingController();
-          final ok = await showDialog<bool>(
+          final ok = await showAppDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
               title: Text(existing == null ? ctx.tr('Add secret', '添加密钥') : ctx.tr('Update secret', '更新密钥')),

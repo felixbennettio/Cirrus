@@ -9,6 +9,7 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
+import '../../ui/widgets/glass.dart';
 
 class DomainsPage extends ConsumerStatefulWidget {
   const DomainsPage({super.key, this.openAdd = false});
@@ -196,7 +197,7 @@ Future<void> addZone(BuildContext context, WidgetRef ref) async {
   final name = TextEditingController();
   var type = 'full';
   var jumpStart = true;
-  final ok = await showDialog<bool>(
+  final ok = await showAppDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(

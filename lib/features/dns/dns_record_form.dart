@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/util/tr.dart';
+import '../../ui/widgets/glass.dart';
 
 /// Every DNS record type the API supports.
 const dnsTypes = [
@@ -141,7 +142,7 @@ Future<Map<String, dynamic>?> showDnsRecordDialog(
   required String zoneName,
   Map<String, dynamic>? record,
 }) {
-  return showDialog<Map<String, dynamic>>(
+  return showAppDialog<Map<String, dynamic>>(
     context: context,
     builder: (_) => _DnsRecordDialog(zoneName: zoneName, record: record),
   );

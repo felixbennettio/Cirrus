@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/cf_client.dart';
 import '../../core/api/cf_exception.dart';
+import '../../core/auth/credential.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/session/session.dart';
 import '../../core/util/tr.dart';
+import '../../features/onboarding/add_profile_page.dart';
 import 'common.dart';
 import 'feedback.dart';
 
@@ -185,6 +187,9 @@ class ErrorView extends ConsumerWidget {
     List<String> perms = const [];
     String title = context.tr('Something went wrong', '出错了');
     IconData icon = Icons.error_outline;
+    // OAuth grants only carry the scopes approved on the consent screen.
+    final profile = ref.watch(activeProfileProvider);
+    final oauthForbidden = e is CfApiException && e.isForbidden && profile?.kind == AuthKind.oauth;
     if (e is CfApiException) {
       final catalog = ref.watch(catalogProvider).value;
       perms = catalog?.find(e.method, e.path)?.permissions ?? const [];
@@ -234,6 +239,19 @@ class ErrorView extends ConsumerWidget {
             children: [for (final p in perms) Chip(label: Text(p), visualDensity: VisualDensity.compact)],
           ),
         ],
+        if (oauthForbidden) ...[
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Text(
+              context.tr(
+                'This permission may not have been granted when you signed in with Cloudflare. Sign in again and approve it on the consent screen.',
+                '登录 Cloudflare 时可能没有授予此权限。请重新登录，并在授权页面中同意该权限。',
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
         if (e is CfApiException) ...[
           const SizedBox(height: 8),
           Text(
@@ -245,7 +263,17 @@ class ErrorView extends ConsumerWidget {
         const SizedBox(height: 16),
         Wrap(
           spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
           children: [
+            if (oauthForbidden)
+              FilledButton.icon(
+                onPressed: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: (_) => AddProfilePage(editing: profile))),
+                icon: const Icon(Icons.login),
+                label: Text(context.tr('Sign in again', '重新登录以授权')),
+              ),
             if (onRetry != null)
               FilledButton.tonalIcon(
                 onPressed: onRetry,
