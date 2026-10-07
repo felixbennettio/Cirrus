@@ -6,7 +6,7 @@
 #     Dockerfile.runtime, docker-compose.yml, .dockerignore
 #     cirrus-license.service                               optional systemd unit
 #     smoke-test.sh                                        end-to-end check
-#     .env.example, DEPLOY.md, README.md
+#     .env.example, DEPLOY.md, README.md, PAYMENT_SETUP.md
 #     SHA256SUMS
 #   dist/cirrus-license-<version>.tar.gz
 #
@@ -40,7 +40,7 @@ done
 
 cp deploy/Dockerfile.runtime deploy/docker-compose.yml deploy/cirrus-license.service deploy/smoke-test.sh "$out/"
 cp deploy/dockerignore "$out/.dockerignore"
-cp .env.example DEPLOY.md README.md "$out/"
+cp .env.example DEPLOY.md README.md PAYMENT_SETUP.md "$out/"
 echo "$VERSION" > "$out/VERSION"
 
 (cd "$out" && find . -type f ! -name SHA256SUMS | LC_ALL=C sort | sed 's|^\./||' | xargs sha256sum > SHA256SUMS)
