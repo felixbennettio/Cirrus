@@ -98,6 +98,27 @@ Request: `{"license_key", "email"}`. 200 `{"ok": true}`; 403
 
 `{"ed25519": "<standard base64 public key>"}`.
 
+### `GET /api/v1/oauth/config`
+
+The Cloudflare OAuth client for "Sign in with Cloudflare". The app calls it
+before starting the sign-in, so the requested scopes follow the OAuth client
+without an app update.
+
+| Status | Body |
+| ------ | ---- |
+| 200 | `{"client_id": "9c147a5155baf903357222bd4d31ad50", "scopes": ["…"], "optional_scopes": ["…"], "source": "cloudflare" \| "env"}` |
+| 404 | `not_configured`: the server has no scopes to offer |
+
+- `scopes` is never empty on 200; `optional_scopes` may be `[]`.
+- Neither list contains `offline_access` or `openid`: the app adds
+  `offline_access` itself.
+- `source` is `cloudflare` when the scopes were synced from the client's
+  settings in the Cloudflare API (refreshed hourly), and `env` when they come
+  from the server configuration (`OAUTH_SCOPES`).
+- Responses carry `Cache-Control: public, max-age=300`.
+- On 404 or a network error the app should fall back to its built-in client id
+  and scopes.
+
 ### Orders
 
 - `POST /api/v1/orders` `{"product", "email", "method": "alipay" | "wechat"}`
@@ -112,11 +133,35 @@ Request: `{"license_key", "email"}`. 200 `{"ok": true}`; 403
     phones): `"pay": {"type": "redirect", "url": "<signed Alipay cashier URL>"}`.
   - Both Alipay modes are confirmed automatically by Alipay's notification to
     `/pay/alipay/notify`.
+  - WeChat Pay Native (Native 支付, when the server has the WeChat Pay API
+    configured): `"pay": {"type": "qr", "qr_text": "weixin://wxpay/bizpayurl?pr=…", "qr_image", "amount"}`,
+    the same shape as Alipay Face-to-Face. The code can only be scanned with
+    WeChat, not opened as a link. Confirmed automatically by WeChat Pay's
+    notification to `/pay/wechat/notify`.
+  - When the Alipay or WeChat Pay API fails, the order falls back to
+    `static_qr` if the merchant's collection code exists.
   - Errors: 400 `invalid_product` / `invalid_email` / `invalid_method`,
     503 `method_unavailable`, 502 `payment_error`.
 - `GET /api/v1/orders/{order_no}?token=…` → `{"status": "pending" | "paid" | "expired", "license_key"?}`.
   The licence key is only included once paid and only with the order token;
   a missing or wrong token gets 404 `order_not_found`.
+
+### Payment notifications
+
+Not called by the app; listed so the paths stay reserved.
+
+- `POST /pay/alipay/notify`: Alipay's asynchronous notification (form,
+  RSA2-signed). Answers `success`, or `failure` with a 4xx/5xx status.
+- `POST /pay/wechat/notify`: WeChat Pay's APIv3 payment notification (JSON).
+  The server verifies the `Wechatpay-Signature` over the raw body with the
+  WeChat Pay public key (`Wechatpay-Serial` must be the configured public key
+  id, `Wechatpay-Timestamp` within 5 minutes), decrypts `resource`
+  (`AEAD_AES_256_GCM` with the APIv3 key), and checks `mchid`, `appid`,
+  `trade_state == "SUCCESS"` and `amount.total` (fen) against the order.
+  It answers 200 with an empty body when the order is paid (also for a
+  repeated notification), and 400 or 500 with
+  `{"code": "FAIL", "message": "…"}` otherwise, so that WeChat Pay retries.
+  404 when the WeChat Pay API is not configured.
 
 Any rate-limited POST gets 429 `rate_limited` with `Retry-After`; a malformed
 request (including a device id that is not 64 lowercase hex characters) gets

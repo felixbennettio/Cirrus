@@ -309,8 +309,10 @@ func buyI18N(en bool) map[string]string {
 		"step_note":    "在付款备注（添加备注 / 转账说明）中填写订单号 {o}",
 		"step_wait":    "付款后请保持本页面打开；收款确认后这里会显示许可证",
 		"save_hint":    "长按或右键保存收款码图片，再在{m}中“扫一扫 → 从相册选取”。",
-		"scan_dynamic": "请使用支付宝扫码付款",
+		"scan_dynamic": "请使用{m}扫码付款。",
 		"open_app":     "在手机上打开支付宝付款",
+
+		"scan_wechat_phone": "在手机上浏览时，可截屏后在微信“扫一扫 → 相册”中选取。",
 	}, map[string]string{
 		"alipay":                 "Alipay",
 		"wechat":                 "WeChat",
@@ -334,7 +336,8 @@ func buyI18N(en bool) map[string]string {
 		"step_note":              "Write the order number {o} in the payment note",
 		"step_wait":              "Keep this page open; your licence key appears here once the payment is confirmed",
 		"save_hint":              "On a phone, save the QR image and choose it from your photos in {m}'s scanner.",
-		"scan_dynamic":           "Scan with Alipay to pay",
+		"scan_dynamic":           "Scan with {m} to pay.",
+		"scan_wechat_phone":      "On a phone, take a screenshot and pick it in WeChat's scanner (Scan → Album).",
 		"open_app":               "Open Alipay on this phone",
 	})
 }

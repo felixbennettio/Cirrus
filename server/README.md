@@ -17,9 +17,9 @@
         ▼
 cirrus-license 容器（:8080，非 root，内存上限 128 MB）
   ├─ 网站：/  /buy  /license  /privacy  /terms  /support（中英双语，无外部 CDN）
-  ├─ API：/api/v1/…（激活、校验、停用、重置、订单）
+  ├─ API：/api/v1/…（激活、校验、停用、重置、订单、OAuth 配置）
   ├─ 管理后台：/admin（HTTP Basic）
-  └─ 支付宝异步通知：/pay/alipay/notify
+  └─ 支付通知：/pay/alipay/notify、/pay/wechat/notify
         │
         ▼
 ./data（挂载到 /data）
@@ -40,10 +40,11 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | 静态收款码（默认） | 页面显示你的支付宝/微信收款码、准确金额和订单号，买家付款时在备注里填订单号 | 你在 `/admin` 点“确认收款”，立即签发许可证 |
 | 支付宝电脑网站支付（`ALIPAY_MODE=page`） | 跳转到支付宝收银台；手机浏览器自动使用手机网站支付（`alipay.trade.wap.pay`） | 支付宝异步通知，自动签发 |
 | 支付宝当面付（`ALIPAY_MODE=precreate`） | 页面显示动态付款二维码 | 支付宝异步通知，自动签发 |
+| 微信支付 Native 支付（`WECHAT_*` 全部填写） | 页面显示动态付款二维码（`weixin://wxpay/…`），用微信扫码 | 微信支付通知（APIv3），自动签发 |
 
-微信支付 API 暂未接入（代码里留有 `pay.Provider` 接口）。启用支付宝 API 后，如果调用失败且存在 `data/pay/alipay.png`，会自动退回静态收款码。
+`PAY_METHODS` 仍然决定购买页显示哪些方式。启用支付宝或微信支付 API 后，如果调用失败且存在对应的 `data/pay/*.png`，会自动退回静态收款码。后台“订单”页顶部显示每种方式当前使用的模式。
 
-订单有效期：静态收款码 24 小时，支付宝 API 2 小时。过期后买家页面显示“已过期”；如果确实收到了款，仍然可以在后台确认。
+订单有效期：静态收款码 24 小时，支付宝和微信支付 API 2 小时。过期后买家页面显示“已过期”；如果确实收到了款，仍然可以在后台确认。
 
 ## 配置
 
@@ -74,6 +75,20 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `ALIPAY_PUBLIC_KEY` | 空 | **支付宝公钥**（不是应用公钥） |
 | `ALIPAY_MODE` | `precreate` | `page` = 电脑网站支付，`precreate` = 当面付 |
 | `ALIPAY_GATEWAY` | `https://openapi.alipay.com/gateway.do` | 沙箱：`https://openapi-sandbox.dl.alipaydev.com/gateway.do` |
+| `WECHAT_MCHID` | 空 | 微信支付商户号 |
+| `WECHAT_APPID` | 空 | 与商户号绑定的 AppID（服务号或小程序） |
+| `WECHAT_API_V3_KEY` | 空 | APIv3 密钥（32 个字符） |
+| `WECHAT_CERT_SERIAL` | 空 | 商户 API 证书序列号 |
+| `WECHAT_PRIVATE_KEY` | 空 | 商户 API 私钥 `apiclient_key.pem`（PEM、带字面量 `\n` 的 PEM，或去掉头尾的 base64） |
+| `WECHAT_PUBLIC_KEY` | 空 | **微信支付公钥**（不是平台证书），格式同上 |
+| `WECHAT_PUBLIC_KEY_ID` | 空 | 微信支付公钥 ID，`PUB_KEY_ID_…` |
+| `WECHAT_GATEWAY` | `https://api.mch.weixin.qq.com` | 微信支付 API 地址 |
+| `OAUTH_CLIENT_ID` | `9c147a5155baf903357222bd4d31ad50` | App 使用的 Cloudflare OAuth 客户端 |
+| `OAUTH_SCOPES` | 空 | 权限范围，空格或逗号分隔；没有自动同步结果时使用 |
+| `OAUTH_OPTIONAL_SCOPES` | 空 | 可选权限范围 |
+| `CF_ACCOUNT_ID` | 空 | 自动同步权限范围：OAuth 客户端所在的 Cloudflare 账户 ID |
+| `CF_API_TOKEN` | 空 | 自动同步用的 API 令牌（Bearer），或改用下面两项 |
+| `CF_API_EMAIL` / `CF_API_KEY` | 空 | 自动同步用的 Global API Key 和账户邮箱 |
 | `SMTP_HOST` | 空 | 填写后启用邮件 |
 | `SMTP_PORT` | `465` | 465 = SSL（隐式 TLS）；其他端口用 STARTTLS。腾讯云封禁 25 端口 |
 | `SMTP_USER` / `SMTP_PASS` | 空 | SMTP 账号密码 |
@@ -87,6 +102,19 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 - `ALIPAY_PUBLIC_KEY` = **支付宝公钥**：把“应用公钥”上传到开放平台后，平台显示的“支付宝公钥”。**不是应用公钥。**
 - 只支持“公钥模式”加签（不是“证书模式”），RSA2。
 - 两个值都可以直接粘贴密钥工具导出的一整行 base64（不带 `-----BEGIN` 头），也可以是 PEM（多行时用字面量 `\n` 连成一行）。
+
+### 微信支付的密钥值
+
+- 7 个 `WECHAT_*` 变量（除 `WECHAT_GATEWAY`）必须全部填写，只填一部分会拒绝启动。
+- `WECHAT_PRIVATE_KEY` 是商户 API 证书的私钥 `apiclient_key.pem`；`WECHAT_CERT_SERIAL` 是同一张证书的序列号。
+- `WECHAT_PUBLIC_KEY` / `WECHAT_PUBLIC_KEY_ID` 是商户平台“API 安全 → 微信支付公钥”里的公钥文件和公钥 ID。只支持公钥模式，不支持“平台证书”。
+- 通知地址 `https://cirrus.routeforge.zone/pay/wechat/notify` 每次下单时自动传给微信，无需在商户平台配置。开通步骤见 DEPLOY.md 第 13 节。
+
+### Cloudflare OAuth 权限范围
+
+App 在“使用 Cloudflare 登录”前请求 `GET /api/v1/oauth/config`，按返回的 `scopes` 申请权限，所以在 Cloudflare 修改 OAuth 客户端的权限后不需要发布新版 App。配置了 `CF_ACCOUNT_ID` 和 API 凭据时，服务器从 Cloudflare API 读取该客户端的 `scopes` / `optional_scopes`（缓存 1 小时，失败时继续用上次的结果），否则使用 `OAUTH_SCOPES`。凭据只用于读取，不会出现在响应或日志中。见 DEPLOY.md 第 14 节。
+
+### 支付宝产品选择
 
 应该开通哪个产品：网站销售对应的正规产品是 **电脑网站支付**（再加开手机网站支付，手机用户体验更好）；**当面付** 通常更容易审核通过，可以作为备选。两者使用同一个异步通知地址 `https://cirrus.routeforge.zone/pay/alipay/notify`（每次下单时自动传给支付宝，无需在后台配置）。开通步骤见 DEPLOY.md 第 12 节。
 
@@ -142,16 +170,18 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `GET /api/v1/pubkey` | Ed25519 公钥 |
 | `POST /api/v1/orders` | 创建订单 |
 | `GET /api/v1/orders/{order_no}?token=` | 查询订单 |
-| `GET /api/v1/orders/{order_no}/qr.png?token=` | 当面付动态二维码图片 |
+| `GET /api/v1/orders/{order_no}/qr.png?token=` | 当面付 / 微信 Native 动态二维码图片 |
+| `GET /api/v1/oauth/config` | App 登录用的 Cloudflare OAuth 客户端 ID 和权限范围（缓存 5 分钟） |
 | `POST /api/v1/resend` | 把该邮箱的全部许可证重新发到邮箱（需 SMTP；无论邮箱是否存在都返回相同结果） |
 | `POST /pay/alipay/notify` | 支付宝异步通知（表单，验签后返回 `success`） |
+| `POST /pay/wechat/notify` | 微信支付通知（JSON，验签并解密，成功返回 200 空响应，失败返回 4xx/5xx `{"code":"FAIL"}`） |
 | `GET /healthz` | 健康检查 |
 
 ## 开发
 
 ```bash
 cd server
-go test ./...                 # 单元测试与 HTTP 测试（含测试向量、支付宝签名、管理后台）
+go test ./...                 # 单元测试与 HTTP 测试（含测试向量、支付宝和微信支付签名、OAuth 同步、管理后台）
 go vet ./...
 ./build-bundle.sh             # 交叉编译 amd64/arm64 静态二进制并打包到 dist/
 ```

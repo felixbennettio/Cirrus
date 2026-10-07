@@ -22,6 +22,8 @@
 | 1Panel 面板地址和账号 | 建议 | 第 5 步创建网站；没有时用 5.4 的手动配置 |
 | SMTP 账号 | 否 | 有则自动发送许可证邮件 |
 | 支付宝开放平台 APPID 和密钥 | 否 | 以后再开，见第 12 节 |
+| 微信支付商户号、AppID、APIv3 密钥、API 证书和微信支付公钥 | 否 | 以后再开，见第 13 节 |
+| Cloudflare 账户 ID 和 API 令牌 | 否 | App 登录权限范围自动同步，见第 14 节 |
 
 ## 1. 预检查
 
@@ -393,6 +395,9 @@ docker compose exec -T cirrus-license cirrus-license version
 | 下单返回 `rate_limited` | 同一 IP 下单过于频繁（约每 2 分钟 1 单，可连续 6 单），正常保护 |
 | 收不到许可证邮件 | 日志搜 `send licence email`；确认 `SMTP_PORT=465`（腾讯云封禁 25 端口）和账号密码 |
 | 支付宝付款后订单仍待付款 | 日志搜 `alipay notify`：`rejected reason=…` 说明验签、app_id 或金额不符（多为 `ALIPAY_PUBLIC_KEY` 填成了应用公钥）；完全没有记录说明通知没到达，检查 HTTPS 是否正常、`PUBLIC_URL` 是否正确 |
+| 下单后微信显示静态收款码（日志 `payment provider failed … provider=wechat_native`） | `HTTP 401 SIGN_ERROR`：`WECHAT_CERT_SERIAL` 和 `WECHAT_PRIVATE_KEY` 不是同一张商户 API 证书；`appid和mch_id不匹配`：AppID 未关联（第 13 节第 2 步）；`NO_AUTH`：未开通 Native 支付；`response signature: serial …`：`WECHAT_PUBLIC_KEY_ID` 填错 |
+| 微信付款后订单仍待付款 | 日志搜 `wechat notify`：`signature: bad signature` 多为 `WECHAT_PUBLIC_KEY` 填错；`stale Wechatpay-Timestamp` 检查服务器时间（`timedatectl`）；`cannot decrypt resource` 是 `WECHAT_API_V3_KEY` 与商户平台不一致；完全没有记录说明通知没到达 |
+| `/api/v1/oauth/config` 返回 `"source":"env"` 或 404 | 见第 14 节；日志搜 `oauth scope sync failed` |
 | 查看内存和 CPU | `docker stats --no-stream cirrus-license`（正常约 20 MB，上限 128 MB） |
 
 需要人工处理的订单（如买家付了款但订单已过期）：在后台“订单”中筛选“已过期”，核对后点“确认收款”即可。
@@ -430,6 +435,123 @@ ALIPAY_MODE=page            # 或 precreate
 沙箱测试：在开放平台的沙箱应用里取得沙箱 APPID 和密钥，并设置 `ALIPAY_GATEWAY=https://openapi-sandbox.dl.alipaydev.com/gateway.do`，用沙箱买家账号付款。沙箱的异步通知同样要发到公网可访问的 `PUBLIC_URL`。测完后删除 `ALIPAY_GATEWAY` 一行（恢复正式网关）并换回正式密钥。
 
 开通后，`data/pay/alipay.png` 只在支付宝接口调用失败时作为备用。
+
+## 13. 开通微信支付 API
+
+开通后，购买页的“微信支付”改为 **Native 支付**：页面显示动态二维码（`weixin://wxpay/bizpayurl?pr=…`），买家用微信扫码付款，微信支付通知到达后自动签发许可证。`PAY_METHODS` 里必须仍有 `wechat`。接口调用失败时，如果存在 `data/pay/wechat.png`，自动退回静态收款码。
+
+需要：已开通 **Native 支付** 的微信支付商户号，和一个与它关联的 AppID（服务号或小程序）。在 [微信支付商户平台](https://pay.weixin.qq.com/) 操作：
+
+1. **产品中心 → 我的产品**：开通 Native 支付。
+2. **产品中心 → AppID 账号管理**：关联服务号或小程序的 AppID，再到对应的公众平台后台确认关联。商户号在 **账户中心 → 商户信息** 查看。
+3. **账户中心 → API 安全**：
+   - **设置 APIv3 密钥**：32 个字符，可用 `openssl rand -hex 16` 生成 → `WECHAT_API_V3_KEY`。以后在商户平台改了这个密钥，`.env` 要同步修改。
+   - **申请 API 证书**（用微信支付证书工具），得到 `apiclient_key.pem` 和 `apiclient_cert.pem`。私钥 → `WECHAT_PRIVATE_KEY`；证书序列号 → `WECHAT_CERT_SERIAL`。
+   - **微信支付公钥**：申请并下载公钥文件 `pub_key.pem` → `WECHAT_PUBLIC_KEY`；页面上的公钥 ID（`PUB_KEY_ID_…`）→ `WECHAT_PUBLIC_KEY_ID`。**只支持微信支付公钥**，不支持“平台证书”；还在用平台证书的商户号可以在同一页面申请公钥（两者可以并存）。
+4. 不需要配置“Native 支付回调链接”（那是模式一）。通知地址固定为 **`https://cirrus.routeforge.zone/pay/wechat/notify`**，每次下单时自动传给微信。
+
+本地把 `apiclient_key.pem`、`apiclient_cert.pem`、`pub_key.pem` 传到服务器：`scp apiclient_key.pem apiclient_cert.pem pub_key.pem <SERVER>:/tmp/`。服务器上写入 `.env`（PEM 转成不带头尾的一整行 base64；`.env` 里还没有这一行时追加）：
+
+```bash
+cd /opt/cirrus-license
+set_env() { if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+one_line() { grep -v -- '-----' "$1" | tr -d '\r\n'; }
+
+set_env WECHAT_MCHID '1900000001'                                   # 商户号
+set_env WECHAT_APPID 'wx0000000000000000'                           # 关联的 AppID
+set_env WECHAT_API_V3_KEY 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'          # 32 个字符
+set_env WECHAT_CERT_SERIAL "$(openssl x509 -in /tmp/apiclient_cert.pem -noout -serial | cut -d= -f2)"
+set_env WECHAT_PRIVATE_KEY "$(one_line /tmp/apiclient_key.pem)"
+set_env WECHAT_PUBLIC_KEY "$(one_line /tmp/pub_key.pem)"
+set_env WECHAT_PUBLIC_KEY_ID 'PUB_KEY_ID_0000000000000000000000000000000000'
+
+grep -E '^WECHAT_[A-Z0-9_]+=.' .env | cut -d= -f1                  # 应列出 7 项
+rm -f /tmp/apiclient_key.pem /tmp/apiclient_cert.pem /tmp/pub_key.pem
+docker compose up -d
+docker compose logs --tail=20 cirrus-license | grep 'cirrus-license started'   # 含 wechat_api=true
+```
+
+只填了一部分 `WECHAT_*` 或 APIv3 密钥不是 32 个字符时，程序拒绝启动并在日志中说明（`configuration: …`）；密钥格式不对时日志为 `WECHAT_PRIVATE_KEY: …` / `WECHAT_PUBLIC_KEY: …`。
+
+验证：
+
+```bash
+# 1. 通知地址可达：未签名的请求应返回 HTTP 400 和 {"code":"FAIL",…}；返回 404 说明 WECHAT_* 没有生效
+curl -s -w ' %{http_code}\n' -X POST https://cirrus.routeforge.zone/pay/wechat/notify -H 'Content-Type: application/json' -d '{}'
+
+# 2. 下单：应返回 "pay":{"type":"qr","qr_text":"weixin://wxpay/bizpayurl?pr=…",…}
+curl -s -X POST https://cirrus.routeforge.zone/api/v1/orders -H 'Content-Type: application/json' \
+  -d '{"product":"cirrus-linux","email":"smoke-test@example.com","method":"wechat"}'
+#    如果是 "type":"static_qr"，说明接口调用失败、退回了静态收款码，查看原因：
+docker compose logs --tail=50 cirrus-license | grep -E 'payment provider failed|wechat'
+```
+
+3. 打开 `https://cirrus.routeforge.zone/admin`，订单页顶部应显示“微信：微信支付 API（Native），自动确认”。
+4. 真实付款测试：在 `/buy` 选择微信支付下单，用微信扫码付款。几秒内页面应显示许可证，日志中有 `order paid … via=wechat`。测试后可以在商户平台退款，并在后台吊销这张许可证。
+
+第 2 步创建的测试订单不用处理，2 小时后自动过期。
+
+## 14. OAuth 权限范围自动同步
+
+App 在“使用 Cloudflare 登录”前请求 `GET /api/v1/oauth/config`，按返回的 `client_id` 和 `scopes` 发起授权（`offline_access` 由 App 自己添加）。这样在 Cloudflare 修改 OAuth 客户端的权限范围后，不需要发布新版 App。
+
+返回什么：
+
+| 配置 | `/api/v1/oauth/config` |
+| --- | --- |
+| 自动同步成功过 | Cloudflare 上该客户端的 `scopes` / `optional_scopes`，`"source":"cloudflare"` |
+| 没有自动同步，或同步还没成功过 | `OAUTH_SCOPES` / `OAUTH_OPTIONAL_SCOPES`，`"source":"env"` |
+| 两者都没有 | 404 `{"error":"not_configured",…}`（App 使用内置的权限范围） |
+
+`offline_access` 和 `openid` 总是被去掉。同步结果缓存 1 小时，到期后由下一个请求刷新；刷新失败时继续使用上次成功的结果，1 分钟后再试。响应带 `Cache-Control: public, max-age=300`。
+
+所需变量（写入 `/opt/cirrus-license/.env`）：
+
+| 变量 | 说明 |
+| --- | --- |
+| `OAUTH_CLIENT_ID` | 可选，默认 `9c147a5155baf903357222bd4d31ad50`（Cirrus 的 OAuth 客户端） |
+| `OAUTH_SCOPES` | 建议填写，作为同步失败时的后备，空格或逗号分隔，例如 `zone.read dns.read` |
+| `OAUTH_OPTIONAL_SCOPES` | 可选 |
+| `CF_ACCOUNT_ID` | OAuth 客户端所在的 Cloudflare 账户 ID（控制台网址 `dash.cloudflare.com/<账户 ID>` 中的部分） |
+| `CF_API_TOKEN` | 推荐：API 令牌（My Profile → API Tokens → 创建自定义令牌，只授予该账户读取 OAuth 客户端的权限） |
+| `CF_API_EMAIL` + `CF_API_KEY` | 或者：账户邮箱和 Global API Key（权限很大，`.env` 要保管好） |
+
+`CF_ACCOUNT_ID` 和凭据必须成对填写，只填一部分时程序拒绝启动。凭据只用来读取 OAuth 客户端，不会出现在响应或日志中。
+
+```bash
+cd /opt/cirrus-license
+set_env() { if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+set_env OAUTH_SCOPES 'zone.read zone.write dns.read'        # 后备权限范围，按实际填写
+set_env CF_ACCOUNT_ID '0123456789abcdef0123456789abcdef'
+set_env CF_API_TOKEN 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+# 或者用 Global API Key：
+# set_env CF_API_EMAIL 'owner@example.com'; set_env CF_API_KEY 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+# 先直接确认凭据能读到这个客户端（应打印 True [] 和权限列表）：
+A=$(grep '^CF_ACCOUNT_ID=' .env | cut -d= -f2-); T=$(grep '^CF_API_TOKEN=' .env | cut -d= -f2-)
+C=$(grep '^OAUTH_CLIENT_ID=' .env | cut -d= -f2-); C=${C:-9c147a5155baf903357222bd4d31ad50}
+curl -s -H "Authorization: Bearer $T" "https://api.cloudflare.com/client/v4/accounts/$A/oauth_clients/$C" |
+  python3 -c 'import json,sys; d=json.load(sys.stdin); r=d.get("result") or {}; print(d.get("success"), d.get("errors"), r.get("scopes"), r.get("optional_scopes"))'
+unset T
+#   用 Global API Key 时把 -H "Authorization: …" 换成 -H "X-Auth-Email: …" -H "X-Auth-Key: …"
+
+docker compose up -d
+```
+
+验证：
+
+```bash
+curl https://cirrus.routeforge.zone/api/v1/oauth/config
+# {"client_id":"9c147a5155baf903357222bd4d31ad50","scopes":[…],"optional_scopes":[…],"source":"cloudflare"}
+curl -sI https://cirrus.routeforge.zone/api/v1/oauth/config | grep -i cache-control     # public, max-age=300
+docker compose -f /opt/cirrus-license/docker-compose.yml logs cirrus-license | grep 'oauth scope'
+# oauth scopes synced client_id=… scopes=N optional_scopes=M
+```
+
+- `"source":"env"`：同步失败，日志中 `oauth scope sync failed err=…` 给出原因（多为令牌权限不足、`CF_ACCOUNT_ID` 或 `OAUTH_CLIENT_ID` 不对）。
+- 404 `not_configured`：同步失败且没有填 `OAUTH_SCOPES`。
+- 同步在第一次请求时才进行，所以日志要在第一次 `curl` 之后才出现。
+- 在 Cloudflare 修改权限范围后，最迟约 1 小时 5 分钟 App 会用上新的权限；要立刻生效：`docker compose restart cirrus-license`。
 
 ## 附录 A：手动执行购买流程（无法运行 smoke-test.sh 时）
 

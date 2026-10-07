@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"cirrus/server/internal/pay"
 	"cirrus/server/internal/store"
 )
 
@@ -149,7 +150,44 @@ func (a *App) adminOrders(w http.ResponseWriter, r *http.Request) {
 	for _, o := range orders {
 		rows = append(rows, orderRow{Order: o, Effective: o.EffectiveStatus(now)})
 	}
-	a.adminPage(w, r, "admin_orders", map[string]any{"Orders": rows, "Stats": stats, "Status": status})
+	a.adminPage(w, r, "admin_orders", map[string]any{"Orders": rows, "Stats": stats, "Status": status, "PayModes": a.payModes()})
+}
+
+type payMode struct{ Name, Mode string }
+
+// payModes says how each payment method is collected right now.
+func (a *App) payModes() []payMode {
+	var out []payMode
+	for _, m := range []string{"alipay", "wechat"} {
+		pm := payMode{Name: "支付宝"}
+		if m == "wechat" {
+			pm.Name = "微信"
+		}
+		static := a.static[m].Available()
+		switch {
+		case !a.cfg.MethodEnabled(m):
+			pm.Mode = "未启用（PAY_METHODS）"
+		case m == "alipay" && a.alipay != nil && a.alipay.Mode == pay.ModePage:
+			pm.Mode = "支付宝 API（电脑网站支付），自动确认"
+		case m == "alipay" && a.alipay != nil:
+			pm.Mode = "支付宝 API（当面付），自动确认"
+		case m == "wechat" && a.wechat != nil:
+			pm.Mode = "微信支付 API（Native），自动确认"
+		case static:
+			pm.Mode = "静态收款码，人工确认"
+		default:
+			pm.Mode = "不可用（缺少 data/pay/" + m + ".png）"
+		}
+		if (m == "alipay" && a.alipay != nil || m == "wechat" && a.wechat != nil) && a.cfg.MethodEnabled(m) {
+			if static {
+				pm.Mode += "；接口失败时退回静态收款码"
+			} else {
+				pm.Mode += "；无备用静态收款码"
+			}
+		}
+		out = append(out, pm)
+	}
+	return out
 }
 
 func (a *App) adminLicenses(w http.ResponseWriter, r *http.Request) {

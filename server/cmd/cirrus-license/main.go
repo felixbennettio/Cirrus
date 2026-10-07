@@ -130,6 +130,17 @@ func run(log *slog.Logger) error {
 		ali.Mode = cfg.Alipay.Mode
 		opts.Alipay = ali
 	}
+	if w := cfg.WeChat; w.Enabled() {
+		wx, err := pay.NewWeChat(pay.WeChatConfig{
+			MchID: w.MchID, AppID: w.AppID, APIv3Key: w.APIv3Key, CertSerial: w.CertSerial,
+			PrivateKey: w.PrivateKey, PublicKey: w.PublicKey, PublicKeyID: w.PublicKeyID,
+			Gateway: w.Gateway, NotifyURL: cfg.PublicURL + "/pay/wechat/notify",
+		})
+		if err != nil {
+			return err
+		}
+		opts.WeChat = wx
+	}
 	a, err := app.New(opts)
 	if err != nil {
 		return err
@@ -152,7 +163,8 @@ func run(log *slog.Logger) error {
 	go func() { errc <- srv.ListenAndServe() }()
 	log.Info("cirrus-license started", "version", version, "listen", cfg.Listen, "public_url", cfg.PublicURL,
 		"data_dir", cfg.DataDir, "pay_methods", cfg.PayMethods, "alipay_api", cfg.Alipay.Enabled(),
-		"alipay_mode", cfg.Alipay.Mode, "smtp", cfg.SMTP.Enabled(), "admin", cfg.AdminPassword != "",
+		"alipay_mode", cfg.Alipay.Mode, "wechat_api", cfg.WeChat.Enabled(), "oauth_client_id", cfg.OAuth.ClientID,
+		"oauth_scope_sync", cfg.OAuth.SyncEnabled(), "smtp", cfg.SMTP.Enabled(), "admin", cfg.AdminPassword != "",
 		"trust_proxy", cfg.TrustProxy)
 
 	select {

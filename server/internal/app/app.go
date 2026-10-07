@@ -30,7 +30,8 @@ type Options struct {
 	Store  *store.Store
 	Key    ed25519.PrivateKey
 	Mailer mailer.Mailer // nil: no email delivery
-	Alipay *pay.Alipay   // nil: Alipay Face-to-Face is off
+	Alipay *pay.Alipay   // nil: the Alipay API is off
+	WeChat *pay.WeChat   // nil: the WeChat Pay API is off
 	Logger *slog.Logger
 	Now    func() time.Time
 }
@@ -43,7 +44,9 @@ type App struct {
 	pubB64 string
 	mail   mailer.Mailer
 	alipay *pay.Alipay
+	wechat *pay.WeChat
 	static map[string]*pay.Static
+	oauth  *oauthSync // nil: OAuth scopes come from OAUTH_SCOPES only
 	log    *slog.Logger
 	now    func() time.Time
 
@@ -80,6 +83,7 @@ func New(o Options) (*App, error) {
 		pubB64: license.PublicKeyBase64(o.Key),
 		mail:   o.Mailer,
 		alipay: o.Alipay,
+		wechat: o.WeChat,
 		static: map[string]*pay.Static{
 			"alipay": pay.NewStatic("alipay", o.Config.DataDir),
 			"wechat": pay.NewStatic("wechat", o.Config.DataDir),
@@ -92,6 +96,9 @@ func New(o Options) (*App, error) {
 		resendLimit: ratelimit.New(10*time.Minute, 3, maxKeys),
 		emailLimit:  ratelimit.New(15*time.Minute, 1, maxKeys),
 		authLimit:   ratelimit.New(3*time.Minute, 10, maxKeys),
+	}
+	if o.Config.OAuth.SyncEnabled() {
+		a.oauth = newOAuthSync(o.Config.OAuth, a.now, a.log)
 	}
 	if err := a.loadTemplates(); err != nil {
 		return nil, err
@@ -130,9 +137,11 @@ func (a *App) routes() *http.ServeMux {
 	m.Handle("POST /api/v1/orders", a.limit(a.orderLimit, a.apiCreateOrder))
 	m.HandleFunc("GET /api/v1/orders/{order_no}", a.apiGetOrder)
 	m.HandleFunc("GET /api/v1/orders/{order_no}/qr.png", a.apiOrderQR)
+	m.HandleFunc("GET /api/v1/oauth/config", a.apiOAuthConfig)
 	m.HandleFunc("/api/", a.apiNotFound)
 
 	m.HandleFunc("POST /pay/alipay/notify", a.alipayNotify)
+	m.HandleFunc("POST /pay/wechat/notify", a.wechatNotify)
 
 	m.HandleFunc("GET /static/pay/{file}", a.payImage)
 	m.Handle("GET /static/", a.staticHandler())

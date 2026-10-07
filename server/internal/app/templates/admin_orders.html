@@ -18,6 +18,7 @@
  <a class="{{if eq .Data.Status "expired"}}active{{end}}" href="/admin?status=expired">已过期</a>
  <a class="{{if eq .Data.Status "cancelled"}}active{{end}}" href="/admin?status=cancelled">已取消</a>
 </p>
+<p class="muted" id="pay-modes">收款方式：{{range $i, $m := .Data.PayModes}}{{if $i}}　{{end}}{{.Name}}：{{.Mode}}{{end}}</p>
 <p class="muted">核对收款时，以付款备注中的订单号和金额为准。确认后会立即签发许可证{{if .Site.SMTP}}并发送邮件{{end}}。已过期的订单如果确实收到了款，也可以确认。</p>
 <div class="table">
 <table>

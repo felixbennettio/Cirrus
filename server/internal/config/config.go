@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"cirrus/server/internal/money"
 )
@@ -39,6 +40,50 @@ type Alipay struct {
 // Enabled reports whether Face-to-Face payment is configured.
 func (a Alipay) Enabled() bool {
 	return a.AppID != "" && a.PrivateKey != "" && a.PublicKey != ""
+}
+
+// WeChat holds the WeChat Pay APIv3 settings (Native 支付). It is enabled
+// only when everything but Gateway is set.
+type WeChat struct {
+	MchID       string // 商户号
+	AppID       string // AppID bound to the merchant
+	APIv3Key    string // 32 bytes
+	CertSerial  string // serial number of the merchant API certificate
+	PrivateKey  string // apiclient_key.pem
+	PublicKey   string // 微信支付公钥
+	PublicKeyID string // PUB_KEY_ID_…
+	Gateway     string
+}
+
+// Enabled reports whether WeChat Pay Native is configured.
+func (w WeChat) Enabled() bool { return w.setCount() == 7 }
+
+func (w WeChat) setCount() int {
+	n := 0
+	for _, v := range []string{w.MchID, w.AppID, w.APIv3Key, w.CertSerial, w.PrivateKey, w.PublicKey, w.PublicKeyID} {
+		n += btoi(v != "")
+	}
+	return n
+}
+
+// OAuth is the Cloudflare OAuth client the apps sign in with, served by
+// GET /api/v1/oauth/config. Scopes come from the Cloudflare API when
+// AccountID and API credentials are set, else from OAUTH_SCOPES.
+type OAuth struct {
+	ClientID       string
+	Scopes         []string
+	OptionalScopes []string
+
+	AccountID string
+	APIToken  string // Bearer token, preferred
+	APIEmail  string // with APIKey: Global API Key
+	APIKey    string
+	APIBase   string // Cloudflare API base URL; not from the environment
+}
+
+// SyncEnabled reports whether the scopes are synced from Cloudflare.
+func (o OAuth) SyncEnabled() bool {
+	return o.AccountID != "" && (o.APIToken != "" || (o.APIEmail != "" && o.APIKey != ""))
 }
 
 // SMTP holds the optional mail settings for sending licence keys.
@@ -76,6 +121,8 @@ type Config struct {
 	PayMethods []string
 
 	Alipay Alipay
+	WeChat WeChat
+	OAuth  OAuth
 	SMTP   SMTP
 }
 
@@ -143,6 +190,26 @@ func Load(getenv func(string) string) (*Config, error) {
 			PublicKey:  env("ALIPAY_PUBLIC_KEY", ""),
 			Gateway:    env("ALIPAY_GATEWAY", "https://openapi.alipay.com/gateway.do"),
 			Mode:       strings.ToLower(env("ALIPAY_MODE", "precreate")),
+		},
+		WeChat: WeChat{
+			MchID:       env("WECHAT_MCHID", ""),
+			AppID:       env("WECHAT_APPID", ""),
+			APIv3Key:    env("WECHAT_API_V3_KEY", ""),
+			CertSerial:  env("WECHAT_CERT_SERIAL", ""),
+			PrivateKey:  env("WECHAT_PRIVATE_KEY", ""),
+			PublicKey:   env("WECHAT_PUBLIC_KEY", ""),
+			PublicKeyID: env("WECHAT_PUBLIC_KEY_ID", ""),
+			Gateway:     strings.TrimRight(env("WECHAT_GATEWAY", "https://api.mch.weixin.qq.com"), "/"),
+		},
+		OAuth: OAuth{
+			ClientID:       env("OAUTH_CLIENT_ID", "9c147a5155baf903357222bd4d31ad50"),
+			Scopes:         scopeList(env("OAUTH_SCOPES", "")),
+			OptionalScopes: scopeList(env("OAUTH_OPTIONAL_SCOPES", "")),
+			AccountID:      env("CF_ACCOUNT_ID", ""),
+			APIToken:       env("CF_API_TOKEN", ""),
+			APIEmail:       env("CF_API_EMAIL", ""),
+			APIKey:         env("CF_API_KEY", ""),
+			APIBase:        "https://api.cloudflare.com/client/v4",
 		},
 		SMTP: SMTP{
 			Host: env("SMTP_HOST", ""),
@@ -227,6 +294,26 @@ func Load(getenv func(string) string) (*Config, error) {
 		fail("ALIPAY_GATEWAY must be an absolute URL")
 	}
 
+	wc := c.WeChat
+	if n := wc.setCount(); n > 0 && n < 7 {
+		fail("the WeChat Pay API needs all of WECHAT_MCHID, WECHAT_APPID, WECHAT_API_V3_KEY, WECHAT_CERT_SERIAL, " +
+			"WECHAT_PRIVATE_KEY, WECHAT_PUBLIC_KEY and WECHAT_PUBLIC_KEY_ID")
+	}
+	if wc.APIv3Key != "" && len(wc.APIv3Key) != 32 {
+		fail("WECHAT_API_V3_KEY must be 32 characters, got %d", len(wc.APIv3Key))
+	}
+	if u, err := url.Parse(wc.Gateway); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		fail("WECHAT_GATEWAY must be an absolute URL")
+	}
+
+	oa := c.OAuth
+	if oa.ClientID == "" || strings.ContainsAny(oa.ClientID, "/?#% ") {
+		fail("OAUTH_CLIENT_ID is not a valid client id")
+	}
+	if (oa.AccountID != "" || oa.APIToken != "" || oa.APIEmail != "" || oa.APIKey != "") && !oa.SyncEnabled() {
+		fail("OAuth scope sync needs CF_ACCOUNT_ID plus CF_API_TOKEN, or CF_ACCOUNT_ID plus CF_API_EMAIL and CF_API_KEY")
+	}
+
 	port, err := strconv.Atoi(env("SMTP_PORT", "465"))
 	if err != nil || port < 1 || port > 65535 {
 		fail("SMTP_PORT must be a port number")
@@ -247,6 +334,11 @@ func Load(getenv func(string) string) (*Config, error) {
 		return nil, fmt.Errorf("configuration: %s", strings.Join(errs, "; "))
 	}
 	return c, nil
+}
+
+// scopeList splits a space- or comma-separated list.
+func scopeList(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
 }
 
 func btoi(b bool) int {
