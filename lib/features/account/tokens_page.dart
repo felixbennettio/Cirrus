@@ -9,6 +9,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 /// User-owned and account-owned API tokens.
 class TokensPage extends ConsumerWidget {
@@ -70,7 +71,7 @@ class _TokenList extends ConsumerWidget {
                     icon: const Icon(Icons.add),
                     label: Text(context.tr('Create token', '创建 Token')),
                     onPressed: () async {
-                      final ok = await showDialog<bool>(
+                      final ok = await showAppDialog<bool>(
                         context: context,
                         builder: (_) => _CreateTokenDialog(base: base, account: account),
                       );

@@ -7,6 +7,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 class MembersPage extends ConsumerWidget {
   const MembersPage({super.key});
@@ -36,7 +37,7 @@ class MembersPage extends ConsumerWidget {
                 for (final r in ((member?['roles'] as List?) ?? const []).cast<Map>()) r['id'] as String,
               };
               final selected = {...current};
-              final ok = await showDialog<bool>(
+              final ok = await showAppDialog<bool>(
                 context: context,
                 builder: (ctx) => StatefulBuilder(
                   builder: (ctx, setState) => AlertDialog(

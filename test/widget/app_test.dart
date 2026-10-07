@@ -1,5 +1,6 @@
 import 'package:cirrus/app/app.dart';
 import 'package:cirrus/app/router.dart';
+import 'package:cirrus/app/theme.dart';
 import 'package:cirrus/core/api/cf_client.dart';
 import 'package:cirrus/core/auth/credential.dart';
 import 'package:cirrus/core/auth/oauth.dart';
@@ -9,7 +10,10 @@ import 'package:cirrus/core/auth/credential_store.dart';
 import 'package:cirrus/core/licensing/license_controller.dart';
 import 'package:cirrus/core/session/session.dart';
 import 'package:cirrus/core/settings/app_settings.dart';
+import 'package:cirrus/ui/widgets/common.dart';
+import 'package:cirrus/ui/widgets/glass.dart';
 import 'package:dio/dio.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -248,5 +252,53 @@ void main() {
     expect(find.textContaining('203.0.113.10', findRichText: true), findsOneWidget);
     expect(find.text('MX'), findsWidgets);
     expect(find.text('2 of 2 records'), findsOneWidget);
+  });
+
+  testWidgets('settings turn liquid glass on: glass app bar and sidebar, content scrolls behind', (tester) async {
+    final container = await _pumpApp(tester, profiles: [_profile]);
+    container.read(routerProvider).go('/settings');
+    await _settle(tester);
+    // Off by default outside iOS/macOS.
+    expect(find.byType(BackdropFilter), findsNothing);
+    // No platform colours in tests: the switch is shown, disabled, with a hint.
+    final dynamicTile = find.widgetWithText(SwitchListTile, 'Dynamic colour');
+    expect(tester.widget<SwitchListTile>(dynamicTile).onChanged, isNull);
+    expect(find.textContaining('Cirrus uses its own colours'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Liquid glass'));
+    await _settle(tester);
+    expect(container.read(settingsProvider).liquidGlass, isTrue);
+    // One blur for the app bar, one for the sidebar panel.
+    expect(find.byType(BackdropFilter), findsNWidgets(2));
+    expect(find.byType(AmbientBackground), findsWidgets);
+    final page = find.ancestor(of: find.byType(ContentList), matching: find.byType(Scaffold)).first;
+    expect(tester.widget<Scaffold>(page).extendBodyBehindAppBar, isTrue);
+    // The list starts below the bar, though it can scroll behind it.
+    final bar = find.descendant(of: page, matching: find.byType(AppBar));
+    expect(tester.getTopLeft(find.text('Credentials')).dy, greaterThan(tester.getBottomLeft(bar).dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dynamic colour follows the system accent colour where there is one', (tester) async {
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(
+      DynamicColorPlugin.channel,
+      (call) async => call.method == 'getAccentColor' ? 0xFF1565C0 : null,
+    );
+    addTearDown(() => messenger.setMockMethodCallHandler(DynamicColorPlugin.channel, null));
+    final container = await _pumpApp(tester, profiles: [_profile]);
+    Color primary() => tester.widget<MaterialApp>(find.byType(MaterialApp)).theme!.colorScheme.primary;
+    final brand = brandScheme(Brightness.light).primary;
+    expect(primary(), isNot(brand));
+    container.read(routerProvider).go('/settings');
+    await _settle(tester);
+    final dynamicTile = find.widgetWithText(SwitchListTile, 'Dynamic colour');
+    expect(tester.widget<SwitchListTile>(dynamicTile).value, isTrue);
+    await tester.tap(dynamicTile);
+    await _settle(tester);
+    expect(container.read(settingsProvider).dynamicColor, isFalse);
+    expect(primary(), brand);
   });
 }

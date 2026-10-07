@@ -6,6 +6,7 @@ import '../../core/util/format.dart';
 import '../../core/util/tr.dart';
 import 'code_editor.dart';
 import 'feedback.dart';
+import 'glass.dart';
 
 /// Collapsible tree view of decoded JSON.
 class JsonTreeView extends StatelessWidget {
@@ -192,7 +193,7 @@ class _JsonViewerState extends State<JsonViewer> {
 
 /// Shows any JSON in a dialog/bottom sheet.
 Future<void> showJsonDialog(BuildContext context, Object? data, {String? title}) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
     builder: (ctx) => Dialog(
       insetPadding: const EdgeInsets.all(16),

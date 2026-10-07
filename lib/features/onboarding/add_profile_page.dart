@@ -9,6 +9,7 @@ import '../../core/api/cf_client.dart';
 import '../../core/auth/credential.dart';
 import '../../core/auth/oauth.dart';
 import '../../core/auth/oauth_login.dart';
+import '../../core/auth/oauth_remote_config.dart';
 import '../../core/auth/verify.dart';
 import '../../core/cache/query_cache.dart';
 import '../../core/session/session.dart';
@@ -63,7 +64,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
   }
 
   Future<void> _signInWithOAuth() async {
-    final config = _oauthConfig;
+    var config = _oauthConfig;
     if (config == null) return;
     final cancel = Completer<void>();
     setState(() {
@@ -73,6 +74,13 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
     });
     final sessions = ref.read(oauthSessionsProvider);
     try {
+      final builtIn = ref.read(oauthConfigProvider);
+      if (builtIn != null && config.clientId == builtIn.clientId) {
+        // The built-in client: request the scopes it is configured with on
+        // Cloudflare right now (as the Cirrus website reports them).
+        config = await ref.read(oauthScopeResolverProvider).resolve(builtIn);
+        if (cancel.isCompleted) return;
+      }
       final tokens = await signInWithCloudflare(config, cancel: cancel.future);
       final previous = widget.editing?.kind == AuthKind.oauth ? widget.editing : null;
       var profile = Profile(
@@ -339,6 +347,7 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
         ],
         if (widget.editing == null || editingOAuth) ...[
           _oauthSection(context, theme, editingOAuth),
+          if (editingOAuth) _GrantedScopes(profile: widget.editing!),
           const SizedBox(height: 12),
           if (!editingOAuth) ...[_orDivider(context, theme), const SizedBox(height: 16)],
         ],
@@ -524,6 +533,86 @@ class _AddProfilePageState extends ConsumerState<AddProfilePage> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: form),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The scopes granted at sign-in, and any requested ones that were not.
+class _GrantedScopes extends ConsumerWidget {
+  const _GrantedScopes({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final granted = ref.watch(grantedScopesProvider(profile.id));
+    final scopes = granted.value ?? const <String>[];
+    final missing = [
+      for (final s in profile.oauthScopes)
+        if (s != OAuthConfig.offlineScope && !scopes.contains(s)) s,
+    ];
+    final hint = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Theme(
+      data: theme.copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        leading: const Icon(Icons.verified_user_outlined),
+        title: Text(context.tr('Granted permissions', '已授予的权限'), style: theme.textTheme.bodyMedium),
+        subtitle: Text(
+          granted.isLoading ? '…' : context.tr('${scopes.length} scopes', '${scopes.length} 项'),
+          style: hint,
+        ),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        children: [
+          if (!granted.isLoading && scopes.isEmpty)
+            Text(
+              context.tr(
+                'This sign-in did not record its permissions. Sign in again to see them.',
+                '本次登录没有记录授权范围，重新登录后即可查看。',
+              ),
+              style: hint,
+            )
+          else
+            Wrap(spacing: 6, runSpacing: 6, children: [for (final s in scopes) _ScopeChip(s)]),
+          if (scopes.isNotEmpty && missing.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(context.tr('Requested but not granted', '已请求但未授予'), style: theme.textTheme.labelMedium),
+            const SizedBox(height: 6),
+            Wrap(spacing: 6, runSpacing: 6, children: [for (final s in missing) _ScopeChip(s, missing: true)]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ScopeChip extends StatelessWidget {
+  const _ScopeChip(this.scope, {this.missing = false});
+
+  final String scope;
+  final bool missing;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: missing ? null : scheme.surfaceContainerHighest,
+        border: missing ? Border.all(color: scheme.outlineVariant) : null,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        scope,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: scheme.onSurfaceVariant,
+          decoration: missing ? TextDecoration.lineThrough : null,
         ),
       ),
     );

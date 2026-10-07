@@ -11,6 +11,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 String _projects(String accountId) => '/accounts/$accountId/pages/projects';
 
@@ -224,7 +225,7 @@ class _Deployments extends ConsumerWidget {
                           case 'open':
                             _open(d['url'] as String?);
                           case 'logs':
-                            await showDialog<void>(
+                            await showAppDialog<void>(
                               context: context,
                               builder: (_) => _LogsDialog(path: '$base/$id/history/logs'),
                             );

@@ -6,6 +6,7 @@ import '../../core/session/session.dart';
 import '../../core/settings/app_settings.dart';
 import '../../core/util/tr.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 class _SwitcherButton extends StatelessWidget {
   const _SwitcherButton({required this.icon, required this.title, required this.subtitle, required this.onTap});
@@ -77,7 +78,7 @@ class AccountSwitcher extends ConsumerWidget {
 }
 
 Future<void> showAccountPicker(BuildContext context) {
-  return showDialog<void>(context: context, builder: (_) => const _AccountPickerDialog());
+  return showAppDialog<void>(context: context, builder: (_) => const _AccountPickerDialog());
 }
 
 class _AccountPickerDialog extends ConsumerWidget {
@@ -181,7 +182,7 @@ class ZoneSwitcher extends ConsumerWidget {
 }
 
 Future<void> showZonePicker(BuildContext context) {
-  return showDialog<void>(context: context, builder: (_) => const _ZonePickerDialog());
+  return showAppDialog<void>(context: context, builder: (_) => const _ZonePickerDialog());
 }
 
 class _ZonePickerDialog extends ConsumerStatefulWidget {

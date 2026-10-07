@@ -13,6 +13,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
 import 'phases.dart';
+import '../../ui/widgets/glass.dart';
 
 /// Rules of one phase entry point (zone or account level).
 class RulesetPhaseView extends ConsumerStatefulWidget {
@@ -48,7 +49,7 @@ class _RulesetPhaseViewState extends ConsumerState<RulesetPhaseView> {
     QueryHandle<Map<String, dynamic>?> h, [
     Map<String, dynamic>? rule,
   ]) async {
-    final body = await showDialog<Map<String, dynamic>>(
+    final body = await showAppDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => RuleEditorDialog(meta: widget.meta, rule: rule),
     );

@@ -21,6 +21,15 @@ final oauthSessionsProvider = Provider<OAuthSessions>((ref) => OAuthSessions(ref
 /// The OAuth client built into this binary (null when not configured).
 final oauthConfigProvider = Provider<OAuthConfig?>((ref) => OAuthConfig.builtIn);
 
+/// The scopes granted to an OAuth profile at sign-in (the token response's
+/// `scope`, kept with its tokens), without `offline_access`.
+final grantedScopesProvider = FutureProvider.autoDispose.family<List<String>, String>((ref, profileId) async {
+  final p = (ref.watch(profilesProvider).value ?? const <Profile>[]).firstWhereOrNull((e) => e.id == profileId);
+  if (p == null || p.kind != AuthKind.oauth) return const [];
+  final tokens = await ref.read(oauthSessionsProvider).forProfile(p).loadTokens();
+  return [...?tokens?.scopes.where((s) => s != OAuthConfig.offlineScope)];
+});
+
 /// All saved credential profiles.
 class ProfilesController extends AsyncNotifier<List<Profile>> {
   @override

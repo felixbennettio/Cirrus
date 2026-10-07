@@ -9,6 +9,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import 'workers_api.dart';
+import '../../ui/widgets/glass.dart';
 
 class WorkersListPage extends ConsumerStatefulWidget {
   const WorkersListPage({super.key});
@@ -23,7 +24,7 @@ class _WorkersListPageState extends ConsumerState<WorkersListPage> {
   Future<void> _create(String accountId, QueryHandle h) async {
     final name = TextEditingController();
     var template = workerTemplates.keys.first;
-    final ok = await showDialog<bool>(
+    final ok = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(

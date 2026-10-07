@@ -37,6 +37,9 @@ class OAuthSession implements AccessTokenSource {
 
   OAuthTokens? get tokens => _tokens;
 
+  /// The stored tokens, loading them if needed (null when signed out).
+  Future<OAuthTokens?> loadTokens() async => _tokens ??= await store.readTokens(profileId);
+
   @override
   Future<String> accessToken({String? rejected}) async {
     var t = _tokens ??= await store.readTokens(profileId);
@@ -66,7 +69,16 @@ class OAuthSession implements AccessTokenSource {
     if (rt == null || rt.isEmpty) {
       throw const OAuthException('invalid_grant', 'The session cannot be renewed. Sign in again.');
     }
-    final next = await api.refresh(clientId, rt);
+    var next = await api.refresh(clientId, rt);
+    // A refresh response may leave out `scope`: the grant is unchanged then.
+    if (next.scopes.isEmpty && current.scopes.isNotEmpty) {
+      next = OAuthTokens(
+        accessToken: next.accessToken,
+        refreshToken: next.refreshToken,
+        expiresAt: next.expiresAt,
+        scopes: current.scopes,
+      );
+    }
     _tokens = next;
     await store.writeTokens(profileId, next);
     return next;

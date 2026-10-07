@@ -14,6 +14,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/files.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 String _buckets(String accountId) => '/accounts/$accountId/r2/buckets';
 
@@ -42,7 +43,7 @@ class R2BucketsPage extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: Text(context.tr('Create bucket', '创建存储桶')),
               onPressed: () async {
-                final r = await showDialog<Map<String, dynamic>>(
+                final r = await showAppDialog<Map<String, dynamic>>(
                   context: context,
                   builder: (_) => const _CreateBucketDialog(),
                 );
@@ -364,7 +365,7 @@ class _ObjectBrowserState extends ConsumerState<_ObjectBrowser> with AutomaticKe
     }
     final r = await runAction(context, () => _c.rawOk('GET', _objPath(key)));
     if (r == null || !mounted) return;
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
         insetPadding: const EdgeInsets.all(16),
