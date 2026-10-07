@@ -8,6 +8,7 @@ import '../../core/util/tr.dart';
 import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
+import '../../ui/widgets/glass.dart';
 
 class EmailRoutingPage extends StatelessWidget {
   const EmailRoutingPage({super.key});
@@ -68,7 +69,7 @@ class _Rules extends ConsumerWidget {
     QueryHandle h, [
     Map<String, dynamic>? rule,
   ]) async {
-    final body = await showDialog<Map<String, dynamic>>(
+    final body = await showAppDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => _RuleDialog(zoneName: zoneName, rule: rule),
     );
@@ -449,7 +450,7 @@ class _Settings extends ConsumerWidget {
                 title: context.tr('Catch-all address', '全部捕获地址'),
                 trailing: TextButton(
                   onPressed: () async {
-                    final body = await showDialog<Map<String, dynamic>>(
+                    final body = await showAppDialog<Map<String, dynamic>>(
                       context: context,
                       builder: (_) => _RuleDialog(zoneName: zone['name'] as String, rule: s.catchAll, catchAll: true),
                     );

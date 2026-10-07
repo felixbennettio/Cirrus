@@ -13,6 +13,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/files.dart';
+import '../../ui/widgets/glass.dart';
 
 String _ns(String accountId) => '/accounts/$accountId/storage/kv/namespaces';
 
@@ -172,7 +173,7 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
     final r = await runAction(context, () => _c.rawOk('GET', '$_base/values/${Uri.encodeComponent(name)}'));
     if (r == null || !mounted) return;
     final isText = _looksText(r.bytes);
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (_) => _ValueEditor(
         name: name,
@@ -219,7 +220,7 @@ class _KvBrowserPageState extends ConsumerState<KvBrowserPage> {
   Future<void> _add() async {
     final key = await promptText(context, title: context.tr('Key name', '键名'));
     if (key == null || key.isEmpty || !mounted) return;
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (_) => _ValueEditor(
         name: key,

@@ -12,6 +12,7 @@ import '../../ui/widgets/async_view.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../../ui/widgets/json_view.dart';
+import '../../ui/widgets/glass.dart';
 
 String _tunnels(String accountId) => '/accounts/$accountId/cfd_tunnel';
 
@@ -111,7 +112,7 @@ Future<void> showInstallDialog(BuildContext context, String token) {
     'Docker':
         'docker run -d --restart unless-stopped cloudflare/cloudflared:latest tunnel --no-autoupdate run --token $token',
   };
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(ctx.tr('Install connector', '安装连接器')),
@@ -369,7 +370,7 @@ class _IngressEditorState extends ConsumerState<_IngressEditor> {
   Future<void> _edit(Map<String, dynamic> cfg, QueryHandle h, [int? index]) async {
     final rules = _ingress(cfg);
     final existing = index == null ? null : rules[index];
-    final result = await showDialog<(Map<String, dynamic>, bool)>(
+    final result = await showAppDialog<(Map<String, dynamic>, bool)>(
       context: context,
       builder: (_) => _IngressRuleDialog(rule: existing),
     );

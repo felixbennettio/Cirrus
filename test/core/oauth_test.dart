@@ -7,11 +7,17 @@ import 'package:cirrus/core/api/cf_exception.dart';
 import 'package:cirrus/core/auth/credential.dart';
 import 'package:cirrus/core/auth/oauth.dart';
 import 'package:cirrus/core/auth/oauth_login.dart';
+import 'package:cirrus/core/auth/oauth_remote_config.dart';
 import 'package:cirrus/core/auth/oauth_session.dart';
+import 'package:cirrus/core/licensing/license_config.dart';
+import 'package:cirrus/core/settings/app_settings.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/fake_api.dart';
+import '../support/fake_oauth_config.dart';
 
 class MemoryTokenStore implements OAuthTokenStore {
   final data = <String, OAuthTokens>{};
@@ -334,6 +340,196 @@ void main() {
       );
       await expectLater(f, throwsA(isA<OAuthException>().having((e) => e.code, 'code', 'cancelled')));
     });
+  });
+
+  group('scopes from the Cirrus website', () {
+    final builtIn = OAuthConfig.builtIn!;
+    final defaults = OAuthConfig.parseScopes(OAuthConfig.defaultScopes);
+    const serverScopes = ['account-settings.read', 'zone.read', 'dns.write'];
+    final same = RemoteOAuthConfig(
+      clientId: builtIn.clientId,
+      scopes: serverScopes,
+      optionalScopes: const ['dns.write'],
+      source: 'cloudflare',
+    );
+
+    Future<(OAuthScopeResolver, SharedPreferences)> resolver(FakeOAuthConfigFetcher fetcher) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      return (OAuthScopeResolver(fetcher: fetcher, prefs: prefs, timeout: const Duration(milliseconds: 50)), prefs);
+    }
+
+    test('requests exactly the server\'s scopes for the built-in client and caches them', () async {
+      final (r, prefs) = await resolver(FakeOAuthConfigFetcher(config: same));
+      final c = await r.resolve(builtIn);
+      expect(c.clientId, builtIn.clientId);
+      expect(c.scopes, serverScopes);
+      expect(c.requestScopes, [...serverScopes, 'offline_access']);
+      expect(prefs.getString(OAuthScopeResolver.cacheKey), isNotNull);
+      expect(r.cached?.optionalScopes, ['dns.write']);
+    });
+
+    test('keeps the built-in scopes when the server describes another client', () async {
+      final (r, prefs) = await resolver(
+        FakeOAuthConfigFetcher(
+          config: const RemoteOAuthConfig(clientId: 'someone-else', scopes: serverScopes),
+        ),
+      );
+      expect((await r.resolve(builtIn)).scopes, defaults);
+      expect(prefs.getString(OAuthScopeResolver.cacheKey), isNull);
+    });
+
+    test('keeps the built-in scopes when the server lists none', () async {
+      final (r, _) = await resolver(
+        FakeOAuthConfigFetcher(
+          config: RemoteOAuthConfig(clientId: builtIn.clientId, scopes: const []),
+        ),
+      );
+      expect((await r.resolve(builtIn)).scopes, defaults);
+    });
+
+    test('an empty client_id keeps the built-in client and takes the server\'s scopes', () async {
+      final (r, _) = await resolver(
+        FakeOAuthConfigFetcher(
+          config: const RemoteOAuthConfig(clientId: '', scopes: serverScopes, source: 'env'),
+        ),
+      );
+      final c = await r.resolve(builtIn);
+      expect(c.clientId, builtIn.clientId);
+      expect(c.scopes, serverScopes);
+    });
+
+    test('offline: the last known scopes, else the built-in ones', () async {
+      final fetcher = FakeOAuthConfigFetcher(
+        error: DioException.connectionError(
+          requestOptions: RequestOptions(path: '/api/v1/oauth/config'),
+          reason: 'offline',
+        ),
+      );
+      final (r, _) = await resolver(fetcher);
+      // Nothing cached yet.
+      expect((await r.resolve(builtIn)).scopes, defaults);
+      // One good answer is remembered...
+      fetcher
+        ..error = null
+        ..config = same;
+      expect((await r.resolve(builtIn)).scopes, serverScopes);
+      // ...and used while the server is unreachable or too slow.
+      fetcher.error = Exception('network down');
+      expect((await r.resolve(builtIn)).scopes, serverScopes);
+      fetcher
+        ..error = null
+        ..hang = true;
+      expect((await r.resolve(builtIn)).scopes, serverScopes);
+      expect(fetcher.calls, 4);
+      // A cached list for another client is not used.
+      expect((await r.resolve(const OAuthConfig(clientId: 'custom', scopes: ['zone.read']))).scopes, ['zone.read']);
+    });
+
+    test('fetches /api/v1/oauth/config from the licence server', () async {
+      final fake = FakeApi((method, uri, body) {
+        if (method != 'GET' || uri.toString() != 'https://licence.example/api/v1/oauth/config') return null;
+        return (
+          200,
+          {
+            'client_id': 'abc',
+            'scopes': 'zone.read  dns.read',
+            'optional_scopes': ['dns.read'],
+            'source': 'cloudflare',
+          },
+          const <String, List<String>>{},
+        );
+      });
+      final fetcher = HttpOAuthConfigFetcher('https://licence.example', dio: Dio()..httpClientAdapter = fake);
+      final c = await fetcher.fetch();
+      expect(c.clientId, 'abc');
+      expect(c.scopes, ['zone.read', 'dns.read']);
+      expect(c.optionalScopes, ['dns.read']);
+      expect(c.source, 'cloudflare');
+    });
+
+    test('a server without a config (404 not_configured) falls back to the built-in scopes', () async {
+      final fake = FakeApi(
+        (method, uri, body) => (
+          404,
+          {'error': 'not_configured', 'error_description': 'No OAuth client configured'},
+          const <String, List<String>>{},
+        ),
+      );
+      final fetcher = HttpOAuthConfigFetcher('https://licence.example', dio: Dio()..httpClientAdapter = fake);
+      await expectLater(fetcher.fetch(), throwsA(isA<DioException>()));
+      final (_, prefs) = await resolver(FakeOAuthConfigFetcher());
+      final c = await OAuthScopeResolver(fetcher: fetcher, prefs: prefs).resolve(builtIn);
+      expect(c.scopes, defaults);
+      expect(prefs.getString(OAuthScopeResolver.cacheKey), isNull);
+    });
+
+    test('the providers use the licence server and can be faked', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final real = ProviderContainer(
+        overrides: [licenseConfigProvider.overrideWithValue(const LicenseConfig(server: 'https://licence.example'))],
+      );
+      addTearDown(real.dispose);
+      expect(
+        (real.read(oauthConfigFetcherProvider) as HttpOAuthConfigFetcher).uri.toString(),
+        'https://licence.example/api/v1/oauth/config',
+      );
+      final faked = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          oauthConfigFetcherProvider.overrideWithValue(FakeOAuthConfigFetcher(config: same)),
+        ],
+      );
+      addTearDown(faked.dispose);
+      expect((await faked.read(oauthScopeResolverProvider).resolve(builtIn)).scopes, serverScopes);
+    });
+
+    test('the authorize URL carries the server\'s scopes', () async {
+      final (r, _) = await resolver(FakeOAuthConfigFetcher(config: same));
+      final resolved = await r.resolve(builtIn);
+      final links = StreamController<Uri>();
+      final (api, _) = tokenServer();
+      Uri? authorize;
+      await signInWithCloudflare(
+        resolved,
+        api: api,
+        receiver: AppLinkReceiver(links: links.stream),
+        launch: (url) async {
+          authorize = url;
+          links.add(Uri.parse('io.felixbennett.cirrus:/oauth/callback?code=xyz&state=${url.queryParameters['state']}'));
+        },
+      );
+      await links.close();
+      expect(authorize!.queryParameters['client_id'], builtIn.clientId);
+      expect(authorize!.queryParameters['scope'], 'account-settings.read zone.read dns.write offline_access');
+    });
+  });
+
+  test('a refresh without `scope` keeps the granted scopes', () async {
+    final fake = FakeApi((method, uri, body) {
+      if (uri.toString() != OAuthConfig.tokenEndpoint) return null;
+      return (
+        200,
+        {'access_token': 'access-2', 'refresh_token': 'refresh-2', 'expires_in': 3600},
+        const <String, List<String>>{},
+      );
+    });
+    final store = MemoryTokenStore();
+    store.data['o1'] = OAuthTokens(
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresAt: DateTime.now(),
+      scopes: const ['zone.read', 'offline_access'],
+    );
+    final session = OAuthSession(
+      profileId: 'o1',
+      clientId: 'client-1',
+      store: store,
+      api: OAuthApi(dio: Dio()..httpClientAdapter = fake),
+    );
+    expect(await session.accessToken(), 'access-2');
+    expect(store.data['o1']!.scopes, ['zone.read', 'offline_access']);
   });
 
   test('profiles round-trip OAuth fields', () {

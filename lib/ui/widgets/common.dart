@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/util/tr.dart';
+import '../cirrus_theme.dart';
 import 'feedback.dart';
+import 'glass.dart';
 
 /// Key of the root shell scaffold, so module pages can open the drawer.
 final shellScaffoldKey = GlobalKey<ScaffoldState>();
@@ -13,6 +15,9 @@ const wideLayoutBreakpoint = 900.0;
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= wideLayoutBreakpoint;
 
 /// Standard module page: an app bar with title/actions and a body.
+///
+/// With liquid glass on, the app bar is a glass surface over a softly tinted
+/// background, and an [InsetAwareBody] (e.g. [ContentList]) scrolls behind it.
 class PageScaffold extends StatelessWidget {
   const PageScaffold({
     super.key,
@@ -45,7 +50,10 @@ class PageScaffold extends StatelessWidget {
         onPressed: () => shellScaffoldKey.currentState?.openDrawer(),
       );
     }
-    return Scaffold(
+    final glass = glassActive(context);
+    final scaffold = Scaffold(
+      backgroundColor: glass ? Colors.transparent : null,
+      extendBodyBehindAppBar: glass && body is InsetAwareBody,
       appBar: AppBar(
         leading: lead,
         automaticallyImplyLeading: canPop,
@@ -66,10 +74,12 @@ class PageScaffold extends StatelessWidget {
               ),
         actions: [...actions, const SizedBox(width: 8)],
         bottom: bottom,
+        flexibleSpace: glass ? const GlassSurface(edge: GlassEdge.bottom) : null,
       ),
       floatingActionButton: floatingActionButton,
       body: body,
     );
+    return glass ? AmbientBackground(child: scaffold) : scaffold;
   }
 }
 
@@ -271,16 +281,10 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final colors = CirrusTheme.of(context);
     final (bg, fg) = switch (tone) {
-      Tone.good => (
-        dark ? const Color(0xFF1E3A2A) : const Color(0xFFDDF4E4),
-        dark ? const Color(0xFF8BE0A8) : const Color(0xFF16683A),
-      ),
-      Tone.warn => (
-        dark ? const Color(0xFF3D3214) : const Color(0xFFFFF1CC),
-        dark ? const Color(0xFFF5CF6A) : const Color(0xFF7A5A00),
-      ),
+      Tone.good => (colors.successContainer, colors.onSuccessContainer),
+      Tone.warn => (colors.warningContainer, colors.onWarningContainer),
       Tone.bad => (scheme.errorContainer, scheme.onErrorContainer),
       Tone.info => (scheme.primaryContainer, scheme.onPrimaryContainer),
       Tone.neutral => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
@@ -363,8 +367,9 @@ class SearchField extends StatelessWidget {
   }
 }
 
-/// Centered, width-limited scroll view for detail/settings pages.
-class ContentList extends StatelessWidget {
+/// Centered, width-limited scroll view for detail/settings pages. Pads by
+/// the [MediaQuery] insets, so it can scroll behind glass bars.
+class ContentList extends StatelessWidget implements InsetAwareBody {
   const ContentList({super.key, required this.children, this.maxWidth = 1100, this.onRefresh, this.padding});
 
   final List<Widget> children;
@@ -374,9 +379,11 @@ class ContentList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final insets = MediaQuery.paddingOf(context);
+    final base = padding ?? EdgeInsets.symmetric(horizontal: isWide(context) ? 24 : 12, vertical: 16);
     final list = ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: padding ?? EdgeInsets.symmetric(horizontal: isWide(context) ? 24 : 12, vertical: 16),
+      padding: base + EdgeInsets.only(top: insets.top, bottom: insets.bottom),
       children: [
         for (final c in children)
           Center(
@@ -388,7 +395,7 @@ class ContentList extends StatelessWidget {
       ],
     );
     if (onRefresh == null) return list;
-    return RefreshIndicator(onRefresh: onRefresh!, child: list);
+    return RefreshIndicator(onRefresh: onRefresh!, edgeOffset: insets.top, child: list);
   }
 }
 
