@@ -231,9 +231,12 @@ class OAuthApi {
     }
     final status = res.statusCode ?? 0;
     if (status >= 400 || json['error'] != null) {
+      // Cloudflare's server (Ory Hydra) puts the reason in `error_hint`,
+      // e.g. that a refresh token has expired or was already used.
+      final description = [json['error_description'], json['error_hint']].whereType<String>().join(' ');
       throw OAuthException(
         json['error'] as String? ?? 'http_$status',
-        json['error_description'] as String? ?? (json.isEmpty ? body : null),
+        description.isNotEmpty ? description : (json.isEmpty ? body : null),
       );
     }
     return json;

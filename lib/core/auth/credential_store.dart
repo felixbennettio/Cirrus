@@ -94,22 +94,28 @@ class CredentialStore implements OAuthTokenStore {
   static String _tokenKey(String profileId) => 'cirrus.oauth.$profileId';
   static String _tokenFile(String profileId) => 'oauth-$profileId.json';
 
+  /// Reads both copies: when a secure-storage write fails (e.g. a locked
+  /// device) the tokens go to the file and the secure copy is left behind
+  /// with a refresh token that has since been used. The newer copy wins.
   @override
   Future<OAuthTokens?> readTokens(String profileId) async {
-    String? raw;
+    OAuthTokens? secure, file;
     if (!usingFallback) {
       try {
-        raw = await _storage.read(key: _tokenKey(profileId));
+        secure = _parseTokens(profileId, await _storage.read(key: _tokenKey(profileId)));
       } catch (_) {
         usingFallback = true;
       }
     }
-    if (raw == null) {
-      try {
-        final f = await _fallbackFile(_tokenFile(profileId));
-        if (await f.exists()) raw = await f.readAsString();
-      } catch (_) {}
-    }
+    try {
+      final f = await _fallbackFile(_tokenFile(profileId));
+      if (await f.exists()) file = _parseTokens(profileId, await f.readAsString());
+    } catch (_) {}
+    if (secure == null || file == null) return secure ?? file;
+    return file.expiresAt.isAfter(secure.expiresAt) ? file : secure;
+  }
+
+  OAuthTokens? _parseTokens(String profileId, String? raw) {
     if (raw == null || raw.isEmpty) return null;
     try {
       return OAuthTokens.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
@@ -125,6 +131,11 @@ class CredentialStore implements OAuthTokenStore {
     if (!usingFallback) {
       try {
         await _storage.write(key: _tokenKey(profileId), value: raw);
+        // A file left from an earlier failed write is now out of date.
+        try {
+          final f = await _fallbackFile(_tokenFile(profileId));
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
         return;
       } catch (e) {
         debugPrint('Secure storage write failed, using fallback: $e');

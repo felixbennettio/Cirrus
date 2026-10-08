@@ -22,8 +22,15 @@ import '../support/fake_oauth_config.dart';
 class MemoryTokenStore implements OAuthTokenStore {
   final data = <String, OAuthTokens>{};
 
+  /// Delays of successive reads (none when empty), like a busy keychain.
+  final readDelays = <Duration>[];
+
   @override
-  Future<OAuthTokens?> readTokens(String profileId) async => data[profileId];
+  Future<OAuthTokens?> readTokens(String profileId) async {
+    final value = data[profileId];
+    if (readDelays.isNotEmpty) await Future<void>.delayed(readDelays.removeAt(0));
+    return value;
+  }
 
   @override
   Future<void> writeTokens(String profileId, OAuthTokens tokens) async => data[profileId] = tokens;
@@ -43,8 +50,10 @@ const oauthProfile = Profile(
 );
 
 /// A token endpoint that issues `access-N` / `refresh-N` and records grants.
+/// Like Cloudflare's, it refuses a refresh token that was already used.
 (OAuthApi, FakeApi) tokenServer({int expiresIn = 3600, void Function(Map body)? onGrant}) {
   var n = 0;
+  final used = <String>{};
   final fake = FakeApi((method, uri, body) {
     if (uri.toString() == OAuthConfig.revokeEndpoint) return (200, '', const <String, List<String>>{});
     if (uri.toString() != OAuthConfig.tokenEndpoint) return null;
@@ -52,6 +61,18 @@ const oauthProfile = Profile(
     onGrant?.call(form);
     if (form['refresh_token'] == 'revoked') {
       return (400, {'error': 'invalid_grant', 'error_description': 'token revoked'}, const <String, List<String>>{});
+    }
+    final rt = form['refresh_token'];
+    if (rt is String && !used.add(rt)) {
+      return (
+        400,
+        {
+          'error': 'invalid_grant',
+          'error_description': 'The refresh token is invalid.',
+          'error_hint': 'It was used before.',
+        },
+        const <String, List<String>>{},
+      );
     }
     n++;
     return (
@@ -174,6 +195,48 @@ void main() {
       expect(fake.calls, hasLength(1));
       expect((fake.calls.single.body as Map)['refresh_token'], 'refresh-0');
       expect(store.data['o1']!.refreshToken, 'refresh-1');
+    });
+
+    test('a slow read at start-up never brings back a refresh token that was already used', () async {
+      // The app starts with an expired token and many requests at once. A
+      // read that finishes after the first refresh must not revive the old
+      // refresh token: Cloudflare would then revoke the whole grant.
+      final store = MemoryTokenStore()
+        ..data['o1'] = tokens('old', ttl: Duration.zero)
+        ..readDelays.addAll([Duration.zero, const Duration(milliseconds: 80)]);
+      final (api, fake) = tokenServer();
+      final s = OAuthSession(profileId: 'o1', clientId: 'client-1', store: store, api: api);
+      // Both start before either read is back; the second read is slow.
+      final results = await Future.wait([s.accessToken(), s.accessToken()]);
+      expect(results, ['access-1', 'access-1']);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(await s.accessToken(), 'access-1');
+      expect(fake.calls, hasLength(1));
+      expect(store.data['o1']!.refreshToken, 'refresh-1');
+    });
+
+    test('a refused refresh token is replaced by newer stored tokens', () async {
+      // Another instance of the app already rotated the grant and stored it.
+      final store = MemoryTokenStore()..data['o1'] = tokens('stored', refresh: 'refresh-9');
+      final (api, fake) = tokenServer();
+      final s = OAuthSession(
+        profileId: 'o1',
+        clientId: 'client-1',
+        store: store,
+        api: api,
+        initial: tokens('old', refresh: 'revoked', ttl: Duration.zero),
+      );
+      expect(await s.accessToken(), 'stored');
+      expect(fake.calls, hasLength(1));
+    });
+
+    test('OAuth errors carry the server\'s hint', () async {
+      final (api, _) = tokenServer();
+      await api.refresh('client-1', 'r1');
+      await expectLater(
+        api.refresh('client-1', 'r1'),
+        throwsA(isA<OAuthException>().having((e) => e.description, 'description', contains('used before'))),
+      );
     });
 
     test('a rejected token forces one refresh; an already replaced one does not', () async {

@@ -14,7 +14,10 @@ abstract interface class OAuthTokenStore {
 
 /// Hands out access tokens for one OAuth profile and refreshes them shortly
 /// before they expire. Cloudflare's authorization server rotates refresh
-/// tokens, so concurrent callers share a single in-flight refresh.
+/// tokens and treats a reused one as stolen, revoking the whole grant (the
+/// user then has to sign in again). So every refresh token is used at most
+/// once: concurrent callers share one load and one in-flight refresh, and a
+/// caller holding tokens that were already replaced gets the new ones.
 class OAuthSession implements AccessTokenSource {
   OAuthSession({
     required this.profileId,
@@ -30,6 +33,7 @@ class OAuthSession implements AccessTokenSource {
   final OAuthTokenStore store;
   final OAuthApi api;
   OAuthTokens? _tokens;
+  Future<OAuthTokens?>? _loading;
   Future<OAuthTokens>? _refreshing;
 
   @override
@@ -38,11 +42,16 @@ class OAuthSession implements AccessTokenSource {
   OAuthTokens? get tokens => _tokens;
 
   /// The stored tokens, loading them if needed (null when signed out).
-  Future<OAuthTokens?> loadTokens() async => _tokens ??= await store.readTokens(profileId);
+  Future<OAuthTokens?> loadTokens() async {
+    if (_tokens != null) return _tokens;
+    final loaded = await (_loading ??= store.readTokens(profileId));
+    // A refresh may have finished while the store was read: keep its tokens.
+    return _tokens ??= loaded;
+  }
 
   @override
   Future<String> accessToken({String? rejected}) async {
-    var t = _tokens ??= await store.readTokens(profileId);
+    var t = await loadTokens();
     if (t == null) {
       throw const OAuthException('not_signed_in', 'This credential has no OAuth session. Sign in again.');
     }
@@ -56,6 +65,11 @@ class OAuthSession implements AccessTokenSource {
   Future<OAuthTokens> _refresh(OAuthTokens current) {
     final inFlight = _refreshing;
     if (inFlight != null) return inFlight;
+    // Already replaced by an earlier refresh: never send its refresh token again.
+    final latest = _tokens;
+    if (latest != null && latest.accessToken != current.accessToken && !latest.expiresSoon()) {
+      return Future.value(latest);
+    }
     final f = _doRefresh(current);
     _refreshing = f;
     f.whenComplete(() {
@@ -69,7 +83,21 @@ class OAuthSession implements AccessTokenSource {
     if (rt == null || rt.isEmpty) {
       throw const OAuthException('invalid_grant', 'The session cannot be renewed. Sign in again.');
     }
-    var next = await api.refresh(clientId, rt);
+    OAuthTokens next;
+    try {
+      next = await api.refresh(clientId, rt);
+    } on OAuthException catch (e) {
+      // Another instance of the app may have rotated the token and stored
+      // the new one: use that rather than giving up.
+      final stored = e.needsReauth ? await store.readTokens(profileId) : null;
+      final storedRt = stored?.refreshToken;
+      if (stored == null || storedRt == null || storedRt == rt) rethrow;
+      next = stored.expiresSoon() ? await api.refresh(clientId, storedRt) : stored;
+      if (identical(next, stored)) {
+        _tokens = stored;
+        return stored;
+      }
+    }
     // A refresh response may leave out `scope`: the grant is unchanged then.
     if (next.scopes.isEmpty && current.scopes.isNotEmpty) {
       next = OAuthTokens(
@@ -90,6 +118,7 @@ class OAuthSession implements AccessTokenSource {
     final rt = t?.refreshToken;
     if (rt != null) await api.revoke(clientId, rt);
     _tokens = null;
+    _loading = null;
     await store.deleteTokens(profileId);
   }
 }
