@@ -261,6 +261,10 @@ func TestStoreCards(t *testing.T) {
 	if strings.Count(body, soon) != 2 || !strings.Contains(body, "<h3>Android</h3>\n   <p class=\"tag\">Google Play</p>") {
 		t.Error("store placeholders")
 	}
+	// Every product on the buy page has its tag, so the cards line up.
+	if body := h.get("/buy?lang=en").Body.String(); strings.Count(body, `<span class="tag">`) != 4 {
+		t.Errorf("buy page has %d product tags, want 4", strings.Count(body, `<span class="tag">`))
+	}
 	if body := h.get("/download?lang=en").Body.String(); strings.Contains(body, `id="google-play"`) || strings.Contains(body, `id="app-store"`) {
 		t.Error("download page lists stores without a link")
 	}
@@ -508,6 +512,14 @@ func TestGalleryImagesListed(t *testing.T) {
 			listed[id] = true
 			if !i18n.Has(i18n.EN, "shots."+id) {
 				t.Errorf("screen %s has no caption", id)
+			}
+		}
+	}
+	// Thumbnails are laid out three (phones: six) to a row: full rows only.
+	for _, lang := range []string{i18n.EN, i18n.ZhHans, i18n.FR} {
+		for _, g := range (&App{}).gallery(lang) {
+			if len(g.Shots)%3 != 0 {
+				t.Errorf("%s: group %s shows %d pictures, not a multiple of 3", lang, g.ID, len(g.Shots))
 			}
 		}
 	}

@@ -11,7 +11,7 @@
    <input type="radio" name="product" required value="{{.ID}}"{{if eq .ID $.Data.Selected}} checked{{end}}>
    <span class="choice-body">
     <strong>{{.Name}}</strong>
-    {{if eq .Platform "macos"}}<span class="tag">{{$.T "product.note_macos"}}</span>{{else if eq .Platform "android"}}<span class="tag">{{$.T "product.note_android"}}</span>{{end}}
+    <span class="tag">{{if eq .Platform "macos"}}{{$.T "product.note_macos"}}{{else if eq .Platform "android"}}{{$.T "product.note_android"}}{{else}}{{$.T "product.note_direct"}}{{end}}</span>
     <span class="amount">{{.Price}}</span>
     <span class="muted">{{.Devices}} · {{$.T "buy.lifetime"}}</span>
    </span>

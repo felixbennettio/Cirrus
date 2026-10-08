@@ -97,9 +97,10 @@ section[id], .shot-group { scroll-margin-top: 76px; }
 .shot-tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .shot-tabs button:focus-visible { outline: 2px solid #b8cff5; outline-offset: 2px; }
 .gallery.tabbed .shot-group h3 { position: absolute; left: -9999px; }
+/* Fixed column counts: every group has 3, 6 or 9 pictures, so rows are always full. */
 .shots { list-style: none; padding: 0; margin: .6rem 0 0; display: grid; gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.shots.phones { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.shots.phones { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
 .shots a { display: flex; flex-direction: column; gap: 8px; color: var(--fg); }
 .shots a:hover { text-decoration: none; }
 /* Every thumbnail of a group gets the same frame, so the rows line up
@@ -170,6 +171,15 @@ input:focus, select:focus { outline: 2px solid #b8cff5; border-color: var(--acce
 .choice input { margin-top: 5px; }
 .choice-body { display: flex; flex-direction: column; }
 .choice-body .amount { font-size: 1.25rem; }
+/* Product choices: name, tag, price and devices line up across a row of cards. */
+@supports (grid-template-rows: subgrid) {
+  .choices .choice { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: subgrid; grid-row: span 4;
+    column-gap: 10px; row-gap: 2px; align-items: center; }
+  .choices .choice > input { grid-row: 1; margin-top: 0; }
+  .choices .choice-body { display: contents; }
+  .choices .choice-body > * { grid-column: 2; }
+  .choices .choice-body > .tag { justify-self: start; margin: 0; }
+}
 .choice.small { display: inline-flex; align-items: center; padding: 8px 14px; margin: 0 8px 8px 0; }
 .choice.small .choice-body { flex-direction: row; gap: 8px; }
 .choice.small input { margin-top: 0; }
@@ -211,6 +221,7 @@ tr.st-pending td:first-child { border-left: 3px solid var(--accent); }
 
 @media (max-width: 860px) {
   .prices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shots.phones { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   .prices { grid-template-columns: minmax(0, 1fr); }
