@@ -39,16 +39,17 @@ var jsPages = map[string]bool{"buy": true, "license": true, "admin_license": tru
 const langCookie = "lang"
 
 type site struct {
-	Name        string
-	Operator    string
-	Contact     string
-	ICP         string
-	PolicyDate  string
-	DownloadURL string // general download link (DOWNLOAD_URL)
-	AppStoreURL string
-	PublicURL   string
-	Year        int
-	SMTP        bool
+	Name          string
+	Operator      string
+	Contact       string
+	ICP           string
+	PolicyDate    string
+	DownloadURL   string // general download link (DOWNLOAD_URL)
+	AppStoreURL   string
+	GooglePlayURL string
+	PublicURL     string
+	Year          int
+	SMTP          bool
 }
 
 type productView struct {
@@ -119,7 +120,7 @@ func (p *page) Active(path string) string {
 
 // HasDownloads reports whether the downloads page has anything to offer.
 func (p *page) HasDownloads() bool {
-	return len(p.Downloads) > 0 || p.Site.DownloadURL != "" || p.Site.AppStoreURL != ""
+	return len(p.Downloads) > 0 || p.Site.DownloadURL != "" || p.Site.AppStoreURL != "" || p.Site.GooglePlayURL != ""
 }
 
 // HasChecksums reports whether any download has a SHA-256 checksum.
@@ -341,7 +342,7 @@ func (a *App) newPage(w http.ResponseWriter, r *http.Request) *page {
 		Lang: lang, Path: r.URL.Path,
 		Site: site{
 			Name: c.SiteName, Operator: c.OperatorName, Contact: c.ContactEmail, ICP: c.ICPNumber,
-			PolicyDate: c.PolicyDate, DownloadURL: c.DownloadURL, AppStoreURL: c.AppStoreURL, PublicURL: c.PublicURL,
+			PolicyDate: c.PolicyDate, DownloadURL: c.DownloadURL, AppStoreURL: c.AppStoreURL, GooglePlayURL: c.GooglePlayURL, PublicURL: c.PublicURL,
 			Year: a.now().In(cst).Year(), SMTP: a.mail != nil,
 		},
 		Products:  a.productViews(lang),

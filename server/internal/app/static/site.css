@@ -66,10 +66,20 @@ nav a:hover, nav a.active { background: var(--soft); text-decoration: none; }
 .card h3 { margin-top: 0; }
 .card p { margin: .3rem 0; }
 .features .card p { color: var(--muted); font-size: .95rem; }
+/* Price cards: three to a line; each card's rows (name, tag, price, price
+   in dollars, devices, button) line up with its neighbours'. */
+.prices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .price { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.price .btn { margin-top: auto; }
+@supports (grid-template-rows: subgrid) {
+  .price { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 2px; justify-items: center; align-items: center; }
+  .price h3 { margin-bottom: 0; }
+  .price .btn { margin-top: 0; align-self: end; }
+}
+.price > p { margin: 0; }
+.price .btn { margin-bottom: 2px; min-width: 9em; }
 .amount { font-size: 1.6rem; font-weight: 700; color: var(--fg); }
 .amount.small { font-size: 1.2rem; }
-.price .btn { margin-top: 10px; }
 .tag { display: inline-block; font-size: .78rem; color: var(--accent-dark); background: #eef3fd; border-radius: 999px;
   padding: 1px 10px; margin: 0 0 4px; }
 
@@ -92,9 +102,14 @@ section[id], .shot-group { scroll-margin-top: 76px; }
 .shots.phones { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .shots a { display: flex; flex-direction: column; gap: 8px; color: var(--fg); }
 .shots a:hover { text-decoration: none; }
-.shots img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line);
+/* Every thumbnail of a group gets the same frame, so the rows line up
+   even when the screenshots differ a little in size. */
+.shots .frame { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: var(--soft);
+  border-radius: 10px; border: 1px solid var(--line);
   box-shadow: 0 6px 18px rgba(29, 36, 51, .08); transition: transform .15s ease, box-shadow .15s ease; }
-.shots a:hover img, .shots a:focus-visible img { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(29, 36, 51, .14); }
+.shots.phones .frame { aspect-ratio: 1 / 2; }
+.shots img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.shots a:hover .frame, .shots a:focus-visible .frame { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(29, 36, 51, .14); }
 .shots .cap { font-size: .9rem; color: var(--muted); }
 .lightbox { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; overflow: visible; }
 .lightbox::backdrop { background: rgba(10, 14, 22, .82); }
@@ -139,6 +154,7 @@ th { background: var(--soft); font-weight: 600; }
 .btn.small { padding: 4px 10px; font-size: .85rem; }
 .btn.link { border: 0; background: none; color: var(--muted); padding: 6px 0; }
 .btn:disabled { opacity: .6; cursor: wait; }
+.btn.disabled, .btn.disabled:hover { color: var(--muted); background: var(--soft); border-color: var(--line); cursor: default; }
 button.copy { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 2px 10px; font: inherit; font-size: .85rem; cursor: pointer; }
 .panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 20px 20px; margin: 1.2rem 0; }
 .field { display: block; margin: .8rem 0; }
@@ -193,6 +209,12 @@ input:focus, select:focus { outline: 2px solid #b8cff5; border-color: var(--acce
 .bad { color: var(--bad); font-weight: 600; }
 tr.st-pending td:first-child { border-left: 3px solid var(--accent); }
 
+@media (max-width: 860px) {
+  .prices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .prices { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 640px) {
   h1 { font-size: 1.5rem; }
   /* header: name and language button, then one row of links that scrolls */

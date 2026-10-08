@@ -134,6 +134,8 @@ type Config struct {
 	DownloadURL string
 	Downloads   []Download
 	AppStoreURL string
+	// GooglePlayURL is the Google Play page of the Android app.
+	GooglePlayURL string
 
 	// Products are the products on sale (PRODUCTS); every known product,
 	// sold or not, stays valid for existing orders and licences.
@@ -239,6 +241,7 @@ func Load(getenv func(string) string) (*Config, error) {
 		PolicyDate:    env("POLICY_EFFECTIVE_DATE", "2026-10-06"),
 		DownloadURL:   env("DOWNLOAD_URL", ""),
 		AppStoreURL:   env("APP_STORE_URL", ""),
+		GooglePlayURL: env("GOOGLE_PLAY_URL", ""),
 		Alipay: Alipay{
 			AppID:      env("ALIPAY_APP_ID", ""),
 			PrivateKey: env("ALIPAY_PRIVATE_KEY", ""),

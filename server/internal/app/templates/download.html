@@ -34,6 +34,13 @@
   <ul class="files"><li><a class="btn" href="{{.Site.AppStoreURL}}" rel="noopener">{{.T "download.appstore_btn"}}</a></li></ul>
  </section>
 {{end}}
+{{if .Site.GooglePlayURL}}
+ <section class="card download" id="google-play">
+  <h2>Google Play</h2>
+  <p class="req">{{.T "download.gplay_note"}}</p>
+  <ul class="files"><li><a class="btn" href="{{.Site.GooglePlayURL}}" rel="noopener">{{.T "download.gplay_btn"}}</a></li></ul>
+ </section>
+{{end}}
 </div>
 {{if .Site.DownloadURL}}<p><a href="{{.Site.DownloadURL}}" rel="noopener">{{.T "download.all"}}</a></p>{{end}}
 {{if .HasChecksums}}{{$f := .T "download.file_arg"}}<p class="muted">{{.H "download.verify" "windows" (code (printf "certutil -hashfile %s SHA256" $f)) "macos" (code (printf "shasum -a 256 %s" $f)) "linux" (code (printf "sha256sum %s" $f))}}</p>{{end}}

@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"html"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -248,6 +249,44 @@ func TestProductsOffSale(t *testing.T) {
 	expect(t, h.post("/api/v1/activate", activateBody(l.Key, dev(1), "macos")), 200, "")
 }
 
+// The App Store and Google Play cards sit next to the products: a link once
+// the store page is configured, a placeholder until then.
+func TestStoreCards(t *testing.T) {
+	soon := `<span class="btn disabled" aria-disabled="true">` + i18n.T(i18n.EN, "home.store_soon") + `</span>`
+	h := newHarness(t, harnessOpt{})
+	body := h.get("/?lang=en").Body.String()
+	if n := strings.Count(body, `class="card price`); n != 6 {
+		t.Errorf("%d price cards, want 4 products and 2 stores", n)
+	}
+	if strings.Count(body, soon) != 2 || !strings.Contains(body, "<h3>Android</h3>\n   <p class=\"tag\">Google Play</p>") {
+		t.Error("store placeholders")
+	}
+	if body := h.get("/download?lang=en").Body.String(); strings.Contains(body, `id="google-play"`) || strings.Contains(body, `id="app-store"`) {
+		t.Error("download page lists stores without a link")
+	}
+
+	h = newHarness(t, harnessOpt{env: map[string]string{
+		"APP_STORE_URL":   "https://apps.apple.com/app/id1",
+		"GOOGLE_PLAY_URL": "https://play.google.com/store/apps/details?id=zone.routeforge.cirrus",
+	}})
+	body = h.get("/?lang=ja").Body.String()
+	for _, want := range []string{
+		`<a class="btn" href="https://apps.apple.com/app/id1" rel="noopener">App Store</a>`,
+		`<a class="btn" href="https://play.google.com/store/apps/details?id=zone.routeforge.cirrus" rel="noopener">Google Play</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("home page lacks %s", want)
+		}
+	}
+	if strings.Contains(body, "btn disabled") {
+		t.Error("placeholder shown although the store is configured")
+	}
+	body = h.get("/download?lang=ja").Body.String()
+	if !strings.Contains(body, `id="google-play"`) || !strings.Contains(body, i18n.T(i18n.JA, "download.gplay_btn")) {
+		t.Error("download page lacks Google Play")
+	}
+}
+
 func TestAdminPrices(t *testing.T) {
 	h := newHarness(t, harnessOpt{})
 	if rec := h.admin(http.MethodGet, "/admin/prices", nil); rec.Code != 200 || !strings.Contains(rec.Body.String(), "cirrus-macos") {
@@ -425,18 +464,19 @@ func TestGallery(t *testing.T) {
 	}
 	// French has no pictures of its own yet: English ones, French captions.
 	fr := h.get("/?lang=fr").Body.String()
-	if !strings.Contains(fr, "/static/shots/en/") || !strings.Contains(fr, i18n.T(i18n.FR, "shots.title")) {
+	if !strings.Contains(fr, "/static/shots/en/") || !strings.Contains(fr, html.EscapeString(i18n.T(i18n.FR, "shots.title"))) {
 		t.Error("French gallery")
 	}
+	// Traditional Chinese has no pictures of its own: Simplified Chinese ones.
 	zh := h.get("/?lang=zh-Hant").Body.String()
-	for _, want := range []string{"/static/shots/zh-Hans/dns.webp", "/static/shots/en/m-home-dark-t.webp", i18n.T(i18n.ZhHant, "shots.dns")} {
+	for _, want := range []string{"/static/shots/zh-Hans/dns.webp", "/static/shots/zh-Hans/m-home-dark-t.webp", i18n.T(i18n.ZhHant, "shots.dns")} {
 		if !strings.Contains(zh, want) {
 			t.Errorf("Traditional Chinese gallery lacks %q", want)
 		}
 	}
-	// The light pictures are Chinese and the only dark ones English: no
-	// dark variants, so light and dark never differ in language.
-	if strings.Contains(zh, `prefers-color-scheme: dark`) || !strings.Contains(zh, `srcset="/static/shots/zh-Hans/m-home.webp`) {
+	if strings.Contains(zh, "/static/shots/en/") ||
+		!strings.Contains(zh, `media="(prefers-color-scheme: dark)" srcset="/static/shots/zh-Hans/home-dark.webp`) ||
+		!strings.Contains(zh, `srcset="/static/shots/zh-Hans/m-home.webp`) {
 		t.Error("Traditional Chinese hero")
 	}
 	for _, g := range h.app.gallery(i18n.ZhHans) {

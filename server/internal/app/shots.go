@@ -20,14 +20,14 @@ type shotGroup struct {
 }
 
 var shotGroups = []shotGroup{
-	{"overview", []string{"home", "home-dark", "domains", "zone", "analytics"}},
+	{"overview", []string{"home", "home-dark", "domains", "zone", "analytics", "phone"}},
 	{"zone", []string{"dns", "dns-dark", "ssl", "security", "rules", "cache", "zone-settings", "email", "zone-more"}},
-	{"compute", []string{"workers", "worker", "pages", "ai"}},
-	{"storage", []string{"kv", "kv-keys", "r2", "r2-bucket", "d1"}},
-	{"zerotrust", []string{"tunnels", "tunnel", "access", "gateway", "devices"}},
-	{"account", []string{"members", "tokens", "audit", "account-more"}},
-	{"developer", []string{"console", "graphql", "requests", "palette", "palette-dark"}},
-	{"mobile", []string{"m-home", "m-home-dark", "m-dns", "m-drawer", "m-drawer-dark"}},
+	{"compute", []string{"workers", "worker", "worker-bindings", "pages", "pages-project", "ai"}},
+	{"storage", []string{"kv", "kv-keys", "r2", "r2-bucket", "d1", "d1-db"}},
+	{"zerotrust", []string{"tunnels", "tunnel", "zt-networks", "access", "gateway", "devices"}},
+	{"account", []string{"members", "tokens", "tokens-dark", "audit", "lists", "account-more"}},
+	{"developer", []string{"console", "console-dark", "graphql", "requests", "palette", "palette-dark"}},
+	{"mobile", []string{"m-home", "m-home-dark", "m-dns", "m-zone", "m-drawer", "m-drawer-dark"}},
 	{"setup", []string{"welcome", "profile", "settings"}},
 }
 

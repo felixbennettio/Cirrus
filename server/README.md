@@ -63,7 +63,8 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `CONTACT_EMAIL` | 空 | 客服邮箱 |
 | `ICP_NUMBER` | 空 | ICP 备案号，显示在每页页脚并链接到 beian.miit.gov.cn |
 | `POLICY_EFFECTIVE_DATE` | `2026-10-06` | 隐私政策和用户协议的生效日期 |
-| `APP_STORE_URL` | 空 | 可选，App Store 地址（iPhone、iPad、Mac），显示在首页和下载页 |
+| `APP_STORE_URL` | 空 | 可选，App Store 地址（iPhone、iPad、Mac），显示在首页和下载页；未设置时首页显示“即将上架” |
+| `GOOGLE_PLAY_URL` | 空 | 可选，Google Play 地址（Android），显示在首页和下载页；未设置时首页显示“即将上架” |
 | `DOWNLOAD_URL_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 空 | 放在别处的安装包链接。本站 `data/downloads/manifest.json` 里有该平台的文件时以它为准（见 DEPLOY.md“发布下载文件”）；都没有的平台不显示 |
 | `DOWNLOAD_VERSION`、`DOWNLOAD_VERSION_<平台>` | 空 | 上面链接的版本号 |
 | `DOWNLOAD_SHA256_<平台>` | 空 | 上面链接的 SHA-256 |
@@ -150,6 +151,7 @@ App 在“使用 Cloudflare 登录”前请求 `GET /api/v1/oauth/config`，按�
 - 文案在 `internal/i18n/<语言>.go`，按 id 查找；改动或新增文案时六种语言都要写，`go test` 会检查是否齐全、占位符是否一致。
 - 隐私政策和用户协议在 `internal/app/templates/legal/<页面>.<语言>.html`，以简体中文版为准，其他语言版本开头注明这一点。
 - 首页的应用截图在 `internal/app/static/shots/<语言>/`，用 `scripts/gallery_images.py` 从 PNG 生成（只用演示数据，不要用真实账户）。某种语言没有自己的截图时用英文截图；中文页面还会用另一种中文的截图。
+- 截图里的数据来自仓库根目录的 `scripts/demo_api.py`（模拟 Cloudflare API 的演示数据）。桌面版和手机布局用 `scripts/screenshots/batch.sh` 在 Linux（Xvfb）下拍摄，环境要求写在脚本开头；iPhone 截图用 GitHub Actions 的 Screenshots 工作流在 GitHub 托管的 Mac 上拍摄（iOS 模拟器需要 Metal 显卡，自托管的 Mac 虚拟机没有）。
 
 ## 签名密钥：务必备份
 

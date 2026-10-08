@@ -44,7 +44,7 @@
   <h3>{{.Title}}</h3>
   <ul class="shots{{if .Phones}} phones{{end}}">
   {{- range .Shots}}
-   <li><a href="{{.Full}}" data-w="{{.W}}" data-h="{{.H}}"><img src="{{.Thumb}}" width="{{.TW}}" height="{{.TH}}" alt="" loading="lazy" decoding="async"><span class="cap">{{.Caption}}</span></a></li>
+   <li><a href="{{.Full}}" data-w="{{.W}}" data-h="{{.H}}"><span class="frame"><img src="{{.Thumb}}" width="{{.TW}}" height="{{.TH}}" alt="" loading="lazy" decoding="async"></span><span class="cap">{{.Caption}}</span></a></li>
   {{- end}}
   </ul>
  </div>
@@ -80,20 +80,31 @@
  <p>{{.T "home.pricing"}}</p>
  <div class="grid prices">
  {{range .Products}}
+  {{- /* Every card has the same six rows, aligned across a line of cards (site.css). */}}
   <div class="card price">
    <h3>{{.Name}}</h3>
-   {{if eq .Platform "macos"}}<p class="tag">{{$.T "product.note_macos"}}</p>{{else if eq .Platform "android"}}<p class="tag">{{$.T "product.note_android"}}</p>{{end}}
+   <p class="tag">{{if eq .Platform "macos"}}{{$.T "product.note_macos"}}{{else if eq .Platform "android"}}{{$.T "product.note_android"}}{{else}}{{$.T "product.note_direct"}}{{end}}</p>
    <p class="amount">{{.Price}}</p>
    <p class="muted">{{.PriceUSD}}</p>
    <p>{{.Devices}}</p>
    <a class="btn primary" href="/buy?product={{.ID}}">{{$.T "nav.buy"}}</a>
   </div>
  {{end}}
-  <div class="card price">
+  <div class="card price store">
    <h3>iOS · macOS</h3>
    <p class="tag">App Store</p>
-   <p>{{.T "home.appstore"}}</p>
-   {{if .Site.AppStoreURL}}<a class="btn" href="{{.Site.AppStoreURL}}" rel="noopener">App Store</a>{{end}}
+   <p class="amount small">{{.T "home.iap"}}</p>
+   <p class="muted">{{.T "home.iap_apple"}}</p>
+   <p>{{.T "home.appstore_devices"}}</p>
+   {{if .Site.AppStoreURL}}<a class="btn" href="{{.Site.AppStoreURL}}" rel="noopener">App Store</a>{{else}}<span class="btn disabled" aria-disabled="true">{{.T "home.store_soon"}}</span>{{end}}
+  </div>
+  <div class="card price store">
+   <h3>Android</h3>
+   <p class="tag">Google Play</p>
+   <p class="amount small">{{.T "home.iap"}}</p>
+   <p class="muted">{{.T "home.iap_google"}}</p>
+   <p>{{.T "home.gplay_devices"}}</p>
+   {{if .Site.GooglePlayURL}}<a class="btn" href="{{.Site.GooglePlayURL}}" rel="noopener">Google Play</a>{{else}}<span class="btn disabled" aria-disabled="true">{{.T "home.store_soon"}}</span>{{end}}
   </div>
  </div>
  <p class="muted">{{.T "home.mac_note"}} {{.T "home.gplay_note"}}</p>
