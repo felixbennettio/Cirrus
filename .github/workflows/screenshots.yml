@@ -1,0 +1,89 @@
+# Screenshots of the iPhone app for the website, with the demo data of
+# scripts/demo_api.py. Runs on a GitHub-hosted Mac: the iOS simulator needs a
+# Metal GPU, which the self-hosted Mac VM does not have. The screenshots are
+# a workflow artifact; server/scripts/gallery_images.py turns them into the
+# website's pictures.
+name: Screenshots
+
+on:
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+  BUNDLE_ID: io.felixbennett.cirrus
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Simulator
+        run: |
+          xcodebuild -version
+          # The newest iOS and its newest non-Max Pro iPhone, deleted afterwards.
+          read -r RUNTIME TYPE < <(xcrun simctl list runtimes -j | python3 -c '
+          import json, sys
+          rs = [r for r in json.load(sys.stdin)["runtimes"] if r["platform"] == "iOS" and r["isAvailable"]]
+          r = max(rs, key=lambda r: [int(p) for p in r["version"].split(".")])
+          phones = [t for t in r["supportedDeviceTypes"] if t["name"].startswith("iPhone")]
+          pros = [t for t in phones if "Pro" in t["name"] and "Max" not in t["name"]] or phones
+          print(r["identifier"], pros[-1]["identifier"])')
+          UDID=$(xcrun simctl create cirrus-screenshots "$TYPE" "$RUNTIME")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+      - name: Build
+        run: flutter build ios --simulator --debug --dart-define=CIRRUS_API_BASE=http://127.0.0.1:8787/client/v4
+      - name: Screenshots
+        run: |
+          mkdir -p shots
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+          xcrun simctl status_bar "$UDID" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
+            --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
+          mkdir -p "$DATA/Library/Application Support"
+          # A saved profile; the API behind it is the demo server.
+          printf '[{"id":"demo","name":"Acme Studio","kind":"apiToken","token":"demo","createdAt":"2026-01-01T00:00:00Z"}]' \
+            > "$DATA/Library/Application Support/profiles.json"
+          api=
+          shot() {  # shot <en|zh> <light|dark> <name> <route>
+            if [ "$api" != "$1" ]; then
+              [ -n "$api" ] && kill "$API_PID"
+              python3 scripts/demo_api.py --lang "$1" > "api-$1.log" 2>&1 &
+              API_PID=$!; api=$1; sleep 1
+            fi
+            [ "$1" = zh ] && langs='(zh-Hans)' locale=zh_CN || { langs='(en)'; locale=en_US; }
+            xcrun simctl ui "$UDID" appearance "$2"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            SIMCTL_CHILD_CIRRUS_INITIAL_ROUTE="$4" xcrun simctl launch "$UDID" "$BUNDLE_ID" \
+              -AppleLanguages "$langs" -AppleLocale "$locale" > /dev/null
+            sleep 14
+            xcrun simctl io "$UDID" screenshot "shots/$1-$3.png" > /dev/null
+            echo "$1-$3"
+          }
+          for l in en zh; do
+            shot $l light m-home /
+            shot $l dark m-home-dark /
+            shot $l light m-dns /zone/dns
+            shot $l dark m-dns-dark /zone/dns
+            shot $l light m-zone /zone
+            shot $l light m-analytics /zone/analytics
+            shot $l light m-workers /workers
+            shot $l dark m-tunnels /zt/tunnels
+          done
+          kill "$API_PID" || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-screenshots
+          path: shots/
+      - name: Clean up
+        if: always()
+        run: xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl delete "$UDID" || true
