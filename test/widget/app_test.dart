@@ -274,6 +274,28 @@ void main() {
     expect(find.text('2 of 2 records'), findsOneWidget);
   });
 
+  testWidgets('a zone page switches zones from under its title', (tester) async {
+    final other = {..._zone, 'id': 'zone0002', 'name': 'example.net'};
+    final api = FakeApi((method, uri, body) {
+      if (method == 'GET' && uri.path.endsWith('/zones')) {
+        return (200, FakeApi.ok([_zone, other]), const <String, List<String>>{});
+      }
+      return _routes(method, uri, body);
+    });
+    final container = await _pumpApp(tester, profiles: [_profile], api: api);
+    container.read(routerProvider).go('/zone/dns');
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Switch zone'));
+    await _settle(tester);
+    await tester.tap(find.text('example.net').last);
+    await _settle(tester);
+    expect(container.read(currentZoneIdProvider), 'zone0002');
+    // Pages outside a zone keep their own subtitle.
+    container.read(routerProvider).go('/');
+    await _settle(tester);
+    expect(find.byTooltip('Switch zone'), findsNothing);
+  });
+
   testWidgets('settings turn liquid glass on: glass app bar and sidebar, content scrolls behind', (tester) async {
     final container = await _pumpApp(tester, profiles: [_profile]);
     container.read(routerProvider).go('/settings');

@@ -38,10 +38,8 @@ class ZoneOverviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final zone = ref.watch(currentZoneProvider);
     return PageScaffold(
-      title: zone?['name'] as String? ?? context.tr('Zone overview', '域名概览'),
-      subtitle: context.tr('Zone overview', '域名概览'),
+      title: context.tr('Zone overview', '域名概览'),
       body: ZoneRequired(
         builder: (context, zoneId, _) => ApiQuery<_ZoneState>(
           cacheKey: 'zone-overview:$zoneId',

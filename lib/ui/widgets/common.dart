@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/util/tr.dart';
 import '../cirrus_theme.dart';
+import '../shell/switchers.dart';
 import 'feedback.dart';
 import 'glass.dart';
 
@@ -15,6 +16,10 @@ const wideLayoutBreakpoint = 900.0;
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= wideLayoutBreakpoint;
 
 /// Standard module page: an app bar with title/actions and a body.
+///
+/// On a zone's pages (`/zone/...`) the line under the title is the current
+/// zone, which opens the zone picker, so the zone can be switched from the
+/// top of the page on a phone too ([subtitle] is not shown there).
 ///
 /// With liquid glass on, the app bar is a glass surface over a softly tinted
 /// background, and an [InsetAwareBody] (e.g. [ContentList]) scrolls behind it.
@@ -51,6 +56,13 @@ class PageScaffold extends StatelessWidget {
       );
     }
     final glass = glassActive(context);
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final Widget? below = _onZonePage(context)
+        ? const ZoneTitleSwitch()
+        : subtitle == null
+        ? null
+        : Text(subtitle!, overflow: TextOverflow.ellipsis, style: subtitleStyle);
     final scaffold = Scaffold(
       backgroundColor: glass ? Colors.transparent : null,
       extendBodyBehindAppBar: glass && body is InsetAwareBody,
@@ -58,18 +70,13 @@ class PageScaffold extends StatelessWidget {
         leading: lead,
         automaticallyImplyLeading: canPop,
         titleSpacing: lead == null && !canPop ? 20 : null,
-        title: subtitle == null
+        title: below == null
             ? Text(title, overflow: TextOverflow.ellipsis)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, overflow: TextOverflow.ellipsis),
-                  Text(
-                    subtitle!,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
+                  below,
                 ],
               ),
         actions: [...actions, const SizedBox(width: 8)],
@@ -80,6 +87,15 @@ class PageScaffold extends StatelessWidget {
       body: body,
     );
     return glass ? AmbientBackground(child: scaffold) : scaffold;
+  }
+
+  static bool _onZonePage(BuildContext context) {
+    try {
+      final path = GoRouterState.of(context).uri.path;
+      return path == '/zone' || path.startsWith('/zone/');
+    } on GoError {
+      return false;
+    }
   }
 }
 

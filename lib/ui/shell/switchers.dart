@@ -195,6 +195,39 @@ class ZoneSwitcher extends ConsumerWidget {
   }
 }
 
+/// The current zone under a zone page's title (see `PageScaffold`): taps
+/// open the zone picker.
+class ZoneTitleSwitch extends ConsumerWidget {
+  const ZoneTitleSwitch({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final name =
+        ref.watch(currentZoneProvider)?['name'] as String? ??
+        (ref.watch(zonesProvider).isLoading ? context.tr('Loading zones…', '加载域名中…') : context.tr('No zones', '没有域名'));
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
+    return Tooltip(
+      message: context.tr('Switch zone', '切换域名'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: () => showZonePicker(context),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.public, size: 13, color: scheme.primary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(name, overflow: TextOverflow.ellipsis, style: style),
+            ),
+            Icon(Icons.arrow_drop_down, size: 18, color: scheme.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 Future<void> showZonePicker(BuildContext context) {
   return showAppDialog<void>(context: context, builder: (_) => const _ZonePickerDialog());
 }
