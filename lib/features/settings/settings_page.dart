@@ -21,6 +21,7 @@ import '../../core/settings/app_settings.dart';
 import '../../core/util/format.dart';
 import '../../core/util/tr.dart';
 import '../../ui/cirrus_theme.dart';
+import '../../ui/shell/sign_out.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/feedback.dart';
 import '../onboarding/add_profile_page.dart';
@@ -87,26 +88,7 @@ class SettingsPage extends ConsumerWidget {
                       if (v == 'edit') {
                         Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AddProfilePage(editing: p)));
                       } else if (v == 'delete') {
-                        final ok = await confirmDanger(
-                          context,
-                          title: context.tr('Remove credential?', '移除凭据？'),
-                          message: p.kind == AuthKind.oauth
-                              ? context.tr(
-                                  '"${p.name}" will be signed out and Cirrus\'s access to the account revoked.',
-                                  '“${p.name}” 将退出登录，并撤销 Cirrus 对该账户的授权。',
-                                )
-                              : context.tr(
-                                  '"${p.name}" will be removed from this device. The token itself is not revoked.',
-                                  '“${p.name}” 将从本设备移除，Token 本身不会被吊销。',
-                                ),
-                          confirmLabel: context.tr('Remove', '移除'),
-                        );
-                        if (ok) {
-                          await ref.read(profilesProvider.notifier).remove(p.id);
-                          if (context.mounted && (ref.read(profilesProvider).value ?? []).isEmpty) {
-                            context.go('/welcome');
-                          }
-                        }
+                        await confirmRemoveProfile(context, ref, p);
                       }
                     },
                     itemBuilder: (context) => [

@@ -7,6 +7,7 @@ import '../../core/settings/app_settings.dart';
 import '../../core/util/tr.dart';
 import '../widgets/common.dart';
 import '../widgets/glass.dart';
+import 'sign_out.dart';
 
 class _SwitcherButton extends StatelessWidget {
   const _SwitcherButton({required this.icon, required this.title, required this.subtitle, required this.onTap});
@@ -66,13 +67,26 @@ class AccountSwitcher extends ConsumerWidget {
     final profile = ref.watch(activeProfileProvider);
     final account = ref.watch(currentAccountProvider);
     final accounts = ref.watch(accountsProvider);
-    return _SwitcherButton(
-      icon: Icons.account_tree_outlined,
-      title:
-          account?['name'] as String? ??
-          (accounts.isLoading ? context.tr('Loading…', '加载中…') : context.tr('No account', '无账户')),
-      subtitle: profile?.name,
-      onTap: () => showAccountPicker(context),
+    return Row(
+      children: [
+        Expanded(
+          child: _SwitcherButton(
+            icon: Icons.account_tree_outlined,
+            title:
+                account?['name'] as String? ??
+                (accounts.isLoading ? context.tr('Loading…', '加载中…') : context.tr('No account', '无账户')),
+            subtitle: profile?.name,
+            onTap: () => showAccountPicker(context),
+          ),
+        ),
+        if (profile != null)
+          IconButton(
+            tooltip: context.tr('Sign out', '退出登录'),
+            icon: const Icon(Icons.logout, size: 20),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => confirmRemoveProfile(context, ref, profile, signOut: true),
+          ),
+      ],
     );
   }
 }

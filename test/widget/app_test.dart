@@ -243,6 +243,26 @@ void main() {
     expect(find.text('Quick access'), findsOneWidget);
   });
 
+  testWidgets('the sidebar signs out of the current credential', (tester) async {
+    const other = Profile(id: 'p2', name: 'Second', kind: AuthKind.apiToken, token: 'tok_abcdef1234567890');
+    final container = await _pumpApp(tester, profiles: [_profile, other]);
+    await tester.tap(find.byTooltip('Sign out'));
+    await _settle(tester);
+    expect(find.text('Sign out of "Demo"?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+    await _settle(tester);
+    expect(container.read(profilesProvider).value!.map((p) => p.id), ['p2']);
+    expect(container.read(activeProfileProvider)?.id, 'p2');
+
+    // Signing out of the last one returns to the welcome page.
+    await tester.tap(find.byTooltip('Sign out'));
+    await _settle(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+    await _settle(tester);
+    expect(container.read(profilesProvider).value, isEmpty);
+    expect(find.text('Verify & save'), findsOneWidget);
+  });
+
   testWidgets('DNS page renders records from the API', (tester) async {
     final container = await _pumpApp(tester, profiles: [_profile]);
     container.read(routerProvider).go('/zone/dns');
