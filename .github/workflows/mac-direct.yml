@@ -150,7 +150,9 @@ jobs:
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install -q 'pyjwt[crypto]'
+          # cryptography's newest release may have no wheel for the Mac's system Python 3.9;
+          # take the newest one that does instead of building it from source.
+          "$RUNNER_TEMP/venv/bin/pip" install -q --only-binary=cryptography,cffi 'pyjwt[crypto]'
           "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune ${{ runner.environment == 'github-hosted' && '--ephemeral' || '' }}
       - name: Remove the API key
         if: always()

@@ -23,5 +23,14 @@ if [ ! -f .runner ]; then
     --work _work
 fi
 ./svc.sh install || true
+# svc.sh gives the agent SessionCreate=true, a fresh security session in which
+# the login keychain is locked: signing then fails with "User interaction is
+# not allowed". Run in the user's login session instead.
+PLIST=$(cat .service 2>/dev/null || true)
+[ -f "$PLIST" ] || PLIST=$(ls "$HOME"/Library/LaunchAgents/actions.runner.*.plist | head -1)
+if /usr/libexec/PlistBuddy -c "Print :SessionCreate" "$PLIST" >/dev/null 2>&1; then
+  ./svc.sh stop || true
+  /usr/libexec/PlistBuddy -c "Delete :SessionCreate" "$PLIST"
+fi
 ./svc.sh start
 ./svc.sh status
