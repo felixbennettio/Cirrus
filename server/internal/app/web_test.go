@@ -207,7 +207,7 @@ func TestAdminLicenseActions(t *testing.T) {
 	}
 	id := strings.TrimPrefix(strings.Split(loc, "?")[0], "/admin/licenses/")
 	l, err := h.st.LicenseByID(t.Context(), id)
-	if err != nil || l.Email != "gift@example.com" || l.MaxDevices != 3 || l.Note != "赠送" {
+	if err != nil || l.Email != "gift@example.com" || l.MaxDevices != 1 || l.Note != "赠送" {
 		t.Fatalf("issued: %+v %v", l, err)
 	}
 	h.app.Wait()

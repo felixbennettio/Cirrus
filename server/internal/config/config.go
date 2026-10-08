@@ -205,7 +205,7 @@ var baseProducts = []Product{
 	{ID: "cirrus-windows", Platform: "windows", Suffix: "WINDOWS", NameZH: "Windows 版", NameEN: "Windows", MaxDevices: 1},
 	{ID: "cirrus-macos", Platform: "macos", Suffix: "MACOS", NameZH: "macOS 版", NameEN: "macOS", MaxDevices: 1},
 	{ID: "cirrus-linux", Platform: "linux", Suffix: "LINUX", NameZH: "Linux 版", NameEN: "Linux", MaxDevices: 1},
-	{ID: "cirrus-android", Platform: "android", Suffix: "ANDROID", NameZH: "Android 版", NameEN: "Android", MaxDevices: 3},
+	{ID: "cirrus-android", Platform: "android", Suffix: "ANDROID", NameZH: "Android 版", NameEN: "Android", MaxDevices: 1},
 }
 
 // Platforms are the platforms with licences and direct downloads, in

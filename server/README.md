@@ -74,7 +74,7 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `PRICE_USD` | `39.99` | 美元参考价（仅显示） |
 | `PRICE_CNY_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 同 `PRICE_CNY` | 按产品覆盖默认价格 |
 | `PRICE_USD_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 同 `PRICE_USD` | 按产品覆盖美元参考价 |
-| `MAX_DEVICES_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | `1` / `1` / `1` / `3` | 每个许可证的设备数，只影响之后签发的许可证 |
+| `MAX_DEVICES_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | `1` / `1` / `1` / `1` | 每个许可证的设备数，只影响之后签发的许可证 |
 | `PAY_METHODS` | `alipay,wechat` | 购买页提供的付款方式 |
 | `ALIPAY_APP_ID` | 空 | 支付宝开放平台 APPID |
 | `ALIPAY_PRIVATE_KEY` | 空 | **应用私钥** |

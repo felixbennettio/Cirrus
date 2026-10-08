@@ -129,10 +129,12 @@ func TestDeactivateAndValidate(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	h := newHarness(t, harnessOpt{})
+	// Every product allows one device.
 	l := h.issue("cirrus-android", "owner@example.com")
-	for i := 1; i <= 3; i++ {
-		expect(t, h.post("/api/v1/activate", activateBody(l.Key, dev(i), "android")), 200, "")
+	if l.MaxDevices != 1 {
+		t.Fatalf("Android licence for %d devices", l.MaxDevices)
 	}
+	expect(t, h.post("/api/v1/activate", activateBody(l.Key, dev(1), "android")), 200, "")
 	expect(t, h.post("/api/v1/activate", activateBody(l.Key, dev(4), "android")), 409, "activation_limit")
 
 	body := func(email string) map[string]string { return map[string]string{"license_key": l.Key, "email": email} }

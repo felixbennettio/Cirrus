@@ -15,7 +15,7 @@ This file is the contract between the licence server (`server/`) and the app
 | `cirrus-windows` | windows  | 1                   | CNY 198 / USD 39.99 |
 | `cirrus-macos`   | macos    | 1                   | CNY 198 / USD 39.99 |
 | `cirrus-linux`   | linux    | 1                   | CNY 198 / USD 39.99 |
-| `cirrus-android` | android  | 3                   | CNY 198 / USD 39.99 |
+| `cirrus-android` | android  | 1                   | CNY 198 / USD 39.99 |
 
 Each platform is bought separately. `cirrus-macos` is the Developer ID build
 downloaded from the website (`.github/workflows/mac-direct.yml`); the Mac App

@@ -27,7 +27,7 @@ func TestDefaults(t *testing.T) {
 		"cirrus-windows": {"windows", 1},
 		"cirrus-macos":   {"macos", 1},
 		"cirrus-linux":   {"linux", 1},
-		"cirrus-android": {"android", 3},
+		"cirrus-android": {"android", 1},
 	}
 	for id, w := range want {
 		p, ok := c.Product(id)
