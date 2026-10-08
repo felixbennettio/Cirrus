@@ -455,7 +455,7 @@ def d1_databases():
              'num_tables': tables, 'file_size': size} for i, (n, tables, size, v) in enumerate(D1)]
 
 
-def d1_query(sql):
+def d1_query(sql, raw=False):
     s = sql.lower()
     if 'sqlite_master' in s or 'sqlite_schema' in s:
         rows = [{'name': n, 'type': 'table', 'sql': f'CREATE TABLE {n} (...)'} for n in
@@ -464,9 +464,12 @@ def d1_query(sql):
         rows = [{'id': 1000 + i, 'customer': f'customer{i}@example.com', 'total': round(19.9 + i * 7.35, 2),
                  'currency': 'USD', 'status': ['paid', 'shipped', 'refunded', 'paid'][i % 4],
                  'created_at': ago(hours=i * 5)} for i in range(14)]
-    return [{'results': rows, 'success': True,
-             'meta': {'duration': 0.41, 'rows_read': len(rows) * 3, 'rows_written': 0, 'changes': 0,
-                      'served_by': 'v3-prod', 'size_after': 48234496, 'changed_db': False}}]
+    meta = {'duration': 0.41, 'rows_read': len(rows) * 3, 'rows_written': 0, 'changes': 0,
+            'served_by': 'v3-prod', 'size_after': 48234496, 'changed_db': False}
+    if raw:  # /raw: column names, then rows as arrays
+        cols = list(rows[0]) if rows else []
+        return [{'results': {'columns': cols, 'rows': [[r[c] for c in cols] for r in rows]}, 'success': True, 'meta': meta}]
+    return [{'results': rows, 'success': True, 'meta': meta}]
 
 
 # ---------------------------------------------------------------------------
@@ -864,8 +867,8 @@ def route(method, path, query, body):
         return page(d1_databases())
     if g := m(r'/accounts/[^/]+/d1/database/([^/]+)'):
         return next((d for d in d1_databases() if d['uuid'] == g[1]), d1_databases()[0]), None
-    if m(r'/accounts/[^/]+/d1/database/[^/]+/(query|raw)'):
-        return d1_query((body or {}).get('sql', '') if isinstance(body, dict) else ''), None
+    if g := m(r'/accounts/[^/]+/d1/database/[^/]+/(query|raw)'):
+        return d1_query((body or {}).get('sql', '') if isinstance(body, dict) else '', g[1] == 'raw'), None
 
     # Zero Trust
     if m(r'/accounts/[^/]+/cfd_tunnel'):
