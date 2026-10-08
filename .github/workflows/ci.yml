@@ -31,7 +31,7 @@ jobs:
         with:
           flutter-version: '3.47.6'
           channel: stable
-          cache: true
+          cache: ${{ runner.environment == 'github-hosted' }}  # self-hosted runners keep Flutter and the pub cache on disk
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test tool
       - run: flutter analyze
