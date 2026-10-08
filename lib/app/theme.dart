@@ -13,7 +13,11 @@ const cirrusSeed = Color(0xFF2F6FDE);
 /// The scheme used when dynamic colour is off or the platform has none: the
 /// accent colour on plain white and grey surfaces.
 ColorScheme brandScheme(Brightness brightness) => withGreySurfaces(
-  ColorScheme.fromSeed(seedColor: cirrusSeed, brightness: brightness, dynamicSchemeVariant: DynamicSchemeVariant.fidelity),
+  ColorScheme.fromSeed(
+    seedColor: cirrusSeed,
+    brightness: brightness,
+    dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+  ),
 );
 
 /// Replaces the surface roles of [s], which a seeded scheme tints with its
