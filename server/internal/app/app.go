@@ -55,10 +55,15 @@ type App struct {
 	// Per-email limit for resend, and failed admin logins per IP.
 	emailLimit, authLimit *ratelimit.Limiter
 
-	pages    map[string]*template.Template
-	assetVer string
-	handler  http.Handler
-	bg       sync.WaitGroup
+	pages         map[string]*template.Template
+	assetVer      string
+	manifestCache manifestCache
+
+	// Prices saved on the admin Prices page, by product id.
+	priceMu sync.RWMutex
+	prices  map[string]store.Price
+	handler http.Handler
+	bg      sync.WaitGroup
 }
 
 // Self-service device reset is allowed once per this period.
@@ -99,6 +104,9 @@ func New(o Options) (*App, error) {
 	}
 	if o.Config.OAuth.SyncEnabled() {
 		a.oauth = newOAuthSync(o.Config.OAuth, a.now, a.log)
+	}
+	if err := a.reloadPrices(context.Background()); err != nil {
+		return nil, err
 	}
 	if err := a.loadTemplates(); err != nil {
 		return nil, err
@@ -144,6 +152,13 @@ func (a *App) routes() *http.ServeMux {
 	m.HandleFunc("POST /pay/wechat/notify", a.wechatNotify)
 
 	m.HandleFunc("GET /static/pay/{file}", a.payImage)
+	m.HandleFunc("GET /downloads/{file}", a.serveDownload)
+	m.HandleFunc("GET /downloads/{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/download", http.StatusMovedPermanently)
+	})
+	m.HandleFunc("GET /downloads", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/download", http.StatusMovedPermanently)
+	})
 	m.Handle("GET /static/", a.staticHandler())
 	m.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, a.asset("favicon.svg"), http.StatusMovedPermanently)
@@ -159,6 +174,7 @@ func (a *App) routes() *http.ServeMux {
 	m.HandleFunc("GET /privacy", a.pageHandler("privacy"))
 	m.HandleFunc("GET /terms", a.pageHandler("terms"))
 	m.HandleFunc("GET /support", a.pageHandler("support"))
+	m.HandleFunc("GET /download", a.pageHandler("download"))
 	m.HandleFunc("GET /oauth/callback", a.oauthCallback)
 
 	m.HandleFunc("GET /admin", a.admin(a.adminOrders))
@@ -169,6 +185,8 @@ func (a *App) routes() *http.ServeMux {
 	m.HandleFunc("POST /admin/licenses/{id}/{action}", a.admin(a.adminLicenseAction))
 	m.HandleFunc("POST /admin/licenses/{id}/devices/{device}/remove", a.admin(a.adminRemoveDevice))
 	m.HandleFunc("POST /admin/issue", a.admin(a.adminIssue))
+	m.HandleFunc("GET /admin/prices", a.admin(a.adminPrices))
+	m.HandleFunc("POST /admin/prices/{product}", a.admin(a.adminSetPrice))
 
 	m.HandleFunc("/", a.notFound)
 	return m
@@ -241,6 +259,10 @@ func (s *statusWriter) WriteHeader(code int) {
 	s.ResponseWriter.WriteHeader(code)
 }
 
+// Unwrap lets http.ResponseController reach the connection (downloads
+// extend the write deadline).
+func (s *statusWriter) Unwrap() http.ResponseWriter { return s.ResponseWriter }
+
 func (s *statusWriter) Write(b []byte) (int, error) {
 	if !s.wrote {
 		s.status, s.wrote = http.StatusOK, true
@@ -288,7 +310,7 @@ func (a *App) limit(l *ratelimit.Limiter, h http.HandlerFunc) http.Handler {
 		if ok, wait := l.Allow(ipFrom(r)); !ok {
 			secs := int(wait/time.Second) + 1
 			w.Header().Set("Retry-After", itoa(secs))
-			writeError(w, http.StatusTooManyRequests, "rate_limited", "请求太频繁，请稍后再试", nil)
+			writeError(w, http.StatusTooManyRequests, "rate_limited", tr(r, "api.rate_limited"), nil)
 			return
 		}
 		h(w, r)

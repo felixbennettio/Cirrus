@@ -567,9 +567,8 @@ docker compose -f /opt/cirrus-license/docker-compose.yml logs cirrus-license | g
 
    这个头只在 `TRUST_PROXY=true` 且请求来自本机反向代理时采信。有人绕过 EdgeOne 直连源站并伪造它，最多只能绕开限流，拿不到许可证。
 
-2. **EdgeOne 规则引擎：这些路径不缓存**（“节点缓存 TTL”设为“不缓存”，或“遵循源站”——本服务对它们返回 `no-store`）：
-   `/api/*`、`/pay/*`、`/admin*`、`/license*`、`/buy*`、`/oauth/*`。`/static/*` 可以缓存。
-   `/api/v1/oauth/config` 返回 `public, max-age=300`，遵循源站即可。
+2. **EdgeOne 规则引擎：缓存一律“遵循源站”**。网站有六种语言，同一个网址按 Cookie 和浏览器语言返回不同的页面，所以网页（`/`、`/buy`、`/download`、`/support`、`/privacy`、`/terms` 等）返回 `private, no-cache`，CDN 不能缓存；`/api/*`、`/pay/*`、`/admin*`、`/oauth/*` 返回 `no-store`。不要为这些路径设置固定的缓存时间，也不要开启“忽略源站 Cache-Control”之类的选项。
+   可以长期缓存的只有带版本号的文件：`/static/*`（网址里有 `?v=`，`max-age=604800`）和 `/downloads/*`（文件名带版本号，`max-age=31536000, immutable`）。`/api/v1/oauth/config` 返回 `public, max-age=300`。
 
 3. **支付通知不能被安全防护拦下**。支付宝和微信的服务器会 POST `/pay/alipay/notify`、`/pay/wechat/notify`，它们不会通过 JS 质询或验证码。在 EdgeOne 的 Web 防护 / Bot 管理 / CC 防护中，为这两个路径设置例外（跳过 Bot 和 CC 质询）。
 
@@ -583,6 +582,55 @@ docker compose -f /opt/cirrus-license/docker-compose.yml logs --tail=5 cirrus-li
 curl -s -o /dev/null -w '%{http_code}\n' -X POST https://cirrus.routeforge.zone/pay/wechat/notify -d '{}'
 curl -s -o /dev/null -w '%{http_code}\n' -X POST https://cirrus.routeforge.zone/pay/alipay/notify -d 'a=b'
 # 不应出现 EdgeOne 的拦截页（403/429 带 HTML 质询页）。
+```
+
+## 16. 发布下载文件
+
+安装包可以直接放在本站：`data/downloads/` 里的文件通过 `https://cirrus.routeforge.zone/downloads/<文件名>` 下载，`data/downloads/manifest.json` 记录每个平台对应的文件、版本和 SHA-256，下载页（`/download`）和许可证邮件按它显示链接。某个平台在 `manifest.json` 里有文件时，优先于 `.env` 的 `DOWNLOAD_URL_<平台>`。
+
+**在本地电脑上**（仓库根目录），用脚本上传，它会在本地计算 SHA-256、上传后在服务器上核对、设好权限，再原子地更新 `manifest.json`：
+
+```bash
+CIRRUS_SERVER=root@<服务器IP> server/scripts/publish_download.sh macos ~/Downloads/Cirrus-1.0.0-macos.dmg
+# 一个平台可以有多个文件，例如 Windows 的安装包和便携版：
+CIRRUS_SERVER=root@<服务器IP> server/scripts/publish_download.sh windows Cirrus-1.0.0-windows-setup.exe Cirrus-1.0.0-windows-portable.zip
+```
+
+- 平台：`windows`、`macos`、`linux`、`android`。新文件会替换该平台原来的条目。
+- 版本号从文件名读取（`Cirrus-<版本>-<平台>…`），读不到时用 `VERSION=1.0.0` 指定。
+- 文件名只能包含字母、数字和 `._-`，并且要带版本号：下载链接会被浏览器和 EdgeOne 缓存一年，同名文件不要重复上传不同的内容。
+- 本地需要 `bash`、`python3`、`ssh` 和 `scp`。部署目录不是 `/opt/cirrus-license` 时，用 `CIRRUS_DIR` 指定。
+
+不需要重启服务。验证：
+
+```bash
+curl -s https://cirrus.routeforge.zone/download | grep -o '/downloads/[^"]*'
+curl -sI https://cirrus.routeforge.zone/downloads/Cirrus-1.0.0-macos.dmg | grep -i -E '^(HTTP|content-length|cache-control|content-disposition)'
+```
+
+旧版本的文件不会自动删除；确认新版本可用后，在服务器上删除即可：`rm /opt/cirrus-license/data/downloads/Cirrus-0.9.0-*`。`manifest.json` 不要手动编辑，用脚本更新。
+
+Mac 直售版的 DMG 来自 GitHub Actions 的 `mac-direct.yml`（已签名、公证）。下载 artifact 后可以先检查：
+
+```bash
+spctl -a -t open --context context:primary-signature -v Cirrus-1.0.0-macos.dmg   # accepted, source=Notarized Developer ID
+shasum -a 256 Cirrus-1.0.0-macos.dmg                                              # 与 artifact 里的 .sha256 一致
+```
+
+## 17. 修改价格
+
+在后台的“价格”页（`/admin/prices`）逐个产品修改人民币价格和美元参考价，保存后网站和新订单立即使用。价格保存在数据库里，升级和重启都不会丢失，并且优先于 `.env` 的 `PRICE_*`；“恢复默认”回到 `.env` 的价格。已经创建的订单保持下单时的金额。
+
+不需要后台时也可以在服务器上用命令修改（密码只在服务器上读取，不出现在命令历史里）：
+
+```bash
+cd /opt/cirrus-license
+P=$(grep '^ADMIN_PASSWORD=' .env | cut -d= -f2-); B=http://127.0.0.1:8790; J=$(mktemp)
+T=$(curl -s -c "$J" -u "admin:$P" $B/admin/prices | grep -o 'name="csrf" value="[0-9a-f]*"' | head -1 | cut -d'"' -f4)
+for p in windows macos linux android; do
+  curl -s -o /dev/null -w "cirrus-$p %{http_code}\n" -b "$J" -u "admin:$P" -H "Origin: $B" \
+    --data-urlencode "csrf=$T" --data-urlencode cny=260 --data-urlencode usd=39.99 "$B/admin/prices/cirrus-$p"
+done; rm -f "$J"; unset P   # 每行应为 303
 ```
 
 ## 附录 A：手动执行购买流程（无法运行 smoke-test.sh 时）

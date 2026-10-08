@@ -1,7 +1,8 @@
 # Cirrus licences (direct sales)
 
-Windows, Linux and Android builds sold outside the app stores unlock Cirrus
-Pro with a licence key bought on the Cirrus website. The App Store and Google
+Windows, Linux and Android builds and the Developer ID Mac build sold outside
+the app stores unlock Cirrus Pro with a licence key bought on the Cirrus
+website. The App Store and Google
 Play builds keep using in-app purchase (`lib/core/billing`).
 
 This file is the contract between the licence server (`server/`) and the app
@@ -12,11 +13,16 @@ This file is the contract between the licence server (`server/`) and the app
 | Product id       | Platform | Devices per licence | Default price      |
 | ---------------- | -------- | ------------------- | ------------------ |
 | `cirrus-windows` | windows  | 1                   | CNY 198 / USD 39.99 |
+| `cirrus-macos`   | macos    | 1                   | CNY 198 / USD 39.99 |
 | `cirrus-linux`   | linux    | 1                   | CNY 198 / USD 39.99 |
 | `cirrus-android` | android  | 3                   | CNY 198 / USD 39.99 |
 
-Windows and Linux are bought separately. Prices and limits live in the server
-configuration, not in the app.
+Each platform is bought separately. `cirrus-macos` is the Developer ID build
+downloaded from the website (`.github/workflows/mac-direct.yml`); the Mac App
+Store build keeps using in-app purchase, and the two purchases are separate.
+Prices and limits live on the server, not in the app: the defaults come from
+its configuration (`PRICE_*`, `MAX_DEVICES_*`, `PRODUCTS`) and the operator
+can change prices on the admin Prices page.
 
 ## Licence keys
 
@@ -34,6 +40,7 @@ The app sends an opaque device id: lowercase hex
 - Windows: `MachineGuid` under `HKLM\SOFTWARE\Microsoft\Cryptography`
 - Linux: `/etc/machine-id`, falling back to `/var/lib/dbus/machine-id`
 - Android: `Settings.Secure.ANDROID_ID`
+- macOS: the hardware UUID (`IOPlatformUUID` of `IOPlatformExpertDevice`)
 
 The server never sees the raw value. `device_name` is the host name (desktop)
 or `manufacturer model` (Android), for display only.
@@ -59,7 +66,10 @@ picked up by `/validate`.
 
 Base URL: `CIRRUS_LICENSE_SERVER` (default `https://cirrus.routeforge.zone`),
 paths under `/api/v1`. Requests and responses are JSON. Errors use the HTTP
-status plus `{"error": "<code>", "message": "<text in Chinese>"}`.
+status plus `{"error": "<code>", "message": "<text>"}`. The message is in the
+language of the request's `Accept-Language` header (English, French,
+Japanese, Russian, Simplified or Traditional Chinese), else in Simplified
+Chinese; apps should rely on the code.
 
 ### `POST /api/v1/activate`
 

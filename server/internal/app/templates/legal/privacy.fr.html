@@ -1,0 +1,61 @@
+{{define "doc"}}
+<h1>Politique de confidentialité</h1>
+<p class="muted">Date d'entrée en vigueur : {{.Site.PolicyDate}}. Exploitant : {{if .Site.Operator}}{{.Site.Operator}}{{else}}le développeur de Cirrus{{end}}{{if .Site.Contact}}, contact : <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{end}}.</p>
+<p class="notice">Ce texte en français est une traduction fournie pour votre commodité. La version en chinois simplifié fait foi : en cas de divergence, la version en chinois simplifié prévaut.</p>
+
+<p>La présente politique explique quelles données personnelles l'application Cirrus (卷云) sur toutes les plateformes, ce site ({{.Site.PublicURL}}) et son serveur de licences collectent, pourquoi, combien de temps elles sont conservées et quels sont vos droits. Nous collectons le strict minimum.</p>
+
+<h2>1. L'application Cirrus</h2>
+<ul>
+ <li><strong>Vos identifiants Cloudflare restent sur votre appareil.</strong> Les jetons d'API, clés d'API et jetons OAuth sont conservés uniquement sur votre appareil, dans le trousseau du système (trousseau Apple, Android Keystore, Gestionnaire d'identification Windows ou Secret Service sous Linux) ou, à défaut de trousseau, dans un fichier local lisible uniquement par votre compte utilisateur. Ils ne nous sont jamais transmis.</li>
+ <li><strong>Connexion directe à Cloudflare.</strong> L'application communique directement avec l'API Cloudflare et les pages de connexion de Cloudflare. Aucun serveur du développeur ne s'interpose, et nous ne voyons jamais vos données Cloudflare. Le traitement de ces données par Cloudflare est régi par la politique de confidentialité de Cloudflare.</li>
+ <li>Les listes, comme celles de vos comptes et de vos zones, sont mises en cache sur votre appareil pour que l'application démarre rapidement. Vous pouvez les effacer en supprimant l'identifiant ou en désinstallant l'application.</li>
+ <li><strong>Aucun SDK de statistiques, de publicité ou de pistage.</strong> L'application ne contient aucun code de mesure d'audience, de publicité ou de pistage.</li>
+ <li><strong>Activation de la licence</strong> (uniquement Windows, Linux et les versions macOS et Android téléchargées directement depuis ce site). Lorsque vous activez, vérifiez (au plus une fois tous les 7 jours lorsque vous êtes en ligne) ou désactivez une licence, l'application envoie à notre serveur de licences la clé de licence, un identifiant d'appareil, le nom de l'appareil, la plateforme et la version de l'application. L'identifiant d'appareil est une empreinte SHA-256 de l'identifiant machine de votre système ; l'identifiant lui-même ne quitte jamais votre appareil.</li>
+</ul>
+
+<h2>2. Achats sur l'App Store et Google Play</h2>
+<p>Les achats effectués dans les versions App Store (y compris le Mac App Store) et Google Play sont traités par Apple et Google selon leurs propres conditions et politiques de confidentialité. Nous ne recevons ni données de carte de paiement ni coordonnées à l'occasion de ces achats.</p>
+
+<h2>3. Données collectées par le site et le serveur de licences</h2>
+<table>
+ <thead><tr><th>Donnée</th><th>Finalité</th></tr></thead>
+ <tbody>
+  <tr><td>Votre adresse e-mail</td><td>Vous remettre votre clé de licence, vérifier les réinitialisations d'appareils en libre-service, renvoyer les clés perdues et répondre aux demandes d'assistance.</td></tr>
+  <tr><td>Données de commande : produit, montant, moyen de paiement, date et référence du paiement (par exemple le numéro de transaction Alipay ou la note d'un virement manuel), ainsi que la langue du site utilisée pour commander</td><td>Traiter votre achat, confirmer le paiement, gérer les remboursements, vous envoyer l'e-mail de licence dans votre langue et conserver les justificatifs de transaction exigés par la loi.</td></tr>
+  <tr><td>Données d'activation : identifiant d'appareil haché, nom de l'appareil, plateforme, version de l'application, date d'activation et de dernière vérification</td><td>Appliquer la limite d'appareils de votre licence et vous indiquer quels appareils l'utilisent.</td></tr>
+  <tr><td>Adresses IP dans les journaux du serveur et le journal d'audit des licences</td><td>Prévenir les abus (limitation de débit, détection des fraudes et des attaques) et assurer la sécurité du service.</td></tr>
+ </tbody>
+</table>
+<p>Les paiements sont effectués via Alipay ou WeChat Pay. Nous ne recevons ni vos coordonnées bancaires ni vos identifiants de compte ; nous apprenons seulement qu'un paiement a été effectué pour une commande, son montant et sa référence.</p>
+<p>Le site n'utilise que le stockage strictement nécessaire : un cookie qui mémorise votre choix de langue, et le stockage local de votre navigateur pour conserver le numéro et le code de suivi d'une commande en cours afin que la page d'achat puisse la reprendre. Il n'y a aucun cookie de pistage, ni script, police ou CDN tiers.</p>
+
+<h2>4. Base juridique</h2>
+<p>Nous traitons ces données parce que cela est nécessaire à la conclusion et à l'exécution du contrat qui nous lie à vous (vente de la licence et assistance), au respect d'obligations légales telles que la conservation des justificatifs de transaction, et à la sécurité du service.</p>
+
+<h2>5. Durée de conservation</h2>
+<ul>
+ <li>E-mail, données de licence et d'activation : aussi longtemps que nécessaire pour la licence. Les données d'activation d'un appareil sont supprimées lorsqu'il est désactivé ou réinitialisé.</li>
+ <li>Justificatifs de transaction des commandes payées : pendant la durée exigée par la loi (par exemple, au moins trois ans après la transaction en vertu de la loi de la RPC sur le commerce électronique).</li>
+ <li>Commandes non payées : supprimées 90 jours après leur expiration.</li>
+ <li>Adresses IP : retirées du journal d'audit au bout de 180 jours ; les journaux du serveur font l'objet d'une rotation automatique et sont conservés peu de temps.</li>
+</ul>
+
+<h2>6. Partage</h2>
+<p>Nous ne vendons ni ne louons vos données personnelles et ne les communiquons à aucun tiers, sauf : aux prestataires de paiement (Alipay, WeChat Pay) pour traiter votre paiement ; à notre service d'envoi d'e-mails, pour vous envoyer votre clé de licence ; à notre hébergeur, qui stocke les données sur des serveurs situés en Chine continentale ; et lorsque la loi ou une autorité compétente l'exige.</p>
+
+<h2>7. Sécurité</h2>
+<p>Le site utilise HTTPS, l'espace d'administration est protégé par un mot de passe, les licences sont signées cryptographiquement, et nous ne conservons que les données minimales décrites ci-dessus.</p>
+
+<h2>8. Vos droits</h2>
+<p>Vous pouvez demander à accéder à vos données personnelles, à en obtenir une copie, à les rectifier ou à les supprimer, ou retirer votre consentement, en écrivant à {{if .Site.Contact}}<a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{else}}l'adresse de contact indiquée sur la page Assistance{{end}}. Nous répondons sous 15 jours ouvrés. Si vous supprimez votre adresse e-mail, la réinitialisation des appareils en libre-service et la récupération de clé ne fonctionneront plus pour votre licence ; les justificatifs de transaction que la loi nous impose de conserver le sont pendant la durée requise.</p>
+
+<h2>9. Enfants</h2>
+<p>Cirrus et ce site ne s'adressent pas aux enfants de moins de 14 ans, et nous ne collectons pas sciemment leurs données personnelles. Si vous pensez qu'un enfant nous a communiqué des données personnelles, contactez-nous et nous les supprimerons.</p>
+
+<h2>10. Modifications</h2>
+<p>Toute modification de la présente politique sera publiée sur cette page et la date d'entrée en vigueur ci-dessus sera mise à jour. Les modifications importantes seront signalées sur le site.</p>
+
+<h2>11. Contact</h2>
+<p>{{if .Site.Operator}}{{.Site.Operator}}{{end}}{{if .Site.Contact}} · <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{end}}</p>
+{{end}}

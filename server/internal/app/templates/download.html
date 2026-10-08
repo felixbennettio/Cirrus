@@ -1,0 +1,44 @@
+{{define "title"}}{{.T "download.title"}}{{end}}
+{{define "content"}}
+<h1>{{.T "download.title"}}</h1>
+<p>{{.T "download.intro"}}</p>
+
+{{if .HasDownloads}}
+<div class="grid downloads">
+{{range $d := .Downloads}}
+ <section class="card download" id="{{.Platform}}">
+  <h2>{{$.PlatformName .Platform}}</h2>
+  {{if .Version}}<p class="muted">{{$.T "download.version" "version" .Version}}</p>{{end}}
+  <p class="req">
+  {{- if eq .Platform "windows"}}{{$.T "download.note_windows"}}
+  {{- else if eq .Platform "macos"}}{{$.T "download.note_macos"}}
+  {{- else if eq .Platform "linux"}}{{$.T "download.note_linux"}}
+  {{- else if eq .Platform "android"}}{{$.T "download.note_android"}}{{end -}}
+  </p>
+  {{if eq .Platform "macos"}}<p class="note">{{$.T "download.macos_direct"}}</p>{{end}}
+  <ul class="files">
+  {{range .Files}}
+   <li>
+    <a class="btn primary" href="{{.URL}}" rel="nofollow">{{if eq (len $d.Files) 1}}{{$.T "download.button" "platform" ($.PlatformName $d.Platform)}}{{else}}{{.Name}}{{end}}</a>
+    {{if or (and (eq (len $d.Files) 1) .Name) .Size}}<span class="muted file">{{if eq (len $d.Files) 1}}{{.Name}}{{end}}{{if .Size}}{{if eq (len $d.Files) 1}} · {{end}}{{$.Size .Size}}{{end}}</span>{{end}}
+    {{if .SHA256}}<span class="sum"><span class="muted">SHA-256</span> <code>{{.SHA256}}</code></span>{{end}}
+   </li>
+  {{end}}
+  </ul>
+ </section>
+{{end}}
+{{if .Site.AppStoreURL}}
+ <section class="card download" id="app-store">
+  <h2>App Store</h2>
+  <p class="req">{{.T "download.appstore_note"}}</p>
+  <ul class="files"><li><a class="btn" href="{{.Site.AppStoreURL}}" rel="noopener">{{.T "download.appstore_btn"}}</a></li></ul>
+ </section>
+{{end}}
+</div>
+{{if .Site.DownloadURL}}<p><a href="{{.Site.DownloadURL}}" rel="noopener">{{.T "download.all"}}</a></p>{{end}}
+{{if .HasChecksums}}{{$f := .T "download.file_arg"}}<p class="muted">{{.H "download.verify" "windows" (code (printf "certutil -hashfile %s SHA256" $f)) "macos" (code (printf "shasum -a 256 %s" $f)) "linux" (code (printf "sha256sum %s" $f))}}</p>{{end}}
+<p class="muted">{{.T "download.licence"}} <a href="/buy">{{.T "home.buy"}}</a></p>
+{{else}}
+<p class="notice">{{.T "download.none"}}{{if .Site.Contact}} {{mailto .Site.Contact}}{{end}}</p>
+{{end}}
+{{end}}

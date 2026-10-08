@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"cirrus/server/internal/i18n"
 	"cirrus/server/internal/pay"
 	"cirrus/server/internal/store"
 )
@@ -105,11 +106,17 @@ var flashes = map[string]string{
 	"paid":      "该订单已付款，不能取消",
 	"bad_email": "邮箱地址无效",
 	"bad_input": "输入无效",
+
+	"price_saved": "价格已保存，新订单立即按新价格计算",
+	"price_reset": "已恢复为配置文件（.env）中的默认价格",
+	"bad_price":   "价格无效：请填写大于 0 的金额，最多两位小数",
 }
 
 func (a *App) adminPage(w http.ResponseWriter, r *http.Request, name string, data any) {
 	p := a.newPage(w, r)
-	p.EN = false // the admin pages are Chinese only
+	p.Lang = i18n.ZhHans // the admin pages are Chinese only
+	p.Products = a.productViews(p.Lang)
+	p.NoIndex = true
 	p.CSRF = a.csrfToken(w, r)
 	p.Flash = flashes[r.URL.Query().Get("msg")]
 	p.Data = data
@@ -287,7 +294,13 @@ func (a *App) adminLicenseAction(w http.ResponseWriter, r *http.Request) {
 			seeOther(w, r, back, "nomail")
 			return
 		}
-		a.background(func(ctx context.Context) { a.sendMail(ctx, l.Email, l.OrderNo, []store.License{l}) })
+		lang := "" // the buyer's website language, when there is an order
+		if l.OrderNo != "" {
+			if o, err := a.st.Order(ctx, l.OrderNo); err == nil {
+				lang = o.Lang
+			}
+		}
+		a.background(func(ctx context.Context) { a.sendMail(ctx, l.Email, l.OrderNo, lang, []store.License{l}) })
 		msg = "mailed"
 	default:
 		a.notFound(w, r)
@@ -337,7 +350,7 @@ func (a *App) adminIssue(w http.ResponseWriter, r *http.Request) {
 	}
 	a.event(r.Context(), "issued", l.ID, "", ipFrom(r), "admin")
 	if email != "" && a.mail != nil && r.PostFormValue("send") == "1" {
-		a.background(func(ctx context.Context) { a.sendMail(ctx, email, "", []store.License{l}) })
+		a.background(func(ctx context.Context) { a.sendMail(ctx, email, "", "", []store.License{l}) })
 	}
 	seeOther(w, r, "/admin/licenses/"+l.ID, "issued")
 }

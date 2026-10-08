@@ -5,26 +5,38 @@ import (
 	"crypto/sha256"
 	"embed"
 	"encoding/hex"
+	"fmt"
+	"html"
 	"html/template"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
+	"cirrus/server/internal/i18n"
 	"cirrus/server/internal/money"
 )
 
-//go:embed templates/*.html
+//go:embed templates/*.html templates/legal/*.html
 var templateFS embed.FS
 
 //go:embed static
 var staticFS embed.FS
 
 var pageNames = []string{
-	"index", "buy", "license", "privacy", "terms", "support", "notfound", "oauth",
-	"admin_orders", "admin_licenses", "admin_license",
+	"index", "buy", "license", "privacy", "terms", "support", "download", "notfound", "oauth",
+	"admin_orders", "admin_licenses", "admin_license", "admin_prices",
 }
+
+// legalPages have one document per language in templates/legal/<page>.<lang>.html.
+var legalPages = map[string]bool{"privacy": true, "terms": true}
+
+// jsPages get the strings of the website's scripts (i18n "js." ids).
+var jsPages = map[string]bool{"buy": true, "license": true, "admin_license": true}
+
+const langCookie = "lang"
 
 type site struct {
 	Name        string
@@ -32,7 +44,7 @@ type site struct {
 	Contact     string
 	ICP         string
 	PolicyDate  string
-	DownloadURL string
+	DownloadURL string // general download link (DOWNLOAD_URL)
 	AppStoreURL string
 	PublicURL   string
 	Year        int
@@ -42,41 +54,57 @@ type site struct {
 type productView struct {
 	ID         string
 	Platform   string
-	NameZH     string
-	NameEN     string
+	Name       string // localized, e.g. "macOS 版"
+	NameZH     string // for the admin pages
 	MaxDevices int
-	Price      string // "198"
-	PriceUSD   string
+	Devices    string // localized, e.g. "3 devices"
+	Price      string // localized CNY price, e.g. "CN¥198"
+	PriceUSD   string // localized reference price, e.g. "≈ US$39.99"
 }
 
 type methodView struct {
 	ID        string
-	NameZH    string
-	NameEN    string
+	Name      string
 	Available bool
+}
+
+// langLink is an entry of the language menu and of the hreflang links.
+type langLink struct {
+	Code    string
+	Name    string
+	URL     string // this page in that language
+	AltURL  string // absolute, for <link rel="alternate">
+	Current bool
 }
 
 // page is the data every template gets.
 type page struct {
-	EN       bool
-	Path     string
-	LangURL  string
-	Site     site
-	Products []productView
-	Methods  []methodView
-	CSRF     string
-	Flash    string
-	Data     any
-	I18N     map[string]string
+	Lang      string
+	Langs     []langLink
+	Path      string
+	NoIndex   bool // no hreflang alternates (error, OAuth and admin pages)
+	Site      site
+	Products  []productView
+	Methods   []methodView
+	Downloads []dlPlatform
+	Gallery   []shotGroupView // home page only
+	Hero      *heroShots      // home page only
+	CSRF      string
+	Flash     string
+	Data      any
+	I18N      map[string]string
 }
 
-// T picks the Chinese or English text.
-func (p *page) T(zh, en string) string {
-	if p.EN {
-		return en
-	}
-	return zh
-}
+// T returns the message in the page's language; args are name/value pairs
+// for its {placeholders}.
+func (p *page) T(key string, args ...any) string { return i18n.T(p.Lang, key, args...) }
+
+// H returns the message as HTML, with template.HTML arguments (links)
+// inserted as they are.
+func (p *page) H(key string, args ...any) template.HTML { return i18n.HTML(p.Lang, key, args...) }
+
+// N returns the plural form of the message for n.
+func (p *page) N(key string, n int, args ...any) string { return i18n.N(p.Lang, key, n, args...) }
 
 // Admin reports whether this is an admin page.
 func (p *page) Admin() bool { return strings.HasPrefix(p.Path, "/admin") }
@@ -87,6 +115,44 @@ func (p *page) Active(path string) string {
 		return "active"
 	}
 	return ""
+}
+
+// HasDownloads reports whether the downloads page has anything to offer.
+func (p *page) HasDownloads() bool {
+	return len(p.Downloads) > 0 || p.Site.DownloadURL != "" || p.Site.AppStoreURL != ""
+}
+
+// HasChecksums reports whether any download has a SHA-256 checksum.
+func (p *page) HasChecksums() bool {
+	for _, d := range p.Downloads {
+		for _, f := range d.Files {
+			if f.SHA256 != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// CurrentLang is the language menu entry of the page's language.
+func (p *page) CurrentLang() langLink {
+	for _, l := range p.Langs {
+		if l.Current {
+			return l
+		}
+	}
+	return langLink{Code: p.Lang}
+}
+
+// PlatformName is the display name of a platform.
+func (p *page) PlatformName(platform string) string { return platformName(platform) }
+
+// Size formats a file size.
+func (p *page) Size(n int64) string {
+	if n < 1_000_000 {
+		return p.T("download.size_kb", "size", (n+999)/1000)
+	}
+	return p.T("download.size_mb", "size", i18n.Number(p.Lang, fmt.Sprintf("%.1f", float64(n)/1e6)))
 }
 
 func (a *App) loadTemplates() error {
@@ -123,14 +189,47 @@ func (a *App) loadTemplates() error {
 			}
 			return s[:n] + "…"
 		},
+		// HTML pieces for .H messages.
+		"link": func(href, text string) template.HTML {
+			return template.HTML(`<a href="` + html.EscapeString(href) + `">` + html.EscapeString(text) + `</a>`)
+		},
+		"mailto": func(addr string) template.HTML {
+			e := html.EscapeString(addr)
+			return template.HTML(`<a href="mailto:` + e + `">` + e + `</a>`)
+		},
+		"code": func(s string) template.HTML { return template.HTML(`<code>` + html.EscapeString(s) + `</code>`) },
+		"strong": func(s string) template.HTML {
+			return template.HTML(`<strong>` + html.EscapeString(s) + `</strong>`)
+		},
+		// An empty element that scripts fill in, e.g. (el "span" "p-amount").
+		"el": func(tag, id string) template.HTML {
+			if tag != "span" && tag != "code" {
+				tag = "span"
+			}
+			return template.HTML(`<` + tag + ` id="` + html.EscapeString(id) + `"></` + tag + `>`)
+		},
 	}
-	a.pages = make(map[string]*template.Template, len(pageNames))
-	for _, name := range pageNames {
-		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
+	a.pages = make(map[string]*template.Template)
+	parse := func(key string, files ...string) error {
+		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, append([]string{"templates/layout.html"}, files...)...)
 		if err != nil {
 			return err
 		}
-		a.pages[name] = t
+		a.pages[key] = t
+		return nil
+	}
+	for _, name := range pageNames {
+		if !legalPages[name] {
+			if err := parse(name, "templates/"+name+".html"); err != nil {
+				return err
+			}
+			continue
+		}
+		for _, l := range i18n.Languages {
+			if err := parse(name+"/"+l.Code, "templates/"+name+".html", "templates/legal/"+name+"."+l.Code+".html"); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -175,38 +274,92 @@ func (a *App) payImage(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, "", st.ModTime(), f)
 }
 
-// isEN picks the language: ?lang= (remembered in a cookie), then the
-// cookie, else Simplified Chinese.
-func isEN(w http.ResponseWriter, r *http.Request) bool {
-	if q := r.URL.Query().Get("lang"); q == "en" || q == "zh" {
-		http.SetCookie(w, &http.Cookie{Name: "lang", Value: q, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
-		return q == "en"
+// pageLang picks the website language: ?lang= (remembered in a cookie),
+// then the cookie, then the browser's Accept-Language, else English. The
+// old values "zh" and "en" keep working.
+func (a *App) pageLang(w http.ResponseWriter, r *http.Request) string {
+	if q := r.URL.Query().Get("lang"); q != "" {
+		if l, ok := i18n.Parse(q); ok {
+			http.SetCookie(w, &http.Cookie{Name: langCookie, Value: l, Path: "/", MaxAge: 365 * 24 * 3600,
+				Secure: a.isHTTPS(r), SameSite: http.SameSiteLaxMode})
+			return l
+		}
 	}
-	c, err := r.Cookie("lang")
-	return err == nil && c.Value == "en"
+	if c, err := r.Cookie(langCookie); err == nil {
+		if l, ok := i18n.Parse(c.Value); ok {
+			return l
+		}
+	}
+	if l, ok := i18n.Negotiate(r.Header.Get("Accept-Language")); ok {
+		return l
+	}
+	return i18n.EN
+}
+
+// apiLang is the language of API error messages: Accept-Language (the
+// website's scripts send the page language), then the lang cookie, else
+// Simplified Chinese as documented in docs/licensing.md.
+func apiLang(r *http.Request) string {
+	if l, ok := i18n.Negotiate(r.Header.Get("Accept-Language")); ok {
+		return l
+	}
+	if c, err := r.Cookie(langCookie); err == nil {
+		if l, ok := i18n.Parse(c.Value); ok {
+			return l
+		}
+	}
+	return i18n.ZhHans
+}
+
+// tr is an API message in the request's language.
+func tr(r *http.Request, key string, args ...any) string { return i18n.T(apiLang(r), key, args...) }
+
+// trN is a plural API message in the request's language.
+func trN(r *http.Request, key string, n int, args ...any) string {
+	return i18n.N(apiLang(r), key, n, args...)
+}
+
+// productViews localizes the products on sale.
+func (a *App) productViews(lang string) []productView {
+	var out []productView
+	for _, pr := range a.products() {
+		out = append(out, productView{
+			ID: pr.ID, Platform: pr.Platform, NameZH: pr.NameZH, MaxDevices: pr.MaxDevices,
+			Name:     i18n.T(lang, "product.name", "platform", platformName(pr.Platform)),
+			Devices:  i18n.N(lang, "devices", pr.MaxDevices),
+			Price:    i18n.T(lang, "price.cny", "amount", i18n.Number(lang, money.Short(pr.PriceCents))),
+			PriceUSD: i18n.T(lang, "price.usd", "amount", i18n.Number(lang, pr.PriceUSD)),
+		})
+	}
+	return out
 }
 
 func (a *App) newPage(w http.ResponseWriter, r *http.Request) *page {
-	p := &page{EN: isEN(w, r), Path: r.URL.Path}
-	q := r.URL.Query()
-	q.Set("lang", p.T("en", "zh"))
-	p.LangURL = r.URL.Path + "?" + q.Encode()
+	lang := a.pageLang(w, r)
 	c := a.cfg
-	p.Site = site{
-		Name: c.SiteName, Operator: c.OperatorName, Contact: c.ContactEmail, ICP: c.ICPNumber,
-		PolicyDate: c.PolicyDate, DownloadURL: c.DownloadURL, AppStoreURL: c.AppStoreURL, PublicURL: c.PublicURL,
-		Year: a.now().In(cst).Year(), SMTP: a.mail != nil,
+	p := &page{
+		Lang: lang, Path: r.URL.Path,
+		Site: site{
+			Name: c.SiteName, Operator: c.OperatorName, Contact: c.ContactEmail, ICP: c.ICPNumber,
+			PolicyDate: c.PolicyDate, DownloadURL: c.DownloadURL, AppStoreURL: c.AppStoreURL, PublicURL: c.PublicURL,
+			Year: a.now().In(cst).Year(), SMTP: a.mail != nil,
+		},
+		Products:  a.productViews(lang),
+		Downloads: a.downloads(),
 	}
-	for _, pr := range c.Products {
-		p.Products = append(p.Products, productView{
-			ID: pr.ID, Platform: pr.Platform, NameZH: pr.NameZH, NameEN: pr.NameEN, MaxDevices: pr.MaxDevices,
-			Price: money.Short(pr.PriceCents), PriceUSD: pr.PriceUSD,
+	q := r.URL.Query()
+	for _, l := range i18n.Languages {
+		q.Set("lang", l.Code)
+		p.Langs = append(p.Langs, langLink{
+			Code: l.Code, Name: l.Name, Current: l.Code == lang,
+			URL:    r.URL.Path + "?" + q.Encode(),
+			AltURL: c.PublicURL + r.URL.Path + "?lang=" + url.QueryEscape(l.Code),
 		})
 	}
 	for _, m := range c.PayMethods {
-		mv := methodView{ID: m, NameZH: "支付宝", NameEN: "Alipay", Available: a.provider(m) != nil}
+		mv := methodView{ID: m, Name: p.T("method.alipay"), Available: a.provider(m) != nil}
 		if m == "wechat" {
-			mv.NameZH, mv.NameEN = "微信支付", "WeChat Pay"
+			mv.Name = p.T("method.wechat")
 		}
 		p.Methods = append(p.Methods, mv)
 	}
@@ -214,17 +367,28 @@ func (a *App) newPage(w http.ResponseWriter, r *http.Request) *page {
 }
 
 func (a *App) render(w http.ResponseWriter, name string, status int, p *page) {
+	if jsPages[name] {
+		p.I18N = i18n.JS(p.Lang)
+	}
+	t := a.pages[name]
+	if legalPages[name] {
+		t = a.pages[name+"/"+p.Lang]
+	}
 	var buf bytes.Buffer
-	if err := a.pages[name].ExecuteTemplate(&buf, "layout", p); err != nil {
+	if err := t.ExecuteTemplate(&buf, "layout", p); err != nil {
 		a.log.Error("render", "page", name, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if w.Header().Get("Cache-Control") == "" {
-		w.Header().Set("Cache-Control", "no-cache")
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	// Pages depend on the language (cookie or Accept-Language): a shared
+	// cache (the CDN) must not keep them.
+	if h.Get("Cache-Control") == "" {
+		h.Set("Cache-Control", "private, no-cache")
 	}
-	w.Header().Set("Vary", "Cookie")
+	h.Set("Vary", "Cookie, Accept-Language")
+	h.Set("Content-Language", p.Lang)
 	w.WriteHeader(status)
 	w.Write(buf.Bytes())
 }
@@ -232,8 +396,8 @@ func (a *App) render(w http.ResponseWriter, name string, status int, p *page) {
 func (a *App) pageHandler(name string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := a.newPage(w, r)
-		if name == "license" {
-			p.I18N = licenseI18N(p.EN)
+		if name == "index" {
+			p.Gallery, p.Hero = a.gallery(p.Lang), a.hero(p.Lang)
 		}
 		a.render(w, name, http.StatusOK, p)
 	}
@@ -250,14 +414,19 @@ func (a *App) oauthCallback(w http.ResponseWriter, r *http.Request) {
 	h.Set("Referrer-Policy", "no-referrer")
 	h.Set("X-Robots-Tag", "noindex")
 	p := a.newPage(w, r)
+	p.NoIndex = true
 	// Never echo the code into the page; oauth.js carries it over on a
 	// language switch.
-	p.LangURL = r.URL.Path + "?lang=" + p.T("en", "zh")
+	for i := range p.Langs {
+		p.Langs[i].URL = r.URL.Path + "?lang=" + url.QueryEscape(p.Langs[i].Code)
+	}
 	a.render(w, "oauth", http.StatusOK, p)
 }
 
 func (a *App) notFound(w http.ResponseWriter, r *http.Request) {
-	a.render(w, "notfound", http.StatusNotFound, a.newPage(w, r))
+	p := a.newPage(w, r)
+	p.NoIndex = true
+	a.render(w, "notfound", http.StatusNotFound, p)
 }
 
 type buyData struct {
@@ -268,7 +437,7 @@ type buyData struct {
 func (a *App) buyPage(w http.ResponseWriter, r *http.Request) {
 	p := a.newPage(w, r)
 	sel := r.URL.Query().Get("product")
-	if _, ok := a.cfg.Product(sel); !ok {
+	if _, ok := a.cfg.OnSale(sel); !ok {
 		sel = a.cfg.Products[0].ID
 	}
 	// ?order= is where Alipay's cashier sends the buyer back. It only tells
@@ -278,98 +447,5 @@ func (a *App) buyPage(w http.ResponseWriter, r *http.Request) {
 		ret = ""
 	}
 	p.Data = buyData{Selected: sel, ReturnOrder: ret}
-	p.I18N = buyI18N(p.EN)
 	a.render(w, "buy", http.StatusOK, p)
-}
-
-func pick(en bool, zh, enm map[string]string) map[string]string {
-	if en {
-		return enm
-	}
-	return zh
-}
-
-// Strings for buy.js. Chinese error texts come from the API's "message";
-// the English page maps error codes ("err_<code>").
-func buyI18N(en bool) map[string]string {
-	return pick(en, map[string]string{
-		"alipay":       "支付宝",
-		"wechat":       "微信",
-		"creating":     "正在创建订单…",
-		"err_generic":  "出错了，请稍后再试",
-		"err_network":  "网络错误，请检查网络后重试",
-		"waiting":      "等待付款… 付款后本页面会自动更新",
-		"waiting_man":  "等待确认收款… 我们会尽快人工确认，确认后本页面会自动显示许可证",
-		"copy":         "复制",
-		"copied":       "已复制",
-		"redirecting":  "正在跳转到支付宝收银台…",
-		"no_order":     "未在本浏览器找到该订单。如果已经付款，许可证会发送到你的邮箱，也可以在“许可证”页面用订单号和查询凭证查询。",
-		"step_scan":    "打开{m}，扫描上方收款码",
-		"step_amount":  "输入金额 ¥{a}（请勿多付或少付）",
-		"step_note":    "在付款备注（添加备注 / 转账说明）中填写订单号 {o}",
-		"step_wait":    "付款后请保持本页面打开；收款确认后这里会显示许可证",
-		"save_hint":    "长按或右键保存收款码图片，再在{m}中“扫一扫 → 从相册选取”。",
-		"scan_dynamic": "请使用{m}扫码付款。",
-		"open_app":     "在手机上打开支付宝付款",
-
-		"scan_wechat_phone": "在手机上浏览时，可截屏后在微信“扫一扫 → 相册”中选取。",
-	}, map[string]string{
-		"alipay":                 "Alipay",
-		"wechat":                 "WeChat",
-		"creating":               "Creating your order…",
-		"err_generic":            "Something went wrong. Please try again.",
-		"err_network":            "Network error. Please check your connection and retry.",
-		"err_invalid_email":      "Please enter a valid email address.",
-		"err_invalid_product":    "Unknown product.",
-		"err_invalid_method":     "Unsupported payment method.",
-		"err_method_unavailable": "This payment method is not available right now. Please choose another.",
-		"err_payment_error":      "Could not start the payment. Please try again or use another method.",
-		"err_rate_limited":       "Too many requests. Please wait a moment.",
-		"waiting":                "Waiting for payment… this page updates by itself.",
-		"waiting_man":            "Waiting for the payment to be confirmed. We confirm payments by hand as soon as possible; your key will appear here.",
-		"copy":                   "Copy",
-		"copied":                 "Copied",
-		"redirecting":            "Taking you to the Alipay checkout…",
-		"no_order":               "This order was not found in this browser. If you have paid, the key is emailed to you, and you can look the order up on the Licence page with its number and token.",
-		"step_scan":              "Open {m} and scan the QR code above",
-		"step_amount":            "Enter the amount ¥{a} exactly",
-		"step_note":              "Write the order number {o} in the payment note",
-		"step_wait":              "Keep this page open; your licence key appears here once the payment is confirmed",
-		"save_hint":              "On a phone, save the QR image and choose it from your photos in {m}'s scanner.",
-		"scan_dynamic":           "Scan with {m} to pay.",
-		"scan_wechat_phone":      "On a phone, take a screenshot and pick it in WeChat's scanner (Scan → Album).",
-		"open_app":               "Open Alipay on this phone",
-	})
-}
-
-func licenseI18N(en bool) map[string]string {
-	return pick(en, map[string]string{
-		"reset_ok":    "已释放全部设备，现在可以在新设备上激活了。",
-		"resend_ok":   "如果该邮箱购买过许可证，邮件将在几分钟内送达。请同时检查垃圾邮件文件夹。",
-		"pending":     "订单待付款",
-		"paid":        "已付款",
-		"expired":     "订单已过期。如果你已经付款，请联系客服并提供订单号。",
-		"err_generic": "出错了，请稍后再试",
-		"err_network": "网络错误，请检查网络后重试",
-		"copy":        "复制",
-		"copied":      "已复制",
-	}, map[string]string{
-		"reset_ok":            "All devices have been released. You can activate on your new device now.",
-		"resend_ok":           "If this address has bought a licence, an email is on its way. Please check your spam folder too.",
-		"pending":             "Waiting for payment",
-		"paid":                "Paid",
-		"expired":             "This order has expired. If you have paid, please contact support with the order number.",
-		"err_generic":         "Something went wrong. Please try again.",
-		"err_network":         "Network error. Please check your connection and retry.",
-		"err_invalid_key":     "This licence key is not valid. Please check it.",
-		"err_email_mismatch":  "The email does not match the one used to buy this licence.",
-		"err_too_soon":        "Devices can be reset once every 30 days. Please try again in {n} day(s) or contact support.",
-		"err_revoked":         "This licence has been revoked.",
-		"err_order_not_found": "Order not found, or the token is wrong.",
-		"err_rate_limited":    "Too many requests. Please wait a moment.",
-		"err_invalid_email":   "Please enter a valid email address.",
-		"err_not_available":   "Email delivery is not available. Please contact support.",
-		"copy":                "Copy",
-		"copied":              "Copied",
-	})
 }

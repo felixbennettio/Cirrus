@@ -1,38 +1,41 @@
-{{define "title"}}{{.T "支持" "Support"}}{{end}}
+{{define "title"}}{{.T "nav.support"}}{{end}}
 {{define "content"}}
 <article class="doc">
-<h1>{{.T "支持" "Support"}}</h1>
-<p>{{if .Site.Contact}}{{.T "有问题请发邮件到" "Email us at"}} <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{.T "，请附上订单号或许可证（可以只写前几位），我们通常在 1 个工作日内回复。" ", with your order number or the first characters of your key. We usually reply within one working day."}}{{else}}{{.T "常见问题见下文。" "See the questions below."}}{{end}}</p>
+<h1>{{.T "nav.support"}}</h1>
+<p>{{if .Site.Contact}}{{.H "support.contact" "email" (mailto .Site.Contact)}}{{else}}{{.T "support.no_contact"}}{{end}}</p>
 
-<h2>{{.T "常见问题" "Frequently asked questions"}}</h2>
+<h2>{{.T "support.faq"}}</h2>
 
-<h3>{{.T "如何激活？" "How do I activate?"}}</h3>
-<p>{{.T "打开 Cirrus → Pro → 输入许可证 → 粘贴许可证 → 激活。激活需要联网；激活后可以离线使用，应用联网时最多每 7 天校验一次。" "Open Cirrus → Pro → Enter licence → paste the key → Activate. Activation needs a connection; afterwards Cirrus works offline and checks the licence at most once every 7 days when online."}}</p>
+<h3>{{.T "support.q_activate"}}</h3>
+<p>{{.T "support.a_activate"}}</p>
 
-<h3>{{.T "提示“已达到设备上限”怎么办？" "It says the device limit is reached"}}</h3>
-<p>{{.T "请先在旧设备上打开 Cirrus → Pro → 停用。旧设备丢失或已重装时，可以在" "Deactivate on the old device first (Cirrus → Pro → Deactivate). If it is lost or reinstalled, use the"}} <a href="/license">{{.T "许可证页面" "Licence page"}}</a>{{.T "用许可证和购买邮箱释放全部设备（每 30 天一次）。" " to release all devices with your key and purchase email (once every 30 days)."}}</p>
+<h3>{{.T "support.q_limit"}}</h3>
+<p>{{.H "support.a_limit" "page" (link "/license" (.T "buy.licence_page"))}}</p>
 
-<h3>{{.T "许可证丢了" "I lost my key"}}</h3>
-<p>{{if .Site.SMTP}}{{.T "在许可证页面输入购买邮箱，我们会把该邮箱的全部许可证重新发给你。" "Enter your purchase email on the Licence page and we will email you all your keys."}}{{else}}{{.T "请发邮件联系我们，附上购买邮箱和订单号。" "Email us with your purchase email and order number."}}{{end}} {{.T "如果保存了订单号和查询凭证，也可以在许可证页面查询订单。" "If you kept the order number and token, you can also look the order up there."}}</p>
+<h3>{{.T "support.q_lost"}}</h3>
+<p>{{if .Site.SMTP}}{{.T "support.a_lost_mail"}}{{else}}{{.T "support.a_lost_contact"}}{{end}} {{.T "support.a_lost_lookup"}}</p>
 
-<h3>{{.T "付款后一直显示“等待确认”" "I paid but it still says waiting"}}</h3>
-<p>{{.T "扫静态收款码付款的订单由人工确认，通常在几个小时内完成，请保持页面打开或稍后用订单号和查询凭证查询。请确认付款金额正确，并在付款备注中填写了订单号。超过 24 小时仍未确认，请联系我们并附上付款截图。" "Payments by static QR code are confirmed by hand, usually within a few hours. Keep the page open or look the order up later. Make sure the amount was exact and the order number was in the payment note. If it is still unconfirmed after 24 hours, contact us with a screenshot of the payment."}}</p>
+<h3>{{.T "support.q_waiting"}}</h3>
+<p>{{.T "support.a_waiting"}}</p>
 
-<h3>{{.T "可以退款吗？" "Can I get a refund?"}}</h3>
-<p>{{.T "许可证是数字商品，签发后一般不退款。如果许可证因技术原因无法使用、客服也无法解决，可以在购买后 14 天内申请退款。重复付款一律退还。详见" "Licences are digital goods and are generally not refundable once issued. If the licence cannot be used for technical reasons that support cannot solve, you can ask for a refund within 14 days of purchase. Duplicate payments are always refunded. See the"}} <a href="/terms">{{.T "用户协议" "Terms"}}</a>{{.T "。" "."}}</p>
+<h3>{{.T "support.q_refund"}}</h3>
+<p>{{.H "support.a_refund" "terms" (link "/terms" (.T "terms.title"))}}</p>
 
-<h3>{{.T "iOS、macOS 和 Google Play 版本" "iOS, macOS and Google Play versions"}}</h3>
-<p>{{.T "这些版本请在应用内购买 Pro，付款和退款由 Apple 或 Google 处理。本站出售的许可证用于 Windows、Linux 和直接下载安装的 Android 版本。" "Buy Pro inside those apps; Apple or Google handle payment and refunds. Licences sold here are for Windows, Linux and the directly downloaded Android app."}}</p>
+<h3>{{.T "support.q_mac"}}</h3>
+<p>{{.T "support.a_mac"}}</p>
 
-<h3>{{.T "哪些功能免费？" "What is free?"}}</h3>
-<p>{{.T "管理域名的功能全部免费：DNS、SSL/TLS、安全、规则、缓存、域名设置和分析。" "Everything for managing zones is free: DNS, SSL/TLS, security, rules, caching, zone settings and analytics."}} <a href="/#pricing">{{.T "查看 Pro 功能和价格" "See Pro features and pricing"}}</a></p>
+<h3>{{.T "support.q_stores"}}</h3>
+<p>{{.T "support.a_stores"}}</p>
 
-<h2>{{.T "链接" "Links"}}</h2>
+<h3>{{.T "support.q_free"}}</h3>
+<p>{{.T "support.a_free"}} <a href="/#pricing">{{.T "support.pricing_link"}}</a></p>
+
+<h2>{{.T "support.links"}}</h2>
 <ul>
- <li><a href="/buy">{{.T "购买许可证" "Buy a licence"}}</a></li>
- <li><a href="/license">{{.T "许可证自助服务" "Licence self-service"}}</a></li>
- {{if .Site.DownloadURL}}<li><a href="{{.Site.DownloadURL}}" rel="noopener">{{.T "下载 Cirrus" "Download Cirrus"}}</a></li>{{end}}
- <li><a href="/privacy">{{.T "隐私政策" "Privacy Policy"}}</a> · <a href="/terms">{{.T "用户协议与许可条款" "Terms & EULA"}}</a></li>
+ <li><a href="/buy">{{.T "home.buy"}}</a></li>
+ {{if .HasDownloads}}<li><a href="/download">{{.T "download.title"}}</a></li>{{end}}
+ <li><a href="/license">{{.T "license.title"}}</a></li>
+ <li><a href="/privacy">{{.T "privacy.title"}}</a> · <a href="/terms">{{.T "terms.title"}}</a></li>
 </ul>
 </article>
 {{end}}

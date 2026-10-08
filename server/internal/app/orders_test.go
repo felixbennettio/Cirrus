@@ -134,7 +134,7 @@ func TestOrderValidation(t *testing.T) {
 		status int
 		code   string
 	}{
-		{map[string]string{"product": "cirrus-macos", "email": "a@example.com", "method": "alipay"}, 400, "invalid_product"},
+		{map[string]string{"product": "cirrus-ios", "email": "a@example.com", "method": "alipay"}, 400, "invalid_product"},
 		{map[string]string{"product": "cirrus-linux", "email": "not-an-email", "method": "alipay"}, 400, "invalid_email"},
 		{map[string]string{"product": "cirrus-linux", "email": "A <a@example.com>", "method": "alipay"}, 400, "invalid_email"},
 		{map[string]string{"product": "cirrus-linux", "email": "a@example.com", "method": "paypal"}, 400, "invalid_method"},

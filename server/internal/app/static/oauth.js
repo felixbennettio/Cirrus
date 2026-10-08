@@ -11,12 +11,12 @@
     return;
   }
   var target = 'io.felixbennett.cirrus:/oauth/callback' + query;
-  var lang = document.querySelector('a.lang');
-  if (lang) {
+  // The language menu links carry the response over to the other language.
+  document.querySelectorAll('.lang-list a[hreflang]').forEach(function (lang) {
     var u = new URL(lang.getAttribute('href'), window.location.href);
     params.forEach(function (v, k) { if (k !== 'lang') u.searchParams.set(k, v); });
     lang.setAttribute('href', u.pathname + u.search);
-  }
+  });
   open.setAttribute('href', target);
   if (params.get('error')) {
     var err = document.getElementById('oauth-error');

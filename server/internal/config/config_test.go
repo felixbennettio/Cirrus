@@ -20,11 +20,12 @@ func TestDefaults(t *testing.T) {
 	if c.PublicURL != "https://cirrus.routeforge.zone" || c.PublicHost() != "cirrus.routeforge.zone" {
 		t.Fatalf("public url %q", c.PublicURL)
 	}
-	if len(c.Products) != 3 {
+	if len(c.Products) != 4 {
 		t.Fatalf("products: %+v", c.Products)
 	}
 	want := map[string][2]any{
 		"cirrus-windows": {"windows", 1},
+		"cirrus-macos":   {"macos", 1},
 		"cirrus-linux":   {"linux", 1},
 		"cirrus-android": {"android", 3},
 	}

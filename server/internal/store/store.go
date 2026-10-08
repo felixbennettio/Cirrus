@@ -140,6 +140,17 @@ CREATE INDEX events_license ON events(license_id, at);
 CREATE INDEX events_order ON events(order_no, at);
 CREATE INDEX events_at ON events(at);
 `,
+	// The website language the buyer ordered in, for the licence email.
+	`ALTER TABLE orders ADD COLUMN lang TEXT NOT NULL DEFAULT '';`,
+	// Prices set on the admin Prices page; they override the PRICE_* settings.
+	`
+CREATE TABLE prices (
+	product    TEXT PRIMARY KEY,
+	cny        INTEGER NOT NULL,
+	usd        TEXT NOT NULL DEFAULT '',
+	updated_at INTEGER NOT NULL
+) WITHOUT ROWID;
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {

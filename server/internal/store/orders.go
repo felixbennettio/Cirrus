@@ -33,6 +33,7 @@ type Order struct {
 	CreatedAt   time.Time
 	ExpiresAt   time.Time
 	PaidAt      time.Time
+	Lang        string // website language of the buyer, e.g. "fr"; "" when unknown
 
 	LicenseKey string // joined from licenses when paid
 }
@@ -47,7 +48,7 @@ func (o Order) EffectiveStatus(now time.Time) string {
 }
 
 const orderCols = `o.order_no, o.token_hash, o.product, o.email, o.method, o.provider, o.amount, o.currency, o.status,
-	o.pay_data, o.pay_ref, o.license_id, o.created_at, o.expires_at, o.paid_at, COALESCE(l.license_key, '')`
+	o.pay_data, o.pay_ref, o.license_id, o.created_at, o.expires_at, o.paid_at, o.lang, COALESCE(l.license_key, '')`
 
 const orderFrom = ` FROM orders o LEFT JOIN licenses l ON l.id = o.license_id `
 
@@ -55,7 +56,7 @@ func scanOrder(r scanner) (Order, error) {
 	var o Order
 	var created, expires, paid int64
 	err := r.Scan(&o.No, &o.TokenHash, &o.Product, &o.Email, &o.Method, &o.Provider, &o.AmountCents, &o.Currency, &o.Status,
-		&o.PayData, &o.PayRef, &o.LicenseID, &created, &expires, &paid, &o.LicenseKey)
+		&o.PayData, &o.PayRef, &o.LicenseID, &created, &expires, &paid, &o.Lang, &o.LicenseKey)
 	if errors.Is(err, sql.ErrNoRows) {
 		return o, ErrNotFound
 	}
@@ -72,10 +73,10 @@ func (s *Store) InsertOrder(ctx context.Context, o Order) error {
 		o.Status = StatusPending
 	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO orders
-		(order_no, token_hash, product, email, method, provider, amount, currency, status, pay_data, created_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(order_no, token_hash, product, email, method, provider, amount, currency, status, pay_data, created_at, expires_at, lang)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		o.No, o.TokenHash, o.Product, NormEmail(o.Email), o.Method, o.Provider, o.AmountCents, o.Currency, o.Status,
-		o.PayData, unix(o.CreatedAt), unix(o.ExpiresAt))
+		o.PayData, unix(o.CreatedAt), unix(o.ExpiresAt), o.Lang)
 	if isUnique(err) {
 		return ErrConflict
 	}

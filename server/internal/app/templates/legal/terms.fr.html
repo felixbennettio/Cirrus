@@ -1,0 +1,51 @@
+{{define "doc"}}
+<h1>Conditions d'utilisation et contrat de licence utilisateur final</h1>
+<p class="muted">Date d'entrée en vigueur : {{.Site.PolicyDate}}. Exploitant : {{if .Site.Operator}}{{.Site.Operator}}{{else}}le développeur de Cirrus{{end}}{{if .Site.Contact}} ({{.Site.Contact}}){{end}}.</p>
+<p class="notice">Ce texte en français est une traduction fournie pour votre commodité. La version en chinois simplifié fait foi : en cas de divergence, la version en chinois simplifié prévaut.</p>
+
+<h2>1. Accord</h2>
+<p>Les présentes conditions constituent un accord entre vous et l'exploitant indiqué ci-dessus concernant l'application Cirrus (卷云) et les licences vendues sur ce site. En achetant une licence ou en utilisant Cirrus, vous les acceptez.</p>
+
+<h2>2. Le logiciel</h2>
+<p>Cirrus est un client de l'API Cloudflare. La gestion des zones est gratuite. Cirrus Pro débloque les fonctions supplémentaires décrites sur la page d'accueil.</p>
+
+<h2>3. Concession de licence</h2>
+<p>Une fois votre paiement confirmé, vous recevez une clé de licence. Elle vous accorde une licence personnelle, non exclusive et non transférable d'utilisation de Cirrus Pro sur la plateforme du produit acheté, sur au plus le nombre d'appareils suivant en même temps :</p>
+<ul>
+{{range .Products}} <li>Licence {{.Name}} : {{.Devices}}</li>
+{{end}}</ul>
+<p>La licence est un achat unique, sans abonnement. Elle n'expire pas et inclut toutes les futures mises à jour de Cirrus.</p>
+
+<h2>4. Appareils et transfert</h2>
+<p>Pour transférer la licence sur un autre appareil, désactivez-la dans l'application sur l'ancien appareil. Si celui-ci a été perdu ou réinstallé, vous pouvez libérer vous-même tous les appareils sur la <a href="/license">page Licence</a> avec votre clé et l'adresse e-mail d'achat, une fois tous les 30 jours ; contactez l'assistance si vous avez besoin de davantage. Vous ne pouvez pas partager, revendre, publier ni diffuser de quelque autre manière votre clé de licence.</p>
+
+<h2>5. Restrictions</h2>
+<p>Vous ne pouvez pas contourner, désactiver ou altérer les vérifications de licence, générer ou diffuser des clés, ni utiliser Cirrus en violation de la loi ou des conditions d'utilisation de Cloudflare.</p>
+
+<h2>6. Paiement et remboursements</h2>
+<p>Les prix sont indiqués sur ce site en yuans chinois (CNY) ; les montants en dollars US ne sont donnés qu'à titre indicatif. Les paiements par QR code de paiement statique sont confirmés manuellement, généralement en quelques heures. Une licence est un bien numérique livré immédiatement ; elle n'est donc en principe pas remboursable une fois délivrée. Toutefois, si la licence ne peut pas être utilisée pour des raisons techniques que l'assistance ne parvient pas à résoudre, nous la remboursons sur demande dans les 14 jours suivant l'achat. Les paiements en double sont toujours remboursés. Vos droits légaux de consommateur ne sont pas affectés.</p>
+
+<h2>7. Copies issues de l'App Store et de Google Play</h2>
+<p>Les licences vendues sur ce site s'appliquent uniquement aux versions téléchargées directement depuis ce site ou les canaux de diffusion propres à l'exploitant (les installateurs Windows, macOS, Linux et Android). Elles ne s'appliquent pas aux versions App Store (y compris le Mac App Store) ou Google Play, et les achats effectués dans ces boutiques ne s'appliquent pas aux versions téléchargées directement : les deux s'achètent séparément. Les copies de Cirrus obtenues sur l'App Store d'Apple sont également soumises au <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" rel="noopener">contrat de licence utilisateur final des applications sous licence</a> (Licensed Application EULA) d'Apple. Les achats effectués sur l'App Store ou Google Play relèvent des conditions d'Apple ou de Google, et leurs remboursements sont gérés par Apple ou Google.</p>
+
+<h2>8. Client non officiel</h2>
+<p>Cirrus est un client non officiel. Il n'est ni affilié à Cloudflare, Inc., ni approuvé ou parrainé par celle-ci. Cloudflare est une marque de Cloudflare, Inc.</p>
+
+<h2>9. Votre compte Cloudflare</h2>
+<p>Cirrus agit sur votre compte Cloudflare avec les identifiants que vous fournissez. Vous êtes responsable de toute action effectuée sur votre compte au moyen de Cirrus, comme la suppression d'enregistrements DNS, la modification de paramètres de sécurité ou le déploiement de code ; nombre de ces actions sont irréversibles. Protégez vos identifiants et vos appareils, et n'accordez à vos jetons que les autorisations nécessaires.</p>
+
+<h2>10. Exclusion de garanties</h2>
+<p>Dans la mesure permise par la loi, Cirrus est fourni « en l'état » et « selon disponibilité », sans garantie d'aucune sorte, expresse ou implicite, notamment d'adéquation à un usage particulier et d'absence de contrefaçon. Nous ne garantissons pas que Cirrus soit exempt d'erreurs ou fonctionne sans interruption, ni que l'API Cloudflare restera compatible avec lui.</p>
+
+<h2>11. Limitation de responsabilité</h2>
+<p>Dans la mesure permise par la loi, nous ne sommes pas responsables des pertes indirectes, accessoires ou consécutives, y compris les pertes de profits, de données ou d'activité, résultant de l'utilisation de Cirrus ou de votre compte Cloudflare, et notre responsabilité totale est limitée au montant que vous avez payé pour la licence. Aucune disposition des présentes n'exclut une responsabilité qui ne peut être exclue par la loi.</p>
+
+<h2>12. Révocation et résiliation</h2>
+<p>Nous pouvons révoquer une licence obtenue par fraude, au moyen d'un paiement annulé ou en violation des présentes conditions. La licence prend fin automatiquement si vous enfreignez ces conditions.</p>
+
+<h2>13. Droit applicable et litiges</h2>
+<p>Les présentes conditions sont régies par le droit de la République populaire de Chine (à l'exclusion, à cette fin, de Hong Kong, de Macao et de Taïwan). Les litiges sont d'abord réglés à l'amiable ; à défaut, chaque partie peut saisir le tribunal populaire compétent du lieu d'établissement de l'exploitant.</p>
+
+<h2>14. Modifications et contact</h2>
+<p>Nous pouvons mettre à jour les présentes conditions et publierons les modifications sur cette page avec une nouvelle date d'entrée en vigueur. Les modifications ne réduisent pas la licence que vous avez déjà achetée. Questions : {{if .Site.Contact}}<a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{else}}voir la <a href="/support">page Assistance</a>{{end}}.</p>
+{{end}}

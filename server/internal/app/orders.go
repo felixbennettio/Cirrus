@@ -17,6 +17,7 @@ import (
 
 	qrcode "github.com/skip2/go-qrcode"
 
+	"cirrus/server/internal/i18n"
 	"cirrus/server/internal/money"
 	"cirrus/server/internal/pay"
 	"cirrus/server/internal/store"
@@ -70,24 +71,24 @@ func (a *App) apiCreateOrder(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	p, ok := a.cfg.Product(strings.TrimSpace(req.Product))
+	p, ok := a.onSale(strings.TrimSpace(req.Product))
 	if !ok {
-		writeError(w, http.StatusBadRequest, "invalid_product", "未知的产品", nil)
+		writeError(w, http.StatusBadRequest, "invalid_product", tr(r, "api.invalid_product"), nil)
 		return
 	}
 	email := store.NormEmail(req.Email)
 	if !validEmail(email) {
-		writeError(w, http.StatusBadRequest, "invalid_email", "邮箱地址无效", nil)
+		writeError(w, http.StatusBadRequest, "invalid_email", tr(r, "api.invalid_email"), nil)
 		return
 	}
 	method := strings.ToLower(strings.TrimSpace(req.Method))
 	if method != "alipay" && method != "wechat" {
-		writeError(w, http.StatusBadRequest, "invalid_method", "不支持的付款方式", nil)
+		writeError(w, http.StatusBadRequest, "invalid_method", tr(r, "api.invalid_method"), nil)
 		return
 	}
 	prov := a.provider(method)
 	if prov == nil {
-		writeError(w, http.StatusServiceUnavailable, "method_unavailable", "该付款方式暂不可用，请选择其他方式", nil)
+		writeError(w, http.StatusServiceUnavailable, "method_unavailable", tr(r, "api.method_unavailable"), nil)
 		return
 	}
 
@@ -105,13 +106,13 @@ func (a *App) apiCreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			a.log.Error("payment provider failed", "provider", prov.Name(), "err", err)
-			writeError(w, http.StatusBadGateway, "payment_error", "创建支付订单失败，请稍后再试或选择其他付款方式", nil)
+			writeError(w, http.StatusBadGateway, "payment_error", tr(r, "api.payment_error"), nil)
 			return
 		}
 		o = store.Order{
 			No: no, TokenHash: tokenHash(token), Product: p.ID, Email: email, Method: method, Provider: prov.Name(),
 			AmountCents: p.PriceCents, Currency: "CNY", Status: store.StatusPending, PayData: info.QRText,
-			CreatedAt: now, ExpiresAt: now.Add(prov.TTL()),
+			CreatedAt: now, ExpiresAt: now.Add(prov.TTL()), Lang: apiLang(r),
 		}
 		err = a.st.InsertOrder(r.Context(), o)
 		if errors.Is(err, store.ErrConflict) && attempt < 5 {
@@ -139,7 +140,7 @@ func (a *App) apiCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 // payOrderFor describes an order to a payment provider.
 func (a *App) payOrderFor(r *http.Request, no, productID string) pay.Order {
-	p, _ := a.cfg.Product(productID)
+	p, _ := a.product(productID)
 	return pay.Order{
 		No:          no,
 		Subject:     strings.NewReplacer("&", " ", "=", " ", "/", " ").Replace(a.cfg.SiteName + " Pro - " + p.NameEN),
@@ -213,7 +214,7 @@ func apiStatus(o store.Order, now time.Time) string {
 func (a *App) apiGetOrder(w http.ResponseWriter, r *http.Request) {
 	o, tok, ok := a.orderWithToken(r)
 	if !ok {
-		writeError(w, http.StatusNotFound, "order_not_found", "订单不存在或查询凭证不正确", nil)
+		writeError(w, http.StatusNotFound, "order_not_found", tr(r, "api.order_not_found"), nil)
 		return
 	}
 	status := apiStatus(o, a.now())
@@ -375,7 +376,7 @@ func (a *App) payOrder(ctx context.Context, no, payRef, ip, via string) (store.O
 		a.event(ctx, "order_paid", l.ID, no, ip, strings.TrimSpace(via+" "+payRef))
 		if a.mail != nil {
 			lic := l
-			a.background(func(ctx context.Context) { a.sendMail(ctx, o.Email, o.No, []store.License{lic}) })
+			a.background(func(ctx context.Context) { a.sendMail(ctx, o.Email, o.No, o.Lang, []store.License{lic}) })
 		}
 	}
 	return o, l, issued, nil
@@ -394,53 +395,58 @@ func (a *App) background(fn contextFunc) {
 	}()
 }
 
-// sendMail emails licence keys to their owner.
-func (a *App) sendMail(ctx context.Context, to, orderNo string, lics []store.License) {
+// sendMail emails licence keys to their owner, in the language the buyer
+// used on the website. Other languages get the English text below theirs;
+// without a known language (licences issued in /admin) the email is in
+// Simplified Chinese and English, as before.
+func (a *App) sendMail(ctx context.Context, to, orderNo, lang string, lics []store.License) {
 	if a.mail == nil || len(lics) == 0 {
 		return
 	}
-	var keysZH, keysEN strings.Builder
-	for _, l := range lics {
-		p, _ := a.cfg.Product(l.Product)
-		state := ""
-		if l.Revoked {
-			state = "（已吊销）"
-		}
-		fmt.Fprintf(&keysZH, "  %s（%d 台设备）%s\n  %s\n\n", p.NameZH, l.MaxDevices, state, l.Key)
-		fmt.Fprintf(&keysEN, "  %s (%d device(s))\n  %s\n\n", p.NameEN, l.MaxDevices, l.Key)
+	if _, ok := i18n.Get(lang); !ok {
+		lang = i18n.ZhHans
 	}
-	contact := a.cfg.ContactEmail
-	if contact == "" {
-		contact = a.cfg.PublicURL + "/support"
+	subject := i18n.T(lang, "mail.subject", "site", a.cfg.SiteName)
+	body := a.mailBody(lang, orderNo, lics)
+	if lang != i18n.EN {
+		subject += " / " + i18n.T(i18n.EN, "mail.subject", "site", a.cfg.SiteName)
+		body += "\n--\n\n" + a.mailBody(i18n.EN, orderNo, lics)
 	}
-	order := ""
-	if orderNo != "" {
-		order = "订单号 / Order: " + orderNo + "\n\n"
-	}
-	body := fmt.Sprintf(`您好，
-
-感谢购买 %[1]s Pro。您的许可证如下：
-
-%[2]s%[4]s激活：打开 Cirrus → Pro → 输入许可证 → 粘贴许可证 → 激活。
-更换设备：先在旧设备上停用；旧设备丢失或重装时，可在 %[5]s/license 使用许可证和本邮箱自助重置（每 30 天一次）。
-请妥善保存本邮件。如有问题，请联系 %[6]s。
-
---
-
-Hello,
-
-Thank you for buying %[1]s Pro. Your licence key(s):
-
-%[3]sTo activate: open Cirrus → Pro → Enter licence → paste the key → Activate.
-To move to another device, deactivate it on the old one first. If the old device is lost, reset your devices at %[5]s/license with the key and this email address (once every 30 days).
-Please keep this email. Questions: %[6]s.
-`, a.cfg.SiteName, keysZH.String(), keysEN.String(), order, a.cfg.PublicURL, contact)
-
-	subject := "您的 " + a.cfg.SiteName + " 许可证 / Your Cirrus licence key"
 	if err := a.mail.Send(ctx, to, subject, body); err != nil {
 		a.log.Error("send licence email", "order", orderNo, "err", err)
 		a.event(ctx, "mail_failed", lics[0].ID, orderNo, "", err.Error())
 		return
 	}
 	a.event(ctx, "mail_sent", lics[0].ID, orderNo, "", "")
+}
+
+// mailBody is the licence email in one language: the keys, each with the
+// download link of its platform, then how to activate and move devices.
+func (a *App) mailBody(lang, orderNo string, lics []store.License) string {
+	var b strings.Builder
+	b.WriteString(i18n.T(lang, "mail.greeting") + "\n\n")
+	b.WriteString(i18n.N(lang, "mail.intro", len(lics), "site", a.cfg.SiteName) + "\n\n")
+	for _, l := range lics {
+		name := i18n.T(lang, "product.name", "platform", platformName(l.Platform))
+		line := i18n.T(lang, "mail.product", "product", name, "devices", i18n.N(lang, "devices", l.MaxDevices))
+		if l.Revoked {
+			line += " " + i18n.T(lang, "mail.revoked")
+		}
+		b.WriteString("  " + line + "\n  " + l.Key + "\n")
+		if dl := a.downloadLink(l.Platform); dl != "" {
+			b.WriteString("  " + i18n.T(lang, "mail.download", "url", dl) + "\n")
+		}
+		b.WriteString("\n")
+	}
+	if orderNo != "" {
+		b.WriteString(i18n.T(lang, "mail.order", "order", orderNo) + "\n\n")
+	}
+	contact := a.cfg.ContactEmail
+	if contact == "" {
+		contact = a.cfg.PublicURL + "/support"
+	}
+	b.WriteString(i18n.T(lang, "mail.activate") + "\n")
+	b.WriteString(i18n.T(lang, "mail.move", "url", a.cfg.PublicURL+"/license?lang="+lang) + "\n")
+	b.WriteString(i18n.T(lang, "mail.keep", "contact", contact) + "\n")
+	return b.String()
 }

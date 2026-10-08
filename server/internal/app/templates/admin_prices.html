@@ -1,0 +1,35 @@
+{{define "title"}}价格{{end}}
+{{define "content"}}
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+<h1>价格</h1>
+<p class="muted">网站和新订单使用这里的价格。未在这里设置的产品使用配置文件（.env 的 PRICE_CNY、PRICE_USD 等）中的默认价格。已创建的订单保持下单时的金额。美元价格只用于展示，付款一律按人民币。</p>
+<div class="table">
+<table>
+ <thead><tr><th>产品</th><th>当前价格</th><th>来源</th><th>修改</th></tr></thead>
+ <tbody>
+ {{range .Data}}
+  <tr>
+   <td>{{.Name}}<br><code class="small">{{.ID}}</code></td>
+   <td><strong>¥{{.CNY}}</strong><br><span class="muted">≈ US${{.USD}}</span></td>
+   <td>{{if .Custom}}后台设置<br><span class="muted small">{{time .UpdatedAt}}</span>{{else}}配置文件默认{{end}}<br><span class="muted small">默认 ¥{{.DefaultCNY}} / US${{.DefaultUSD}}</span></td>
+   <td class="actions">
+    <form method="post" action="/admin/prices/{{.ID}}">
+     <input type="hidden" name="csrf" value="{{$.CSRF}}">
+     <label>¥ <input name="cny" required inputmode="decimal" value="{{.CNY}}" aria-label="人民币价格"></label>
+     <label>US$ <input name="usd" inputmode="decimal" value="{{.USD}}" aria-label="美元参考价"></label>
+     <button class="btn small primary">保存</button>
+    </form>
+    {{if .Custom}}
+    <form method="post" action="/admin/prices/{{.ID}}">
+     <input type="hidden" name="csrf" value="{{$.CSRF}}">
+     <input type="hidden" name="action" value="reset">
+     <button class="btn small">恢复默认</button>
+    </form>
+    {{end}}
+   </td>
+  </tr>
+ {{end}}
+ </tbody>
+</table>
+</div>
+{{end}}

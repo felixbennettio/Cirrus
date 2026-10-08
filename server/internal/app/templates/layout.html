@@ -1,31 +1,50 @@
 {{define "layout"}}<!doctype html>
-<html lang="{{.T "zh-CN" "en"}}">
+<html lang="{{.Lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{block "title" .}}{{.T "快速、原生的 Cloudflare 客户端" "A fast, native Cloudflare client"}}{{end}} · {{.Site.Name}}</title>
-<meta name="description" content="{{.T "卷云 Cirrus：快速、原生的跨平台 Cloudflare 管理客户端，支持 Windows、macOS、Linux、iOS 和 Android。" "Cirrus: a fast, native Cloudflare management client for Windows, macOS, Linux, iOS and Android."}}">
+<title>{{block "title" .}}{{.T "meta.title"}}{{end}} · {{.Site.Name}}</title>
+<meta name="description" content="{{.T "meta.description"}}">
 {{if .Admin}}<meta name="robots" content="noindex">{{end}}
+{{- if not .NoIndex}}
+{{range .Langs}}<link rel="alternate" hreflang="{{.Code}}" href="{{.AltURL}}">
+{{end}}<link rel="alternate" hreflang="x-default" href="{{.Site.PublicURL}}{{.Path}}">
+{{- end}}
 <link rel="icon" href="{{asset "favicon.svg"}}" type="image/svg+xml">
 <link rel="stylesheet" href="{{asset "site.css"}}">
 </head>
 <body>
 <header class="top">
- <div class="wrap bar">
+ <div class="wrap bar{{if .Admin}} admin{{end}}">
   <a class="brand" href="{{if .Admin}}/admin{{else}}/{{end}}"><img src="{{asset "favicon.svg"}}" alt="" width="28" height="28"><span>{{.Site.Name}}</span>{{if .Admin}} <em>管理</em>{{end}}</a>
-  <nav>
+  <nav class="nav">
   {{- if .Admin}}
    <a class="{{.Active "/admin"}}" href="/admin">订单</a>
    <a class="{{.Active "/admin/licenses"}}" href="/admin/licenses">许可证</a>
+   <a class="{{.Active "/admin/prices"}}" href="/admin/prices">价格</a>
    <a href="/">网站</a>
   {{- else}}
-   <a class="{{.Active "/"}}" href="/">{{.T "首页" "Home"}}</a>
-   <a class="{{.Active "/buy"}}" href="/buy">{{.T "购买" "Buy"}}</a>
-   <a class="{{.Active "/license"}}" href="/license">{{.T "许可证" "Licence"}}</a>
-   <a class="{{.Active "/support"}}" href="/support">{{.T "支持" "Support"}}</a>
-   <a class="lang" href="{{.LangURL}}" hreflang="{{.T "en" "zh-CN"}}">{{.T "English" "中文"}}</a>
+   <a class="home {{.Active "/"}}" href="/">{{.T "nav.home"}}</a>
+   {{- if .HasDownloads}}
+   <a class="{{.Active "/download"}}" href="/download">{{.T "nav.download"}}</a>
+   {{- end}}
+   <a class="{{.Active "/buy"}}" href="/buy">{{.T "nav.buy"}}</a>
+   <a class="{{.Active "/license"}}" href="/license">{{.T "nav.license"}}</a>
+   <a class="{{.Active "/support"}}" href="/support">{{.T "nav.support"}}</a>
   {{- end}}
   </nav>
+  {{- if not .Admin}}
+  <details class="langs">
+   <summary class="lang-btn" aria-label="{{.T "lang.label"}}: {{.CurrentLang.Name}}" title="{{.T "lang.label"}}">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+   </summary>
+   <ul class="lang-list">
+   {{- range .Langs}}
+    <li><a href="{{.URL}}" hreflang="{{.Code}}" lang="{{.Code}}"{{if .Current}} aria-current="true"{{end}}>{{.Name}}{{if .Current}}<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{{end}}</a></li>
+   {{- end}}
+   </ul>
+  </details>
+  {{- end}}
  </div>
 </header>
 <main class="wrap">
@@ -33,11 +52,13 @@
 </main>
 <footer class="foot">
  <div class="wrap">
-  <p class="links"><a href="/privacy">{{.T "隐私政策" "Privacy"}}</a> · <a href="/terms">{{.T "用户协议" "Terms"}}</a> · <a href="/support">{{.T "支持" "Support"}}</a>{{if .Site.Contact}} · <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{end}}</p>
+  <p class="links"><a href="/privacy">{{.T "privacy.title"}}</a> · <a href="/terms">{{.T "terms.title"}}</a> · <a href="/support">{{.T "nav.support"}}</a>{{if .Site.Contact}} · <a href="mailto:{{.Site.Contact}}">{{.Site.Contact}}</a>{{end}}</p>
   <p>© {{.Site.Year}} {{if .Site.Operator}}{{.Site.Operator}}{{else}}{{.Site.Name}}{{end}}{{if .Site.ICP}} · <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{.Site.ICP}}</a>{{end}}</p>
-  <p class="muted">{{.T "Cirrus 是非官方客户端，与 Cloudflare, Inc. 没有任何关联。Cloudflare 是 Cloudflare, Inc. 的商标。" "Cirrus is an unofficial client and is not affiliated with Cloudflare, Inc. Cloudflare is a trademark of Cloudflare, Inc."}}</p>
+  <p class="muted">{{.T "footer.unofficial"}}</p>
  </div>
 </footer>
+{{if .I18N}}<script type="application/json" id="i18n">{{.I18N}}</script>
+{{end}}<script src="{{asset "site.js"}}"></script>
 {{block "scripts" .}}{{end}}
 </body>
 </html>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -24,6 +25,15 @@ type Product struct {
 	MaxDevices int
 	PriceCents int64  // CNY
 	PriceUSD   string // display only, e.g. "39.99"
+}
+
+// Download is a published build of the app for one platform, from the
+// DOWNLOAD_*_<PLATFORM> variables.
+type Download struct {
+	Platform string // windows, macos, linux, android
+	URL      string
+	Version  string // optional
+	SHA256   string // optional, lowercase hex
 }
 
 // Alipay holds the Alipay API settings. It is enabled only when AppID,
@@ -115,12 +125,20 @@ type Config struct {
 	ContactEmail  string
 	ICPNumber     string
 	PolicyDate    string
-	DownloadURL   string
-	AppStoreURL   string
 	PriceCNYCents int64
 	PriceUSD      string
 
+	// DownloadURL is the general download link (e.g. GitHub Releases);
+	// Downloads are the per-platform builds that are configured, in display
+	// order; AppStoreURL is the App Store page (iPhone, iPad and Mac).
+	DownloadURL string
+	Downloads   []Download
+	AppStoreURL string
+
+	// Products are the products on sale (PRODUCTS); every known product,
+	// sold or not, stays valid for existing orders and licences.
 	Products   []Product
+	known      []Product
 	PayMethods []string
 
 	Alipay Alipay
@@ -129,14 +147,35 @@ type Config struct {
 	SMTP   SMTP
 }
 
-// Product returns the product with the given id.
+// Product returns the product with the given id, whether or not it is on
+// sale, so that orders and licences of a product taken off sale keep working.
 func (c *Config) Product(id string) (Product, bool) {
+	for _, p := range c.known {
+		if p.ID == id {
+			return p, true
+		}
+	}
+	return Product{}, false
+}
+
+// OnSale returns the product with the given id when it is listed in PRODUCTS.
+func (c *Config) OnSale(id string) (Product, bool) {
 	for _, p := range c.Products {
 		if p.ID == id {
 			return p, true
 		}
 	}
 	return Product{}, false
+}
+
+// Download returns the configured build for a platform.
+func (c *Config) Download(platform string) (Download, bool) {
+	for _, d := range c.Downloads {
+		if d.Platform == platform {
+			return d, true
+		}
+	}
+	return Download{}, false
 }
 
 // MethodEnabled reports whether the payment method is listed in PAY_METHODS.
@@ -158,10 +197,23 @@ func (c *Config) PublicHost() string {
 	return u.Host
 }
 
+// baseProducts are all known products, in display order. cirrus-macos is
+// the Developer ID build sold outside the Mac App Store.
 var baseProducts = []Product{
 	{ID: "cirrus-windows", Platform: "windows", Suffix: "WINDOWS", NameZH: "Windows 版", NameEN: "Windows", MaxDevices: 1},
+	{ID: "cirrus-macos", Platform: "macos", Suffix: "MACOS", NameZH: "macOS 版", NameEN: "macOS", MaxDevices: 1},
 	{ID: "cirrus-linux", Platform: "linux", Suffix: "LINUX", NameZH: "Linux 版", NameEN: "Linux", MaxDevices: 1},
 	{ID: "cirrus-android", Platform: "android", Suffix: "ANDROID", NameZH: "Android 版", NameEN: "Android", MaxDevices: 3},
+}
+
+// Platforms are the platforms with licences and direct downloads, in
+// display order.
+func Platforms() []string {
+	out := make([]string, len(baseProducts))
+	for i, p := range baseProducts {
+		out[i] = p.Platform
+	}
+	return out
 }
 
 // Load builds the configuration from getenv (normally os.Getenv).
@@ -253,6 +305,21 @@ func Load(getenv func(string) string) (*Config, error) {
 		fail("PRICE_USD must be an amount like 39.99")
 	}
 
+	onSale := map[string]bool{}
+	for _, v := range strings.Split(env("PRODUCTS", "windows,macos,linux,android"), ",") {
+		v = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(v), "cirrus-"))
+		if v == "" {
+			continue
+		}
+		if !slices.Contains(Platforms(), v) {
+			fail("PRODUCTS: unknown product %q (use windows, macos, linux, android)", v)
+		}
+		onSale[v] = true
+	}
+	if len(onSale) == 0 {
+		fail("PRODUCTS must list at least one of windows, macos, linux, android")
+	}
+
 	for _, p := range baseProducts {
 		p.PriceCents = c.PriceCNYCents
 		p.PriceUSD = c.PriceUSD
@@ -276,7 +343,33 @@ func Load(getenv func(string) string) (*Config, error) {
 			}
 			p.MaxDevices = n
 		}
-		c.Products = append(c.Products, p)
+		c.known = append(c.known, p)
+		if onSale[p.Platform] {
+			c.Products = append(c.Products, p)
+		}
+	}
+
+	version := env("DOWNLOAD_VERSION", "")
+	for _, p := range baseProducts {
+		d := Download{
+			Platform: p.Platform,
+			URL:      env("DOWNLOAD_URL_"+p.Suffix, ""),
+			Version:  env("DOWNLOAD_VERSION_"+p.Suffix, version),
+			SHA256:   strings.ToLower(env("DOWNLOAD_SHA256_"+p.Suffix, "")),
+		}
+		if d.URL == "" {
+			continue // version and checksum alone are ignored
+		}
+		if u, err := url.Parse(d.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			fail("DOWNLOAD_URL_%s must be an absolute http(s) URL", p.Suffix)
+		}
+		if d.SHA256 != "" && !isHex(d.SHA256, 64) {
+			fail("DOWNLOAD_SHA256_%s must be 64 hexadecimal characters", p.Suffix)
+		}
+		if strings.ContainsAny(d.Version, "<>\"\n") || len(d.Version) > 40 {
+			fail("DOWNLOAD_VERSION_%s (or DOWNLOAD_VERSION) is not a version", p.Suffix)
+		}
+		c.Downloads = append(c.Downloads, d)
 	}
 
 	for _, m := range strings.Split(env("PAY_METHODS", "alipay,wechat"), ",") {
@@ -348,6 +441,18 @@ func Load(getenv func(string) string) (*Config, error) {
 // scopeList splits a space- or comma-separated list.
 func scopeList(s string) []string {
 	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
+}
+
+func isHex(s string, n int) bool {
+	if len(s) != n {
+		return false
+	}
+	for _, r := range s {
+		if !strings.ContainsRune("0123456789abcdef", r) {
+			return false
+		}
+	}
+	return true
 }
 
 func btoi(b bool) int {

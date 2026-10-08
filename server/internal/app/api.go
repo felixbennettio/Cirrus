@@ -43,13 +43,13 @@ func writeError(w http.ResponseWriter, status int, code, msg string, extra map[s
 
 func (a *App) internalError(w http.ResponseWriter, r *http.Request, err error) {
 	a.log.Error("request failed", "path", r.URL.Path, "err", err)
-	writeError(w, http.StatusInternalServerError, "internal", "服务器内部错误，请稍后再试", nil)
+	writeError(w, http.StatusInternalServerError, "internal", tr(r, "api.internal"), nil)
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
 	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "请求格式错误", nil)
+		writeError(w, http.StatusBadRequest, "bad_request", tr(r, "api.bad_request"), nil)
 		return false
 	}
 	return true
@@ -82,7 +82,7 @@ func validEmail(s string) bool {
 		!strings.HasPrefix(domain, ".") && !strings.HasSuffix(domain, ".") && !strings.ContainsAny(s, " \"\\")
 }
 
-var platformNames = map[string]string{"windows": "Windows", "linux": "Linux", "android": "Android"}
+var platformNames = map[string]string{"windows": "Windows", "macos": "macOS", "linux": "Linux", "android": "Android"}
 
 func platformName(p string) string {
 	if n, ok := platformNames[p]; ok {
@@ -96,7 +96,7 @@ func (a *App) apiPubkey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) apiNotFound(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusNotFound, "not_found", "接口不存在", nil)
+	writeError(w, http.StatusNotFound, "not_found", tr(r, "api.not_found"), nil)
 }
 
 type licenseReq struct {
@@ -108,12 +108,12 @@ type licenseReq struct {
 	Email      string `json:"email"`
 }
 
-func invalidKey(w http.ResponseWriter) {
-	writeError(w, http.StatusNotFound, "invalid_key", "许可证无效，请检查是否输入正确", nil)
+func invalidKey(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotFound, "invalid_key", tr(r, "api.invalid_key"), nil)
 }
 
-func revoked(w http.ResponseWriter) {
-	writeError(w, http.StatusGone, "revoked", "此许可证已被吊销，如有疑问请联系客服", nil)
+func revoked(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusGone, "revoked", tr(r, "api.revoked"), nil)
 }
 
 // readKeyDevice decodes the request and normalises the key and device id.
@@ -125,12 +125,12 @@ func readKeyDevice(w http.ResponseWriter, r *http.Request, needDevice bool) (lic
 	}
 	key, err := license.NormalizeKey(req.LicenseKey)
 	if err != nil {
-		invalidKey(w)
+		invalidKey(w, r)
 		return req, "", false
 	}
 	req.DeviceID = strings.TrimSpace(req.DeviceID)
 	if needDevice && !license.ValidDeviceID(req.DeviceID) {
-		writeError(w, http.StatusBadRequest, "bad_request", "设备标识无效", nil)
+		writeError(w, http.StatusBadRequest, "bad_request", tr(r, "api.bad_device"), nil)
 		return req, "", false
 	}
 	return req, key, true
@@ -160,14 +160,14 @@ func (a *App) apiActivate(w http.ResponseWriter, r *http.Request) {
 	var limit *store.LimitError
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		invalidKey(w)
+		invalidKey(w, r)
 		return
 	case errors.Is(err, store.ErrRevoked):
-		revoked(w)
+		revoked(w, r)
 		return
 	case errors.Is(err, store.ErrWrongPlatform):
 		writeError(w, http.StatusForbidden, "wrong_platform",
-			fmt.Sprintf("此许可证适用于 %s，不能在 %s 上激活", platformName(l.Platform), platformName(in.Platform)),
+			tr(r, "api.wrong_platform", "licensed", platformName(l.Platform), "requested", platformName(in.Platform)),
 			map[string]any{"platform": l.Platform})
 		return
 	case errors.As(err, &limit):
@@ -176,8 +176,7 @@ func (a *App) apiActivate(w http.ResponseWriter, r *http.Request) {
 			devs = append(devs, deviceJSON{Name: d.DeviceName, ActivatedAt: rfc3339(d.ActivatedAt)})
 		}
 		a.event(r.Context(), "activate_limit", l.ID, "", ip, in.DeviceName)
-		writeError(w, http.StatusConflict, "activation_limit",
-			fmt.Sprintf("此许可证已在 %d 台设备上激活，达到上限。请先在其他设备上停用，或在网站上重置设备", len(devs)),
+		writeError(w, http.StatusConflict, "activation_limit", trN(r, "api.activation_limit", len(devs)),
 			map[string]any{"devices": devs})
 		return
 	case err != nil:
@@ -209,7 +208,7 @@ func (a *App) apiDeactivate(w http.ResponseWriter, r *http.Request) {
 	l, removed, err := a.st.Deactivate(r.Context(), key, req.DeviceID)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		invalidKey(w)
+		invalidKey(w, r)
 		return
 	case err != nil:
 		a.internalError(w, r, err)
@@ -229,7 +228,7 @@ func (a *App) apiValidate(w http.ResponseWriter, r *http.Request) {
 	_, status, err := a.st.Validate(r.Context(), key, req.DeviceID, a.now())
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		invalidKey(w)
+		invalidKey(w, r)
 		return
 	case err != nil:
 		a.internalError(w, r, err)
@@ -247,19 +246,18 @@ func (a *App) apiReset(w http.ResponseWriter, r *http.Request) {
 	var soon *store.TooSoonError
 	switch {
 	case errors.Is(err, store.ErrNotFound):
-		invalidKey(w)
+		invalidKey(w, r)
 		return
 	case errors.Is(err, store.ErrEmailMismatch):
 		a.event(r.Context(), "reset_mismatch", l.ID, "", ipFrom(r), "")
-		writeError(w, http.StatusForbidden, "email_mismatch", "邮箱与购买此许可证时填写的邮箱不一致", nil)
+		writeError(w, http.StatusForbidden, "email_mismatch", tr(r, "api.email_mismatch"), nil)
 		return
 	case errors.Is(err, store.ErrRevoked):
-		revoked(w)
+		revoked(w, r)
 		return
 	case errors.As(err, &soon):
 		days := int((soon.Wait + 24*time.Hour - time.Second) / (24 * time.Hour))
-		writeError(w, http.StatusTooManyRequests, "too_soon",
-			fmt.Sprintf("每 30 天只能自助重置一次，请 %d 天后再试，或联系客服", days),
+		writeError(w, http.StatusTooManyRequests, "too_soon", trN(r, "api.too_soon", days),
 			map[string]any{"retry_after_days": days})
 		return
 	case err != nil:
@@ -274,7 +272,7 @@ func (a *App) apiReset(w http.ResponseWriter, r *http.Request) {
 // the same whether or not the address has licences.
 func (a *App) apiResend(w http.ResponseWriter, r *http.Request) {
 	if a.mail == nil {
-		writeError(w, http.StatusNotFound, "not_available", "邮件服务未启用，请联系客服", nil)
+		writeError(w, http.StatusNotFound, "not_available", tr(r, "api.not_available"), nil)
 		return
 	}
 	var req licenseReq
@@ -283,11 +281,12 @@ func (a *App) apiResend(w http.ResponseWriter, r *http.Request) {
 	}
 	email := store.NormEmail(req.Email)
 	if !validEmail(email) {
-		writeError(w, http.StatusBadRequest, "invalid_email", "邮箱地址无效", nil)
+		writeError(w, http.StatusBadRequest, "invalid_email", tr(r, "api.invalid_email"), nil)
 		return
 	}
 	if ok, _ := a.emailLimit.Allow(email); ok {
 		ip := ipFrom(r)
+		lang := apiLang(r)
 		a.background(func(ctx context.Context) {
 			lics, err := a.st.LicensesByEmail(ctx, email)
 			if err != nil {
@@ -298,7 +297,7 @@ func (a *App) apiResend(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			a.event(ctx, "resend", "", "", ip, license.MaskEmail(email))
-			a.sendMail(ctx, email, "", lics)
+			a.sendMail(ctx, email, "", lang, lics)
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})

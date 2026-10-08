@@ -1,8 +1,8 @@
-{{define "title"}}{{.T "页面不存在" "Page not found"}}{{end}}
+{{define "title"}}{{.T "notfound.title"}}{{end}}
 {{define "content"}}
 <section class="hero">
  <h1>404</h1>
- <p class="lead">{{.T "页面不存在" "Page not found"}}</p>
- <p><a class="btn" href="/">{{.T "返回首页" "Back to the home page"}}</a></p>
+ <p class="lead">{{.T "notfound.title"}}</p>
+ <p><a class="btn" href="/">{{.T "notfound.back"}}</a></p>
 </section>
 {{end}}

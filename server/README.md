@@ -63,13 +63,17 @@ cirrus-license 容器（:8080，非 root，内存上限 128 MB）
 | `CONTACT_EMAIL` | 空 | 客服邮箱 |
 | `ICP_NUMBER` | 空 | ICP 备案号，显示在每页页脚并链接到 beian.miit.gov.cn |
 | `POLICY_EFFECTIVE_DATE` | `2026-10-06` | 隐私政策和用户协议的生效日期 |
-| `DOWNLOAD_URL` | 空 | 可选，首页“下载”按钮 |
-| `APP_STORE_URL` | 空 | 可选，首页 App Store 链接 |
-| `PRICE_CNY` | `198` | 默认人民币价格 |
+| `APP_STORE_URL` | 空 | 可选，App Store 地址（iPhone、iPad、Mac），显示在首页和下载页 |
+| `DOWNLOAD_URL_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 空 | 放在别处的安装包链接。本站 `data/downloads/manifest.json` 里有该平台的文件时以它为准（见 DEPLOY.md“发布下载文件”）；都没有的平台不显示 |
+| `DOWNLOAD_VERSION`、`DOWNLOAD_VERSION_<平台>` | 空 | 上面链接的版本号 |
+| `DOWNLOAD_SHA256_<平台>` | 空 | 上面链接的 SHA-256 |
+| `DOWNLOAD_URL` | 空 | 可选，“全部下载”链接（例如 GitHub Releases），也用于没有单独下载的平台的许可证邮件 |
+| `PRODUCTS` | `windows,macos,linux,android` | 在售产品；下架的产品不再出售，已售许可证照常使用 |
+| `PRICE_CNY` | `198` | 默认人民币价格。后台“价格”页设置的价格优先 |
 | `PRICE_USD` | `39.99` | 美元参考价（仅显示） |
-| `PRICE_CNY_WINDOWS` / `_LINUX` / `_ANDROID` | 同 `PRICE_CNY` | 按产品覆盖价格 |
-| `PRICE_USD_WINDOWS` / `_LINUX` / `_ANDROID` | 同 `PRICE_USD` | 按产品覆盖美元参考价 |
-| `MAX_DEVICES_WINDOWS` / `_LINUX` / `_ANDROID` | `1` / `1` / `3` | 每个许可证的设备数，只影响之后签发的许可证 |
+| `PRICE_CNY_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 同 `PRICE_CNY` | 按产品覆盖默认价格 |
+| `PRICE_USD_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | 同 `PRICE_USD` | 按产品覆盖美元参考价 |
+| `MAX_DEVICES_WINDOWS` / `_MACOS` / `_LINUX` / `_ANDROID` | `1` / `1` / `1` / `3` | 每个许可证的设备数，只影响之后签发的许可证 |
 | `PAY_METHODS` | `alipay,wechat` | 购买页提供的付款方式 |
 | `ALIPAY_APP_ID` | 空 | 支付宝开放平台 APPID |
 | `ALIPAY_PRIVATE_KEY` | 空 | **应用私钥** |
@@ -135,8 +139,17 @@ App 在“使用 Cloudflare 登录”前请求 `GET /api/v1/oauth/config`，按�
 - **订单**：待付款订单排在最前。核对手机上的收款记录（金额和备注里的订单号）后点“确认收款”，系统签发许可证，配置了邮件时同时发给买家；也可以取消订单。
 - **许可证**：按许可证（可只输入一部分）、邮箱、订单号搜索；查看设备、事件记录；吊销/恢复、释放全部设备、移除单台设备、重新发送邮件、备注。
 - **手动签发**：选择产品、填写邮箱和备注即可签发，用于赠送或补发。
+- **价格**：逐个产品修改人民币价格和美元参考价，保存后网站和新订单立即使用；“恢复默认”回到 `.env` 里的价格。价格保存在数据库里，升级不会丢失；已创建的订单保持下单时的金额。
 
 后台的每个 POST 都有 CSRF 保护（同源检查 + Cookie 令牌）。连续输错密码 10 次后，该 IP 会被暂时拒绝。
+
+## 网站语言与截图
+
+网站有六种语言：English、Français、日本語、Русский、简体中文、繁體中文，右上角的地球按钮切换。语言的选择顺序：`?lang=`（记在 Cookie 里）→ Cookie → 浏览器的 `Accept-Language` → English；旧链接里的 `lang=zh` 仍然有效。API 的错误信息按请求的 `Accept-Language` 返回，网页脚本会带上当前页面的语言；许可证邮件使用下单时的语言，并附英文。后台只有简体中文。
+
+- 文案在 `internal/i18n/<语言>.go`，按 id 查找；改动或新增文案时六种语言都要写，`go test` 会检查是否齐全、占位符是否一致。
+- 隐私政策和用户协议在 `internal/app/templates/legal/<页面>.<语言>.html`，以简体中文版为准，其他语言版本开头注明这一点。
+- 首页的应用截图在 `internal/app/static/shots/<语言>/`，用 `scripts/gallery_images.py` 从 PNG 生成（只用演示数据，不要用真实账户）。某种语言没有自己的截图时用英文截图；中文页面还会用另一种中文的截图。
 
 ## 签名密钥：务必备份
 

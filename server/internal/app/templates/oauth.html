@@ -1,12 +1,12 @@
-{{define "title"}}{{.T "返回 Cirrus" "Back to Cirrus"}}{{end}}
+{{define "title"}}{{.T "oauth.title"}}{{end}}
 {{define "content"}}
 <article class="doc">
-<h1 id="oauth-title">{{.T "正在返回 Cirrus…" "Returning to Cirrus…"}}</h1>
-<p id="oauth-hint">{{.T "Cloudflare 登录已完成。如果 Cirrus 没有自动打开，请点下面的按钮。" "You have signed in with Cloudflare. If Cirrus did not open, tap the button below."}}</p>
+<h1 id="oauth-title">{{.T "oauth.returning"}}</h1>
+<p id="oauth-hint">{{.T "oauth.hint"}}</p>
 <p id="oauth-error" class="error" hidden></p>
-<p><a id="oauth-open" class="btn primary" href="#">{{.T "打开 Cirrus" "Open Cirrus"}}</a></p>
-<p class="muted">{{.T "这个页面只把登录结果交回 Cirrus 应用，不保存任何信息。打开 Cirrus 后可以关闭本页。" "This page only hands the sign-in result back to the Cirrus app and keeps nothing. You can close it once Cirrus is open."}}</p>
-<p class="muted" id="oauth-missing" hidden>{{.T "这个地址缺少登录结果。请回到 Cirrus 重新点「使用 Cloudflare 账户登录」。" "This address carries no sign-in result. Go back to Cirrus and choose “Sign in with Cloudflare” again."}}</p>
+<p><a id="oauth-open" class="btn primary" href="#">{{.T "oauth.open"}}</a></p>
+<p class="muted">{{.T "oauth.keeps"}}</p>
+<p class="muted" id="oauth-missing" hidden>{{.T "oauth.missing"}}</p>
 </article>
 {{end}}
 {{define "scripts"}}<script src="{{asset "oauth.js"}}"></script>{{end}}

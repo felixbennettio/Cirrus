@@ -34,7 +34,7 @@ func TestPagesRender(t *testing.T) {
 			if lang == "en" && !strings.Contains(body, `lang="en"`) {
 				t.Errorf("%s: not English", path)
 			}
-			if lang == "zh" && !strings.Contains(body, `lang="zh-CN"`) {
+			if lang == "zh" && !strings.Contains(body, `lang="zh-Hans"`) {
 				t.Errorf("%s: not Chinese", path)
 			}
 			for _, ext := range []string{"https://cdn", "googleapis", "jsdelivr", "unpkg"} {
@@ -61,13 +61,13 @@ func TestPagesRender(t *testing.T) {
 	if !strings.Contains(buy, `id="i18n">{"`) {
 		t.Error("buy page lacks its strings")
 	}
-	priv := h.get("/privacy").Body.String()
+	priv := h.get("/privacy?lang=zh-Hans").Body.String()
 	for _, s := range []string{"support@cirrus.test", "2026-10-06", "14 周岁", "SHA-256"} {
 		if !strings.Contains(priv, s) {
 			t.Errorf("privacy page lacks %q", s)
 		}
 	}
-	terms := h.get("/terms").Body.String()
+	terms := h.get("/terms?lang=zh-Hans").Body.String()
 	for _, s := range []string{"14 天", "中华人民共和国", "Licensed Application", "Cloudflare, Inc."} {
 		if !strings.Contains(terms, s) {
 			t.Errorf("terms page lacks %q", s)
@@ -99,7 +99,7 @@ func TestPagesRender(t *testing.T) {
 
 func TestUnavailableMethodShown(t *testing.T) {
 	h := newHarness(t, harnessOpt{noQR: []string{"wechat"}})
-	body := h.get("/buy").Body.String()
+	body := h.get("/buy?lang=zh-Hans").Body.String()
 	if !strings.Contains(body, `value="wechat" disabled`) || !strings.Contains(body, "暂不可用") {
 		t.Error("missing QR image should mark WeChat unavailable")
 	}
