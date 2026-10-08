@@ -1,4 +1,5 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:material_ui/material_ui.dart' as mui show ColorScheme;
 
@@ -6,15 +7,40 @@ import '../ui/cirrus_theme.dart';
 import '../ui/widgets/glass.dart';
 import '../ui/widgets/native_glass.dart';
 
-const cirrusSeed = Color(0xFFF2701B);
+/// The accent colour, the same blue as the website.
+const cirrusSeed = Color(0xFF2F6FDE);
 
-/// The scheme from the brand colour, used when dynamic colour is off or the
-/// platform has none.
-ColorScheme brandScheme(Brightness brightness) => ColorScheme.fromSeed(
-  seedColor: cirrusSeed,
-  brightness: brightness,
-  dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+/// The scheme used when dynamic colour is off or the platform has none: the
+/// accent colour on plain white and grey surfaces.
+ColorScheme brandScheme(Brightness brightness) => withGreySurfaces(
+  ColorScheme.fromSeed(seedColor: cirrusSeed, brightness: brightness, dynamicSchemeVariant: DynamicSchemeVariant.fidelity),
 );
+
+/// Replaces the surface roles of [s], which a seeded scheme tints with its
+/// seed, with neutral greys, so only the accent roles carry colour.
+ColorScheme withGreySurfaces(ColorScheme s) {
+  final grey = ColorScheme.fromSeed(
+    seedColor: cirrusSeed,
+    brightness: s.brightness,
+    dynamicSchemeVariant: DynamicSchemeVariant.monochrome,
+  );
+  return s.copyWith(
+    surface: grey.surface,
+    onSurface: grey.onSurface,
+    surfaceDim: grey.surfaceDim,
+    surfaceBright: grey.surfaceBright,
+    surfaceContainerLowest: grey.surfaceContainerLowest,
+    surfaceContainerLow: grey.surfaceContainerLow,
+    surfaceContainer: grey.surfaceContainer,
+    surfaceContainerHigh: grey.surfaceContainerHigh,
+    surfaceContainerHighest: grey.surfaceContainerHighest,
+    onSurfaceVariant: grey.onSurfaceVariant,
+    outline: grey.outline,
+    outlineVariant: grey.outlineVariant,
+    inverseSurface: grey.inverseSurface,
+    onInverseSurface: grey.onInverseSurface,
+  );
+}
 
 /// dynamic_color 2.x builds its schemes with `package:material_ui`, whose
 /// `ColorScheme` is a different class from Flutter's: copy it role by role.
@@ -78,15 +104,20 @@ ColorScheme harmonizeScheme(ColorScheme s) => s.copyWith(
 );
 
 /// The app theme. [dynamicScheme] (from the wallpaper or accent colour)
-/// replaces the brand scheme; [glass] switches bars, panels and overlays to
-/// the liquid-glass style.
+/// replaces the brand scheme; outside Android, where only the accent colour
+/// comes from the system, its surfaces stay grey. [glass] switches bars,
+/// panels and overlays to the liquid-glass style.
 ThemeData buildTheme(
   Brightness brightness, {
   ColorScheme? dynamicScheme,
   bool glass = false,
   bool dynamicColorAvailable = false,
 }) {
-  final scheme = dynamicScheme == null ? brandScheme(brightness) : harmonizeScheme(dynamicScheme);
+  final scheme = switch (dynamicScheme) {
+    null => brandScheme(brightness),
+    final s when defaultTargetPlatform == TargetPlatform.android => harmonizeScheme(s),
+    final s => harmonizeScheme(withGreySurfaces(s)),
+  };
   final dark = brightness == Brightness.dark;
   var cirrus = CirrusTheme.fallback(brightness).copyWith(glass: glass, dynamicColorAvailable: dynamicColorAvailable);
   if (dynamicScheme != null) cirrus = cirrus.harmonized((c) => c.harmonizeWith(scheme.primary));

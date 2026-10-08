@@ -1,6 +1,7 @@
 import 'package:cirrus/app/theme.dart';
 import 'package:cirrus/ui/cirrus_theme.dart';
 import 'package:cirrus/ui/widgets/glass.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart' as mui show ColorScheme;
@@ -90,6 +91,27 @@ void main() {
       expect(find.text('Hello'), findsNothing);
     });
   }
+
+  test('the brand scheme and desktop accent schemes have grey surfaces', () {
+    bool grey(Color c) => c.r == c.g && c.g == c.b;
+    for (final b in Brightness.values) {
+      final brand = brandScheme(b);
+      for (final c in [brand.surface, brand.surfaceContainerLow, brand.surfaceContainerHighest, brand.outlineVariant]) {
+        expect(grey(c), isTrue, reason: '$b $c');
+      }
+      expect(grey(brand.primary), isFalse);
+    }
+    final accent = schemeFromMaterialUi(mui.ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)));
+    expect(grey(accent.surfaceContainerLow), isFalse);
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    final mac = buildTheme(Brightness.light, dynamicScheme: accent).colorScheme;
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    final android = buildTheme(Brightness.light, dynamicScheme: accent).colorScheme;
+    debugDefaultTargetPlatformOverride = null;
+    expect(grey(mac.surfaceContainerLow), isTrue);
+    expect(mac.primary, accent.primary);
+    expect(android.surfaceContainerLow, accent.surfaceContainerLow);
+  });
 
   test('dynamic schemes are copied role by role and harmonise the status colours', () {
     final source = mui.ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0));
