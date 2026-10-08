@@ -56,13 +56,18 @@ jobs:
         run: |
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
           echo "AUTH_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - name: Use the Developer ID entitlements
+        # For the app target only: a CODE_SIGN_ENTITLEMENTS build setting on
+        # the xcodebuild command line would also apply to every Swift package
+        # target, which then cannot find the file.
+        run: cp macos/Runner/Direct.entitlements macos/Runner/Release.entitlements
       - name: Configure the Xcode project
         run: >
           flutter build macos --config-only --release
           --build-name="$VERSION" --build-number="$BUILD_NUMBER"
           --dart-define-from-file=dart_defines.json
       - name: Archive
-        # No App Sandbox (Runner/Direct.entitlements), hardened runtime on.
+        # No App Sandbox (Runner/Direct.entitlements, see above), hardened runtime on.
         run: |
           xcodebuild archive \
             -workspace macos/Runner.xcworkspace -scheme Runner -configuration Release \
@@ -70,7 +75,7 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development" \
-            CODE_SIGN_ENTITLEMENTS=Runner/Direct.entitlements ENABLE_HARDENED_RUNTIME=YES
+            ENABLE_HARDENED_RUNTIME=YES
       - name: Unsign plugin resource bundles
         # Same as appstore.yml: resource bundles hold no code and must not
         # keep the development signature.
