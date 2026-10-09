@@ -15,6 +15,14 @@ const wideLayoutBreakpoint = 900.0;
 
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= wideLayoutBreakpoint;
 
+/// Phones and tablets, where focusing a text field brings up the on-screen
+/// keyboard. Lists that open with a filter field (pickers) leave it
+/// unfocused there, so the keyboard only appears when the field is tapped.
+bool onScreenKeyboard(BuildContext context) => switch (Theme.of(context).platform) {
+  TargetPlatform.iOS || TargetPlatform.android || TargetPlatform.fuchsia => true,
+  _ => false,
+};
+
 /// Standard module page: an app bar with title/actions and a body.
 ///
 /// On a zone's pages (`/zone/...`) the line under the title is the current

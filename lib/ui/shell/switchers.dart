@@ -258,7 +258,7 @@ class _ZonePickerDialogState extends ConsumerState<_ZonePickerDialog> {
                 children: [
                   Expanded(
                     child: SearchField(
-                      autofocus: true,
+                      autofocus: !onScreenKeyboard(context),
                       hint: context.tr('Search domains', '搜索域名'),
                       onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
                     ),

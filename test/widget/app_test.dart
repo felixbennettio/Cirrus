@@ -296,6 +296,49 @@ void main() {
     expect(find.byTooltip('Switch zone'), findsNothing);
   });
 
+  testWidgets('on a phone the zone picker opens without bringing up the keyboard', (tester) async {
+    // Tests run as Android: the search field waits for a tap.
+    final container = await _pumpApp(tester, profiles: [_profile]);
+    container.read(routerProvider).go('/zone/dns');
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Switch zone'));
+    await _settle(tester);
+    final search = find.descendant(of: find.byType(Dialog), matching: find.byType(EditableText));
+    expect(search, findsOneWidget);
+    expect(tester.widget<EditableText>(search).focusNode.hasFocus, isFalse);
+    expect(tester.testTextInput.isVisible, isFalse);
+    // Tapping the field is what brings up the keyboard.
+    await tester.tap(search);
+    await _settle(tester);
+    expect(tester.widget<EditableText>(search).focusNode.hasFocus, isTrue);
+  });
+
+  testWidgets('only phones and tablets count as having an on-screen keyboard', (tester) async {
+    final seen = <TargetPlatform, bool>{};
+    for (final platform in TargetPlatform.values) {
+      // A plain Theme: MaterialApp would animate between the two themes.
+      await tester.pumpWidget(
+        Theme(
+          data: ThemeData(platform: platform),
+          child: Builder(
+            builder: (context) {
+              seen[platform] = onScreenKeyboard(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+    }
+    expect(seen, {
+      TargetPlatform.android: true,
+      TargetPlatform.fuchsia: true,
+      TargetPlatform.iOS: true,
+      TargetPlatform.linux: false,
+      TargetPlatform.macOS: false,
+      TargetPlatform.windows: false,
+    });
+  });
+
   testWidgets('settings turn liquid glass on: glass app bar and sidebar, content scrolls behind', (tester) async {
     final container = await _pumpApp(tester, profiles: [_profile]);
     container.read(routerProvider).go('/settings');
