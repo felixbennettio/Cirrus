@@ -199,12 +199,12 @@ func TestNormalizeKey(t *testing.T) {
 
 func TestMaskEmail(t *testing.T) {
 	cases := map[string]string{
-		"someone@gmail.com":  "s***@gmail.com",
-		"q@example.com":      "q***@example.com",
-		"张三@例子.中国":           "张***@例子.中国",
-		"":                   "",
-		"no-at-sign":         "",
-		"@example.com":       "",
+		"someone@gmail.com": "s***@gmail.com",
+		"q@example.com":     "q***@example.com",
+		"张三@例子.中国":          "张***@例子.中国",
+		"":                  "",
+		"no-at-sign":        "",
+		"@example.com":      "",
 	}
 	for in, want := range cases {
 		if got := MaskEmail(in); got != want {
