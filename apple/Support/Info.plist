@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CirrusStore</key>
+	<string>$(CIRRUS_STORE)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Cirrus uses Face ID to unlock the app and protect your Cloudflare credentials.</string>
+</dict>
+</plist>

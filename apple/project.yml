@@ -1,0 +1,73 @@
+# The native iOS and macOS app. Generate the Xcode project with XcodeGen
+# (`xcodegen generate` in this directory); the .xcodeproj is not committed.
+name: Cirrus
+options:
+  bundleIdPrefix: io.felixbennett
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+packages:
+  CirrusKit:
+    path: CirrusKit
+settings:
+  base:
+    MARKETING_VERSION: "2.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: SZN83F2GT9
+    CODE_SIGN_STYLE: Automatic
+    # `appstore` sells Cirrus Pro through StoreKit; anything else is fully unlocked.
+    CIRRUS_STORE: appstore
+    PRODUCT_NAME: Cirrus
+    PRODUCT_BUNDLE_IDENTIFIER: io.felixbennett.cirrus
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_FILE: Support/Info.plist
+    INFOPLIST_KEY_CFBundleDisplayName: Cirrus
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+targetTemplates:
+  App:
+    type: application
+    sources:
+      - path: Cirrus
+    dependencies:
+      - package: CirrusKit
+        product: CirrusKit
+targets:
+  Cirrus-iOS:
+    templates: [App]
+    platform: iOS
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  Cirrus-macOS:
+    templates: [App]
+    platform: macOS
+    entitlements:
+      path: Support/Cirrus-macOS.entitlements
+    settings:
+      base:
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+schemes:
+  Cirrus-iOS:
+    build:
+      targets:
+        Cirrus-iOS: all
+    archive:
+      config: Release
+  Cirrus-macOS:
+    build:
+      targets:
+        Cirrus-macOS: all
+    archive:
+      config: Release

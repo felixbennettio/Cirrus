@@ -1,6 +1,13 @@
 # The native iOS and macOS app (apple/).
 #
-# Every push that touches apple/ runs the CirrusKit tests on Linux.
+# Every push that touches apple/ runs the CirrusKit tests on Linux. Run the
+# workflow from the Actions tab to archive the app on the macos-latest runner
+# and upload it to App Store Connect, where it shows up in TestFlight.
+#
+# Uploading needs the repository secrets APP_STORE_CONNECT_ISSUER_ID,
+# APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_PRIVATE_KEY (the .p8 file's
+# text) and APPLE_TEAM_ID. Signing is automatic through the API key, as in
+# appstore.yml.
 name: Apple
 
 on:
@@ -8,6 +15,16 @@ on:
     branches: [main]
     paths: ['apple/**', '.forgejo/workflows/apple.yml']
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: What to build
+        type: choice
+        options: [ios-and-macos, ios, macos]
+        default: ios-and-macos
+      upload:
+        description: Upload to App Store Connect (off = keep the signed files as workflow artifacts)
+        type: boolean
+        default: true
 
 concurrency:
   group: apple-${{ github.ref }}-${{ github.event_name }}
@@ -22,3 +39,92 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: swift test --package-path apple/CirrusKit
+
+  app:
+    name: ${{ matrix.platform == 'ios' && 'iOS' || 'macOS' }}
+    needs: kit
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms == 'ios' && '["ios"]' || inputs.platforms == 'macos' && '["macos"]' || '["ios","macos"]') }}
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    defaults:
+      run:
+        working-directory: apple
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the secrets
+        run: |
+          for v in ISSUER_ID KEY_ID TEAM_ID; do
+            eval "val=\${$v}"
+            if [ -z "$val" ]; then echo "::error::The App Store Connect secrets are not set (see the top of this workflow)."; exit 1; fi
+          done
+      - name: Version
+        # Build numbers must grow with every upload: they come from the run
+        # counter, shared by every workflow of the repository, offset like
+        # appstore.yml's.
+        run: |
+          echo "VERSION=$(sed -n 's/^ *MARKETING_VERSION: *"\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' project.yml)" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$(( (${{ github.run_number }} + 100) * 10 + ${{ github.run_attempt || 1 }} ))" >> "$GITHUB_ENV"
+      - name: App Store Connect API key
+        env:
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "AUTH_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+      - name: Generate the Xcode project
+        run: /usr/local/bin/xcodegen generate
+      - name: Archive
+        run: |
+          if [ "$PLATFORM" = ios ]; then SCHEME=Cirrus-iOS DEST='generic/platform=iOS'; else SCHEME=Cirrus-macOS DEST='generic/platform=macOS'; fi
+          xcodebuild archive \
+            -project Cirrus.xcodeproj -scheme "$SCHEME" -configuration Release \
+            -destination "$DEST" -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+      - name: Sign for the App Store${{ inputs.upload && ' and upload' || '' }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Clear dict" \
+            -c "Add :method string app-store-connect" \
+            -c "Add :destination string ${{ inputs.upload && 'upload' || 'export' }}" \
+            -c "Add :teamID string $TEAM_ID" \
+            -c "Add :signingStyle string automatic" \
+            -c "Add :manageAppVersionAndBuildNumber bool false" \
+            -c "Add :uploadSymbols bool true" \
+            "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Cirrus.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
+          echo "${{ inputs.upload && 'Uploaded' || 'Signed' }} Cirrus $VERSION ($BUILD_NUMBER) for $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
+      - uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        if: ${{ !inputs.upload }}
+        with:
+          name: apple-${{ matrix.platform }}
+          path: ${{ runner.temp }}/export/*
+          if-no-files-found: error
+      - name: Revoke unusable development certificates
+        if: always()
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          [ -n "$APP_STORE_CONNECT_KEY_ID" ] || exit 0
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install -q --only-binary=cryptography,cffi 'pyjwt[crypto]'
+          "$RUNNER_TEMP/venv/bin/python" ../scripts/appstore_certs.py prune
+      - name: Remove the API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
