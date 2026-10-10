@@ -12,9 +12,17 @@ BUNDLE="build/linux/x64/release/bundle"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ICON="$ROOT/assets/branding/cirrus.png"
 
+# Normal modes whatever the build's umask was (CI containers may run with
+# umask 0): nothing in the packages may be group- or world-writable, and
+# dpkg-deb insists on 0755 for DEBIAN/.
+umask 022
 mkdir -p "$OUT"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$WORK/bundle"
+cp -a "$BUNDLE/." "$WORK/bundle/"
+chmod -R go-w,a+rX "$WORK/bundle"
+BUNDLE="$WORK/bundle"
 
 desktop_file() {
   cat <<EOF
