@@ -1,0 +1,24 @@
+# The native iOS and macOS app (apple/).
+#
+# Every push that touches apple/ runs the CirrusKit tests on Linux.
+name: Apple
+
+on:
+  push:
+    branches: [main]
+    paths: ['apple/**', '.forgejo/workflows/apple.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: apple-${{ github.ref }}-${{ github.event_name }}
+
+jobs:
+  kit:
+    name: CirrusKit tests
+    runs-on: ubuntu-latest
+    container:
+      image: ci-runner-swift:6.2
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --package-path apple/CirrusKit
