@@ -151,7 +151,7 @@ App 在“使用 Cloudflare 登录”前请求 `GET /api/v1/oauth/config`，按�
 - 文案在 `internal/i18n/<语言>.go`，按 id 查找；改动或新增文案时六种语言都要写，`go test` 会检查是否齐全、占位符是否一致。
 - 隐私政策和用户协议在 `internal/app/templates/legal/<页面>.<语言>.html`，以简体中文版为准，其他语言版本开头注明这一点。
 - 首页的应用截图在 `internal/app/static/shots/<语言>/`，用 `scripts/gallery_images.py` 从 PNG 生成（只用演示数据，不要用真实账户）。某种语言没有自己的截图时用英文截图；中文页面还会用另一种中文的截图。
-- 截图里的数据来自仓库根目录的 `scripts/demo_api.py`（模拟 Cloudflare API 的演示数据）。桌面版和手机布局用 `scripts/screenshots/batch.sh` 在 Linux（Xvfb）下拍摄，环境要求写在脚本开头；iPhone 截图用 GitHub Actions 的 Screenshots 工作流在 GitHub 托管的 Mac 上拍摄（iOS 模拟器需要 Metal 显卡，自托管的 Mac 虚拟机没有）。
+- 截图里的数据来自仓库根目录的 `scripts/demo_api.py`（模拟 Cloudflare API 的演示数据）。桌面版和手机布局用 `scripts/screenshots/batch.sh` 在 Linux（Xvfb）下拍摄，环境要求写在脚本开头；iPhone 截图用 Screenshots 工作流（`.forgejo/workflows/screenshots.yml`）在有 Metal 显卡的真 Mac 上拍摄（iOS 模拟器需要 Metal 显卡，macos-latest runner 是虚拟机，没有）。
 
 ## 签名密钥：务必备份
 

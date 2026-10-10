@@ -1,5 +1,5 @@
 // Prints the CGWindowID of the frontmost on-screen window of the app at the
-// given path, for `screencapture -l` (.github/workflows/glass-preview.yml).
+// given path, for `screencapture -l` (.forgejo/workflows/glass-preview.yml).
 import AppKit
 
 let path = CommandLine.arguments.dropFirst().first ?? ""

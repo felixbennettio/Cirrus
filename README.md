@@ -92,13 +92,13 @@ Linux 构建需要 `clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-
 
 ### 发布流程
 
-推送 `v*` 格式的 tag（例如 `git tag v0.2.0 && git push origin v0.2.0`）就会触发 [Release 工作流](.github/workflows/release.yml)。它会：
+推送 `v*` 格式的 tag（例如 `git tag v0.2.0 && git push origin v0.2.0`）就会触发 Forgejo Actions 的 [Release 工作流](.forgejo/workflows/release.yml)。它会：
 
 1. 用最新的官方 OpenAPI 规范重新生成 API 目录；
 2. 构建全部 5 个平台；
-3. 附上 `SHA256SUMS.txt`，创建 GitHub Release。
+3. 附上 `SHA256SUMS.txt`，在 Forgejo 上创建 Release。
 
-**Android 正式签名**（可选，强烈建议）：先生成 keystore，再在仓库的 *Settings → Secrets and variables → Actions* 中添加下面几个 secrets：
+**Android 正式签名**（可选，强烈建议）：先生成 keystore，再在仓库的 *设置 → Actions → 密钥* 中添加下面几个 secrets：
 
 ```bash
 keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias cirrus
@@ -153,7 +153,7 @@ base64 -w0 release.jks   # 把输出填进 ANDROID_KEYSTORE_BASE64
 | Google Play Console | 一次性商品，价格 US$39.99；Google Play 在中国大陆不可用 |
 
 - **实现**：使用 `in_app_purchase`（iOS/macOS 上是 StoreKit 2，Android 上是 Play Billing）。应用启动时会静默恢复已购项目，购买完成后在本机记住，离线也能用。设置页和付费墙都提供"恢复购买"。
-- **什么时候生效**：只有在构建时设置 `--dart-define=CIRRUS_STORE=appstore`（iOS/macOS）或 `play`（Android）才会启用 Pro。CI 中对应的是 `build.yml` 的 `store_build: true`。GitHub Releases 和 Windows/Linux 版本不设置，所有功能直接可用。
+- **什么时候生效**：只有在构建时设置 `--dart-define=CIRRUS_STORE=appstore`（iOS/macOS）或 `play`（Android）才会启用 Pro。CI 中对应的是 `build.yml` 的 `store_build: true`。Release 工作流的构建和 Windows/Linux 版本不设置，所有功能直接可用。
 - **许可证版本**：在应用商店以外销售的 Windows、Linux、Android 版本用 `--dart-define=CIRRUS_STORE=license` 构建，Pro 通过在网站购买的许可证密钥激活（`lib/core/licensing`，协议见 `docs/licensing.md`）。正式服务器 `https://cirrus.routeforge.zone` 的 Ed25519 公钥已内置；换服务器时用 `CIRRUS_LICENSE_SERVER` 和 `CIRRUS_LICENSE_PUBKEY`（标准 base64）覆盖。
 - **防 DNS 污染**：应用访问自家服务器（`routeforge.zone` 及其子域名，例如许可证服务器）时不用系统 DNS，而是依次用腾讯云 HTTPDNS（HTTPS 接口）、阿里 DNS（223.5.5.5 / 223.6.6.6，HTTPS JSON 接口）解析，都失败时才用系统 DNS（`lib/core/net/secure_dns.dart`）。证书仍按域名校验，所以错误的解析结果只会导致连接失败，不会把请求带到别处。用 `CIRRUS_HTTPDNS_DOMAINS`（逗号分隔）和 `CIRRUS_HTTPDNS_TOKEN`（腾讯云 HTTPDNS 控制台的 HTTPS Token，留空则跳过腾讯云）覆盖。Cloudflare API 和浏览器打开的网页不受影响。
 - **测试**：
@@ -189,6 +189,6 @@ Cirrus is a fast, native client for the Cloudflare API on **Linux, Windows, macO
 
 **Sign-in:** "Sign in with Cloudflare" uses Cloudflare OAuth (authorization code + PKCE, no client secret): pick the account in the browser and approve; tokens refresh automatically and the grant is revoked when the credential is removed. To enable it, create an OAuth client under *Manage Account → OAuth clients* with grant types `authorization_code` + `refresh_token`, token auth method `none`, redirect URLs `http://127.0.0.1/oauth/callback` and `https://cirrus.routeforge.zone/oauth/callback` (the website page hands the result to the iOS/Android/macOS app), then set the repository variables `CIRRUS_OAUTH_CLIENT_ID` and `CIRRUS_OAUTH_SCOPES` (space-separated scope IDs). API tokens and the Global API Key still work.
 
-**Cirrus Pro:** store builds (`--dart-define=CIRRUS_STORE=appstore|play`, or `store_build: true` in `build.yml`) sell a one-time, non-consumable `cirrus_pro_lifetime` (US$39.99 / ¥198) through StoreKit 2 and Play Billing. Zone management stays free. Workers, Pages, AI, storage, Zero Trust, account administration, GraphQL, console writes, 30-day analytics and multiple credentials need Pro. Purchases are restored silently on launch. Builds without a store flag (GitHub Releases, Windows, Linux) have everything unlocked. Windows, Linux and Android builds sold outside the stores use `CIRRUS_STORE=license`: Pro is unlocked with a licence key bought on the website (`lib/core/licensing`, contract in `docs/licensing.md`). The public key of the production server (`https://cirrus.routeforge.zone`) is built in; override both with `CIRRUS_LICENSE_SERVER` and `CIRRUS_LICENSE_PUBKEY` (standard base64) for another server. Names under `routeforge.zone` (Cirrus's own servers) are resolved over HTTPS instead of the system resolver, which some networks poison: Tencent Cloud HTTPDNS, then AliDNS (223.5.5.5), then the system resolver as a last resort (`lib/core/net/secure_dns.dart`; override with `CIRRUS_HTTPDNS_DOMAINS` and `CIRRUS_HTTPDNS_TOKEN`). Certificates are still verified against the host name.
+**Cirrus Pro:** store builds (`--dart-define=CIRRUS_STORE=appstore|play`, or `store_build: true` in `build.yml`) sell a one-time, non-consumable `cirrus_pro_lifetime` (US$39.99 / ¥198) through StoreKit 2 and Play Billing. Zone management stays free. Workers, Pages, AI, storage, Zero Trust, account administration, GraphQL, console writes, 30-day analytics and multiple credentials need Pro. Purchases are restored silently on launch. Builds without a store flag (the Release workflow's, Windows, Linux) have everything unlocked. Windows, Linux and Android builds sold outside the stores use `CIRRUS_STORE=license`: Pro is unlocked with a licence key bought on the website (`lib/core/licensing`, contract in `docs/licensing.md`). The public key of the production server (`https://cirrus.routeforge.zone`) is built in; override both with `CIRRUS_LICENSE_SERVER` and `CIRRUS_LICENSE_PUBKEY` (standard base64) for another server. Names under `routeforge.zone` (Cirrus's own servers) are resolved over HTTPS instead of the system resolver, which some networks poison: Tencent Cloud HTTPDNS, then AliDNS (223.5.5.5), then the system resolver as a last resort (`lib/core/net/secure_dns.dart`; override with `CIRRUS_HTTPDNS_DOMAINS` and `CIRRUS_HTTPDNS_TOKEN`). Certificates are still verified against the host name.
 
 **Build:** `flutter pub get && flutter run`. Regenerate the API catalog with `dart run tool/build_catalog.dart`. Push a `v*` tag to build all platforms and publish a release.

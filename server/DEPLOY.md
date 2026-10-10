@@ -610,7 +610,7 @@ curl -sI https://cirrus.routeforge.zone/downloads/Cirrus-1.0.0-macos.dmg | grep 
 
 旧版本的文件不会自动删除；确认新版本可用后，在服务器上删除即可：`rm /opt/cirrus-license/data/downloads/Cirrus-0.9.0-*`。`manifest.json` 不要手动编辑，用脚本更新。
 
-Mac 直售版的 DMG 来自 GitHub Actions 的 `mac-direct.yml`（已签名、公证）。下载 artifact 后可以先检查：
+Mac 直售版的 DMG 来自 Forgejo Actions 的 `mac-direct.yml`（已签名、公证）。下载 artifact 后可以先检查：
 
 ```bash
 spctl -a -t open --context context:primary-signature -v Cirrus-1.0.0-macos.dmg   # accepted, source=Notarized Developer ID

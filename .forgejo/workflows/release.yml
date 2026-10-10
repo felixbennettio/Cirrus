@@ -15,35 +15,39 @@ permissions:
 jobs:
   meta:
     name: Version
-    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.v.outputs.tag }}
       version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
     steps:
       - id: v
+        # Build numbers (Android version codes) must keep growing; the run
+        # counter restarted at 1 when the repository moved to Forgejo.
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "build=$(( ${{ github.run_number }} + 100 ))" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build
     needs: meta
-    uses: ./.github/workflows/build.yml
+    uses: ./.forgejo/workflows/build.yml
     secrets: inherit
     with:
       version: ${{ needs.meta.outputs.version }}
-      build_number: ${{ github.run_number }}
+      build_number: ${{ needs.meta.outputs.build }}
       apple: true
       refresh_catalog: true
 
   publish:
     name: Publish release
     needs: [meta, build]
-    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/forgejo/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
@@ -63,11 +67,14 @@ jobs:
             cat dist/SHA256SUMS.txt
             echo '```'
           } >> notes.md
-      - uses: softprops/action-gh-release@v3
+      - uses: https://data.forgejo.org/actions/forgejo-release@v2.13.4
         with:
-          tag_name: ${{ needs.meta.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          name: Cirrus ${{ needs.meta.outputs.tag }}
-          body_path: notes.md
-          files: dist/*
-          fail_on_unmatched_files: true
+          direction: upload
+          url: ${{ github.server_url }}
+          repo: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.meta.outputs.tag }}
+          sha: ${{ github.sha }}
+          title: Cirrus ${{ needs.meta.outputs.tag }}
+          release-notes-file: notes.md
+          release-dir: dist

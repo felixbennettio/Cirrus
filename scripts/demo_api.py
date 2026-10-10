@@ -6,7 +6,7 @@
 Build the app against it with
 `--dart-define=CIRRUS_API_BASE=http://127.0.0.1:8787/client/v4` and add a
 profile with any token, or write one to profiles.json in the app's support
-directory before the first start (.github/workflows/screenshots.yml does).
+directory before the first start (.forgejo/workflows/screenshots.yml does).
 Such builds open the page in CIRRUS_INITIAL_ROUTE. Writes are accepted and
 echoed but change nothing. Every name, address and number here is invented;
 domains use the reserved example names.

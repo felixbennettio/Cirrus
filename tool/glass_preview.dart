@@ -5,7 +5,7 @@ import 'package:cirrus/ui/widgets/glass.dart';
 import 'package:flutter/material.dart';
 
 /// Glass surfaces over colourful scrolling content, to see the system glass
-/// on iOS and macOS (`.github/workflows/glass-preview.yml`):
+/// on iOS and macOS (`.forgejo/workflows/glass-preview.yml`):
 /// `flutter run -t tool/glass_preview.dart [--dart-define=PREVIEW_DARK=true]`.
 /// A dialog opens after a few seconds.
 void main() => runApp(const _Preview());

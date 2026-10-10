@@ -18,7 +18,7 @@ This file is the contract between the licence server (`server/`) and the app
 | `cirrus-android` | android  | 1                   | CNY 198 / USD 39.99 |
 
 Each platform is bought separately. `cirrus-macos` is the Developer ID build
-downloaded from the website (`.github/workflows/mac-direct.yml`); the Mac App
+downloaded from the website (`.forgejo/workflows/mac-direct.yml`); the Mac App
 Store build keeps using in-app purchase, and the two purchases are separate.
 Prices and limits live on the server, not in the app: the defaults come from
 its configuration (`PRICE_*`, `MAX_DEVICES_*`, `PRODUCTS`) and the operator

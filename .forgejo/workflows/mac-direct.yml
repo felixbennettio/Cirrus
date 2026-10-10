@@ -4,8 +4,8 @@
 # website with server/scripts/publish_download.sh (server/DEPLOY.md).
 #
 # Needs the App Store Connect API key secrets (see appstore.yml) and a
-# "Developer ID Application" certificate: in the keychain of the self-hosted
-# Mac (ci/RUNNERS.md), or cloud-managed when the API key may use it.
+# "Developer ID Application" certificate: in the keychain of the macos-latest
+# runner's disk image, or cloud-managed when the API key may use it.
 name: Mac direct
 
 on:
@@ -25,24 +25,25 @@ env:
 jobs:
   build:
     name: macOS (Developer ID)
-    runs-on: ${{ fromJSON(vars.RUNNER_MAC || '"macos-latest"') }}
+    runs-on: macos-latest
     timeout-minutes: 90
     env:
       ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: https://github.com/subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          cache: ${{ runner.environment == 'github-hosted' }}  # self-hosted runners keep Flutter and the pub cache on disk
+          cache: false  # the runners come with Flutter; there is no cache server
       - run: flutter pub get
       - name: Version
         run: |
           echo "VERSION=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_ENV"
-          echo "BUILD_NUMBER=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_ENV"
+          # Same numbering as appstore.yml (offset for the move to Forgejo).
+          echo "BUILD_NUMBER=$(( (${{ github.run_number }} + 100) * 10 + ${{ github.run_attempt || 1 }} ))" >> "$GITHUB_ENV"
       - name: Build configuration
         env:
           CLIENT_ID: ${{ vars.CIRRUS_OAUTH_CLIENT_ID }}
@@ -142,7 +143,7 @@ jobs:
         run: |
           shasum -a 256 "$DMG" | tee "$DMG.sha256"
           echo "Cirrus $VERSION ($BUILD_NUMBER) for macOS, Developer ID: \`$(cut -d' ' -f1 "$DMG.sha256")\`" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v7
+      - uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: mac-direct
           path: dist/*
@@ -158,7 +159,7 @@ jobs:
           # cryptography's newest release may have no wheel for the Mac's system Python 3.9;
           # take the newest one that does instead of building it from source.
           "$RUNNER_TEMP/venv/bin/pip" install -q --only-binary=cryptography,cffi 'pyjwt[crypto]'
-          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune ${{ runner.environment == 'github-hosted' && '--ephemeral' || '' }}
+          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune
       - name: Remove the API key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/Cirrus.zip"

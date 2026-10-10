@@ -7,10 +7,9 @@
 # text) and APPLE_TEAM_ID. Signing is automatic: Xcode creates or reuses the
 # certificates and provisioning profiles through the API key (Admin role).
 #
-# Runs on the self-hosted Mac named by the RUNNER_MAC repository variable
-# (ci/RUNNERS.md), else on GitHub's macOS runners. A self-hosted Mac keeps
-# its development certificate; after GitHub-hosted runs the one Xcode had to
-# create is revoked again (scripts/appstore_certs.py).
+# Runs on the macos-latest runner. Its VM starts every job from the same disk
+# image, whose keychain holds the development certificate that signing
+# reuses; scripts/appstore_certs.py revokes any other one Xcode creates.
 name: App Store
 
 on:
@@ -27,7 +26,7 @@ on:
         default: true
   push:
     # Re-check the Apple setup whenever this workflow changes (no builds).
-    paths: ['.github/workflows/appstore.yml', 'scripts/appstore_check.py']
+    paths: ['.forgejo/workflows/appstore.yml', 'scripts/appstore_check.py']
 
 concurrency:
   group: appstore-${{ github.ref }}
@@ -39,12 +38,12 @@ env:
 jobs:
   check:
     name: Check Apple setup
-    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       ready: ${{ steps.check.outputs.ready }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - name: Python
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
@@ -69,7 +68,7 @@ jobs:
     name: ${{ matrix.platform == 'ios' && 'iOS' || 'macOS' }}
     needs: check
     if: needs.check.outputs.ready == 'true' && github.event_name == 'workflow_dispatch' && inputs.platforms != 'check-only'
-    runs-on: ${{ fromJSON(vars.RUNNER_MAC || '"macos-latest"') }}
+    runs-on: macos-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -81,19 +80,21 @@ jobs:
       KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: https://github.com/subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          cache: ${{ runner.environment == 'github-hosted' }}  # self-hosted runners keep Flutter and the pub cache on disk
+          cache: false  # the runners come with Flutter; there is no cache server
       - run: flutter pub get
       - name: Version
         # Version name from pubspec.yaml. Build numbers must grow with every
-        # upload, so they come from this workflow's run counter.
+        # upload, so they come from the run counter; it restarted at 1 when
+        # the repository moved to Forgejo (the last earlier upload was 191),
+        # hence the offset of 100 runs.
         run: |
           echo "VERSION=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_ENV"
-          echo "BUILD_NUMBER=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$(( (${{ github.run_number }} + 100) * 10 + ${{ github.run_attempt || 1 }} ))" >> "$GITHUB_ENV"
       - name: Build configuration
         shell: bash
         env:
@@ -163,7 +164,7 @@ jobs:
             -authenticationKeyPath "$AUTH_KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
           ls -la "$RUNNER_TEMP/export" 2>/dev/null || true  # nothing is kept when uploading
           echo "${{ inputs.upload && 'Uploaded' || 'Signed' }} Cirrus $VERSION ($BUILD_NUMBER) for $PLATFORM" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v7
+      - uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         if: ${{ !inputs.upload }}
         with:
           name: appstore-${{ matrix.platform }}
@@ -180,7 +181,7 @@ jobs:
           # cryptography's newest release may have no wheel for the Mac's system Python 3.9;
           # take the newest one that does instead of building it from source.
           "$RUNNER_TEMP/venv/bin/pip" install -q --only-binary=cryptography,cffi 'pyjwt[crypto]'
-          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune ${{ runner.environment == 'github-hosted' && '--ephemeral' || '' }}
+          "$RUNNER_TEMP/venv/bin/python" scripts/appstore_certs.py prune
       - name: Remove the API key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8"
