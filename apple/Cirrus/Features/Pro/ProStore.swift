@@ -14,6 +14,10 @@ final class ProStore {
     private(set) var busy = false
     private(set) var error: String?
     private(set) var storeChecked = false
+    /// TEMPORARY, remove before App Review: TestFlight (sandbox) builds
+    /// unlock Pro while the App Store has no Pro product to sell (the paid
+    /// apps agreement is still pending), so Pro features can be tested.
+    private(set) var testFlightUnlock = false
     private let defaults: UserDefaults
     @ObservationIgnored private var updates: Task<Void, Never>?
 
@@ -27,7 +31,7 @@ final class ProStore {
     var enforced: Bool { channel == .appStore }
 
     /// Pro features are usable.
-    var hasPro: Bool { !enforced || unlocked }
+    var hasPro: Bool { !enforced || unlocked || testFlightUnlock }
 
     func start() {
         guard enforced, updates == nil else { return }
@@ -49,6 +53,15 @@ final class ProStore {
             self.error = describe(error)
         }
         storeChecked = true
+        if product == nil, await isSandbox() { testFlightUnlock = true }
+    }
+
+    private func isSandbox() async -> Bool {
+        guard let result = try? await AppTransaction.shared else { return false }
+        switch result {
+        case .verified(let t): return t.environment == .sandbox
+        case .unverified(let t, _): return t.environment == .sandbox
+        }
     }
 
     /// Reads the current entitlements (purchases on any device of the account).

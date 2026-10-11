@@ -65,7 +65,16 @@ struct SettingsView: View {
             if !pro.unlocked {
                 Button(L("Restore purchase", "恢复购买")) { Task { await pro.restore() } }.disabled(pro.busy)
             }
-            if let e = pro.error { Text(e).font(.caption).foregroundStyle(.red) }
+            if pro.testFlightUnlock && !pro.unlocked {
+                Text(
+                    L(
+                        "Unlocked for TestFlight testing while the App Store can't sell Cirrus Pro yet.",
+                        "App Store 暂时还不能购买 Cirrus Pro，TestFlight 测试期间已临时解锁。")
+                )
+                .font(.caption).foregroundStyle(.secondary)
+            } else if let e = pro.error {
+                Text(e).font(.caption).foregroundStyle(.red)
+            }
         }
     }
 
