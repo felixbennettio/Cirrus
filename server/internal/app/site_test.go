@@ -478,7 +478,8 @@ func TestGallery(t *testing.T) {
 			t.Errorf("Traditional Chinese gallery lacks %q", want)
 		}
 	}
-	if strings.Contains(zh, "/static/shots/en/") ||
+	hero, _, _ := strings.Cut(zh[strings.Index(zh, `<figure class="hero-shot"`):], "</figure>")
+	if strings.Contains(hero, "/static/shots/en/") ||
 		!strings.Contains(zh, `media="(prefers-color-scheme: dark)" srcset="/static/shots/zh-Hans/home-dark.webp`) ||
 		!strings.Contains(zh, `srcset="/static/shots/zh-Hans/m-home.webp`) {
 		t.Error("Traditional Chinese hero")

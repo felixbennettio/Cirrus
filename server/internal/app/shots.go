@@ -28,6 +28,7 @@ var shotGroups = []shotGroup{
 	{"account", []string{"members", "tokens", "tokens-dark", "audit", "lists", "account-more"}},
 	{"developer", []string{"console", "console-dark", "graphql", "requests", "palette", "palette-dark"}},
 	{"mobile", []string{"m-home", "m-home-dark", "m-dns", "m-zone", "m-drawer", "m-drawer-dark"}},
+	{"iphone", []string{"i-home", "i-zone", "i-ai"}},
 	{"setup", []string{"welcome", "profile", "settings"}},
 }
 
