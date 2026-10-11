@@ -15,6 +15,7 @@ struct SettingsView: View {
             credentials
             appearance
             security
+            catalogSection
             Section(L("Data", "数据")) {
                 Button(L("Clear cached data", "清除缓存数据"), systemImage: "trash") {
                     model.clearCaches()
@@ -158,6 +159,40 @@ struct SettingsView: View {
             }
             .disabled(!available)
         }
+    }
+
+    private var catalogSection: some View {
+        let store = model.catalog
+        return Section {
+            if let c = store.catalog {
+                InfoRow(L("Endpoints", "接口数量"), Format.number(Double(c.operations.count)))
+                InfoRow(L("Products", "产品数量"), Format.number(Double(c.byProduct.count)))
+                InfoRow(L("Generated", "生成时间"), c.generated.map { Format.date(.string(ISODate.format($0))) })
+            } else if store.loading {
+                ProgressView()
+            } else if let e = store.error {
+                Text(e).foregroundStyle(.red)
+            }
+            Button {
+                Task {
+                    await model.run(L("API catalog updated", "API 目录已更新")) { try await store.refresh() }
+                }
+            } label: {
+                HStack {
+                    if store.refreshing { ProgressView().controlSize(.small) } else { Image(systemName: "icloud.and.arrow.down") }
+                    Text(L("Update from Cloudflare", "从 Cloudflare 更新"))
+                }
+            }
+            .disabled(store.refreshing)
+            if store.usesRefreshed {
+                Button(L("Use bundled version", "使用内置版本")) { Task { await store.resetToBundled() } }
+            }
+        } header: {
+            Text(L("API catalog", "API 目录"))
+        } footer: {
+            Text(L("Index of every Cloudflare API endpoint, generated from the official OpenAPI schema.", "由官方 OpenAPI 规范生成的全部 Cloudflare API 接口索引。"))
+        }
+        .task { _ = await store.load() }
     }
 
     private var about: some View {

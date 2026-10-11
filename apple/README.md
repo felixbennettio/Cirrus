@@ -30,10 +30,23 @@ app.
 
 ## Status
 
-The first stage covers sign-in (Cloudflare OAuth, API tokens, Global API
-Key), accounts and zones, the home screen, domains, zone overview, DNS
-(including BIND import/export, DNSSEC and DNS settings), SSL/TLS (Origin CA
-keys are generated on the device), caching, zone settings, analytics,
-settings, app lock and Cirrus Pro. The second adds Workers (code editor, bindings,
-secrets, triggers, deployments, live logs), Pages, Workers AI, KV, R2 and D1.
-The other areas of the Flutter app follow.
+The native app covers what the Flutter app does: sign-in (Cloudflare OAuth,
+API tokens, Global API Key), accounts and zones, the home screen, domains,
+zone overview, DNS (including BIND import/export, DNSSEC and DNS settings),
+SSL/TLS (Origin CA keys are generated on the device), security and WAF
+(custom rules, rate limiting, managed rules, security events, IP and user
+agent rules, zone lockdown), rules (redirects, transforms, origin, cache and
+configuration rules, page rules), caching, zone settings, analytics, Workers
+routes, email routing, Workers (code editor, bindings, secrets, triggers,
+deployments, live logs), Pages, Workers AI, KV, R2, D1, the rest of the
+compute and storage products, Zero Trust (tunnels with public hostnames and
+private networks, Access, Gateway, devices, networks), account members, API
+tokens, audit logs, the registrar, lists and bulk redirects, notifications,
+the API console, GraphQL analytics, the request log, global search,
+settings, app lock and Cirrus Pro.
+
+Most account pages are driven by `Cirrus/Resources/resources.json`, the same
+resource descriptions as `lib/features/generic/resource_specs.dart` in the
+Flutter app. The API console uses `assets/api/catalog.json.gz` (built by
+`tool/build_catalog.dart`); Settings can rebuild it on the device from
+Cloudflare's published OpenAPI schema.

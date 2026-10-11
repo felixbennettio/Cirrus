@@ -15,6 +15,13 @@ final class AppModel {
 
     let feedback = Feedback()
     let pro: ProStore
+    /// The generic resource pages' specs (`Resources/resources.json`).
+    let resources: ResourceCatalog = AppModel.loadResources()
+    let catalog = CatalogStore()
+    /// The most recent API requests (Request log), newest first.
+    private(set) var requests: [RequestRecord] = []
+    /// Requests sent from the API console in this session.
+    var consoleHistory: [ConsoleHistoryEntry] = []
 
     private(set) var settings: AppSettings
     private(set) var profiles: [Profile] = []
@@ -40,6 +47,25 @@ final class AppModel {
         pro = ProStore(defaults: defaults)
         AppLanguage.current = settings.language
         CFClient.userAgent = "Cirrus/" + AppInfo.version
+        requestLog.onChange = { [weak self] records in
+            Task { @MainActor in self?.requests = records }
+        }
+    }
+
+    private static func loadResources() -> ResourceCatalog {
+        guard let url = Bundle.main.url(forResource: "resources", withExtension: "json"), let data = try? Data(contentsOf: url),
+            let json = try? JSON.parse(data)
+        else { return ResourceCatalog(json: [:]) }
+        return ResourceCatalog(json: json)
+    }
+
+    /// Values for `{account_id}` and `{zone_id}` in path templates.
+    var scopeIds: [String: String?] { ["account_id": accountId, "zone_id": zoneId] }
+
+    func toggleFavorite(_ opId: String) {
+        update { s in
+            if let i = s.favoriteOps.firstIndex(of: opId) { s.favoriteOps.remove(at: i) } else { s.favoriteOps.append(opId) }
+        }
     }
 
     // MARK: Start
@@ -271,4 +297,14 @@ enum FlutterImport {
         }
         if defaults.bool(forKey: FlutterAppData.proKey) { defaults.set(true, forKey: ProStore.cacheKey) }
     }
+}
+
+/// A request sent from the API console.
+struct ConsoleHistoryEntry: Identifiable {
+    let id = UUID()
+    var opId: String
+    var method: String
+    var path: String
+    var status: Int
+    var at: Date
 }

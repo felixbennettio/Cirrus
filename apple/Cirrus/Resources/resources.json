@@ -1,0 +1,3542 @@
+{
+ "lists": {
+  "zone": [
+   "zone_worker_routes",
+   "custom_hostnames",
+   "zone_load_balancers",
+   "waiting_rooms",
+   "healthchecks",
+   "spectrum_apps",
+   "zone_logpush",
+   "page_shield_scripts",
+   "page_shield_connections",
+   "page_shield_policies",
+   "snippets",
+   "web3_hostnames",
+   "keyless_certificates",
+   "zone_custom_pages",
+   "origin_tls_client_auth",
+   "zone_access_apps"
+  ],
+  "compute": [
+   "queues",
+   "workflows",
+   "ai_gateways",
+   "durable_objects",
+   "dispatch_namespaces",
+   "containers",
+   "pipelines"
+  ],
+  "storage": [
+   "hyperdrive",
+   "vectorize",
+   "secrets_store"
+  ],
+  "access": [
+   "access_apps",
+   "access_policies",
+   "access_groups",
+   "access_service_tokens",
+   "access_idps",
+   "access_certificates",
+   "access_tags",
+   "access_custom_pages",
+   "access_bookmarks",
+   "access_users",
+   "access_logs"
+  ],
+  "gateway": [
+   "gateway_rules",
+   "gateway_lists",
+   "gateway_locations",
+   "gateway_proxy_endpoints",
+   "gateway_certificates",
+   "gateway_pacfiles",
+   "gateway_categories"
+  ],
+  "devices": [
+   "devices",
+   "device_profiles",
+   "device_posture",
+   "device_posture_integrations",
+   "device_networks",
+   "dex_tests"
+  ],
+  "networks": [
+   "tunnel_routes",
+   "virtual_networks",
+   "warp_connectors"
+  ],
+  "zeroTrustMore": [
+   "dlp_profiles",
+   "dlp_custom_profiles",
+   "mtls_certificates"
+  ],
+  "account": [
+   "registrar_domains",
+   "alert_policies",
+   "alert_webhooks",
+   "alert_history",
+   "turnstile",
+   "lb_pools",
+   "lb_monitors",
+   "account_logpush",
+   "images",
+   "stream_videos",
+   "stream_live_inputs",
+   "dns_firewall",
+   "ip_prefixes",
+   "subscriptions",
+   "user_invites",
+   "memberships"
+  ],
+  "security": [
+   "ip_access_rules",
+   "ua_rules",
+   "zone_lockdowns"
+  ],
+  "rules": [
+   "page_rules"
+  ]
+ },
+ "specs": [
+  {
+   "id": "zone_worker_routes",
+   "title": {
+    "en": "Workers routes",
+    "zh": "Workers 路由"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "alt_route",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/workers/routes",
+   "idField": "id",
+   "titleFields": [
+    "pattern"
+   ],
+   "subtitleFields": [
+    "script"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "worker route",
+    "pattern"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "custom_hostnames",
+   "title": {
+    "en": "Custom hostnames",
+    "zh": "自定义主机名"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "dns",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/custom_hostnames",
+   "idField": "id",
+   "titleFields": [
+    "hostname"
+   ],
+   "subtitleFields": [
+    "ssl.status",
+    "custom_origin_server"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "ssl for saas",
+    "saas"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "zone_load_balancers",
+   "title": {
+    "en": "Load balancers",
+    "zh": "负载均衡"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "balance",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/load_balancers",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "description",
+    "steering_policy"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "lb",
+    "failover"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "waiting_rooms",
+   "title": {
+    "en": "Waiting rooms",
+    "zh": "等候室"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "hourglass_top",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/waiting_rooms",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "host",
+    "path",
+    "total_active_users"
+   ],
+   "statusField": "suspended",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "healthchecks",
+   "title": {
+    "en": "Health checks",
+    "zh": "健康检查"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "monitor_heart_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/healthchecks",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "address",
+    "type"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "spectrum_apps",
+   "title": {
+    "en": "Spectrum applications",
+    "zh": "Spectrum 应用"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "settings_input_antenna",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/spectrum/apps",
+   "idField": "id",
+   "titleFields": [
+    "dns.name",
+    "id"
+   ],
+   "subtitleFields": [
+    "protocol",
+    "origin_direct"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "tcp",
+    "udp",
+    "proxy"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "zone_logpush",
+   "title": {
+    "en": "Logpush jobs (zone)",
+    "zh": "Logpush 任务（域名）"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "upload_file",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/logpush/jobs",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "dataset",
+    "id"
+   ],
+   "subtitleFields": [
+    "dataset",
+    "destination_conf"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "logs",
+    "export"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "page_shield_scripts",
+   "title": {
+    "en": "Page Shield scripts",
+    "zh": "Page Shield 脚本"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "javascript",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/page_shield/scripts",
+   "idField": "id",
+   "titleFields": [
+    "url"
+   ],
+   "subtitleFields": [
+    "first_seen_at",
+    "last_seen_at",
+    "js_integrity_score"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "client side security"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "page_shield_connections",
+   "title": {
+    "en": "Page Shield connections",
+    "zh": "Page Shield 连接"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "link",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/page_shield/connections",
+   "idField": "id",
+   "titleFields": [
+    "url"
+   ],
+   "subtitleFields": [
+    "first_seen_at",
+    "last_seen_at"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "page_shield_policies",
+   "title": {
+    "en": "Page Shield policies",
+    "zh": "Page Shield 策略"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "policy_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/page_shield/policies",
+   "idField": "id",
+   "titleFields": [
+    "description",
+    "id"
+   ],
+   "subtitleFields": [
+    "action",
+    "expression"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "csp"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "snippets",
+   "title": {
+    "en": "Snippets",
+    "zh": "Snippets 代码片段"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "code",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/snippets",
+   "idField": "snippet_name",
+   "titleFields": [
+    "snippet_name"
+   ],
+   "subtitleFields": [
+    "modified_on"
+   ],
+   "canCreate": false,
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "View code",
+      "zh": "查看代码"
+     },
+     "icon": "code",
+     "method": "GET",
+     "path": "/zones/{zone_id}/snippets/{id}/content",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": false
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "web3_hostnames",
+   "title": {
+    "en": "Web3 gateways",
+    "zh": "Web3 网关"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "hub",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/web3/hostnames",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "target",
+    "dnslink"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "ipfs",
+    "ethereum"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "keyless_certificates",
+   "title": {
+    "en": "Keyless SSL",
+    "zh": "Keyless SSL"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "key_off",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/keyless_certificates",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "host"
+   ],
+   "subtitleFields": [
+    "host",
+    "port"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "zone_custom_pages",
+   "title": {
+    "en": "Custom error pages",
+    "zh": "自定义错误页"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "web_asset",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/custom_pages",
+   "idField": "id",
+   "titleFields": [
+    "description",
+    "id"
+   ],
+   "subtitleFields": [
+    "url",
+    "state"
+   ],
+   "canCreate": false,
+   "updateMethod": "PUT",
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "origin_tls_client_auth",
+   "title": {
+    "en": "Authenticated Origin Pulls certificates",
+    "zh": "源站认证拉取证书"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "verified",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/origin_tls_client_auth",
+   "idField": "id",
+   "titleFields": [
+    "id"
+   ],
+   "subtitleFields": [
+    "issuer",
+    "expires_on"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "aop",
+    "mtls origin"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "zone_access_apps",
+   "title": {
+    "en": "Access applications (zone)",
+    "zh": "Access 应用（域名级）"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "admin_panel_settings_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/access/apps",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "domain",
+    "type"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "queues",
+   "title": {
+    "en": "Queues",
+    "zh": "队列 Queues"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "queue",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/queues",
+   "idField": "queue_id",
+   "titleFields": [
+    "queue_name"
+   ],
+   "subtitleFields": [
+    "producers_total_count",
+    "consumers_total_count",
+    "modified_on"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "message queue",
+    "consumer"
+   ],
+   "children": [
+    {
+     "id": "queue_consumers",
+     "title": {
+      "en": "Consumers",
+      "zh": "消费者"
+     },
+     "group": {
+      "en": "Compute & AI",
+      "zh": "计算与 AI"
+     },
+     "icon": "call_received",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/queues/{parent}/consumers",
+     "idField": "consumer_id",
+     "titleFields": [
+      "script_name",
+      "script",
+      "consumer_id"
+     ],
+     "subtitleFields": [
+      "type",
+      "dead_letter_queue"
+     ],
+     "canCreate": true,
+     "updateMethod": "PUT",
+     "canDelete": true,
+     "paginate": false,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "en": "Send message",
+      "zh": "发送消息"
+     },
+     "icon": "send",
+     "method": "POST",
+     "path": "/accounts/{account_id}/queues/{id}/messages",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    },
+    {
+     "label": {
+      "en": "Pull messages",
+      "zh": "拉取消息"
+     },
+     "icon": "download",
+     "method": "POST",
+     "path": "/accounts/{account_id}/queues/{id}/messages/pull",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    },
+    {
+     "label": {
+      "en": "Purge queue",
+      "zh": "清空队列"
+     },
+     "icon": "delete_sweep",
+     "method": "POST",
+     "path": "/accounts/{account_id}/queues/{id}/purge",
+     "confirm": true,
+     "danger": true,
+     "showResult": true,
+     "withBody": false,
+     "body": {
+      "delete_messages_permanently": true
+     }
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "workflows",
+   "title": {
+    "en": "Workflows",
+    "zh": "Workflows 工作流"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "account_tree",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/workflows",
+   "idField": "name",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "script_name",
+    "class_name",
+    "modified_on"
+   ],
+   "canCreate": false,
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [
+    {
+     "id": "workflow_instances",
+     "title": {
+      "en": "Instances",
+      "zh": "实例"
+     },
+     "group": {
+      "en": "Compute & AI",
+      "zh": "计算与 AI"
+     },
+     "icon": "play_circle_outline",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/workflows/{parent}/instances",
+     "idField": "id",
+     "titleFields": [
+      "id"
+     ],
+     "subtitleFields": [
+      "created_on",
+      "modified_on"
+     ],
+     "statusField": "status",
+     "canCreate": true,
+     "canDelete": false,
+     "paginate": true,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "ai_gateways",
+   "title": {
+    "en": "AI Gateway",
+    "zh": "AI 网关"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "router",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/ai-gateway/gateways",
+   "idField": "id",
+   "titleFields": [
+    "id"
+   ],
+   "subtitleFields": [
+    "cache_ttl",
+    "rate_limiting_limit",
+    "collect_logs"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "llm proxy",
+    "openai",
+    "cache"
+   ],
+   "children": [
+    {
+     "id": "ai_gateway_logs",
+     "title": {
+      "en": "Logs",
+      "zh": "日志"
+     },
+     "group": {
+      "en": "Compute & AI",
+      "zh": "计算与 AI"
+     },
+     "icon": "receipt_long",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/ai-gateway/gateways/{parent}/logs",
+     "idField": "id",
+     "titleFields": [
+      "model",
+      "id"
+     ],
+     "subtitleFields": [
+      "provider",
+      "created_at",
+      "duration",
+      "tokens_in",
+      "tokens_out"
+     ],
+     "statusField": "success",
+     "canCreate": false,
+     "canDelete": false,
+     "paginate": true,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "durable_objects",
+   "title": {
+    "en": "Durable Objects",
+    "zh": "Durable Objects"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "widgets_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/workers/durable_objects/namespaces",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "class",
+    "id"
+   ],
+   "subtitleFields": [
+    "script",
+    "class"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [
+    {
+     "id": "durable_object_instances",
+     "title": {
+      "en": "Objects",
+      "zh": "对象"
+     },
+     "group": {
+      "en": "Compute & AI",
+      "zh": "计算与 AI"
+     },
+     "icon": "data_object",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/workers/durable_objects/namespaces/{parent}/objects",
+     "idField": "id",
+     "titleFields": [
+      "id"
+     ],
+     "subtitleFields": [
+      "hasStoredData"
+     ],
+     "canCreate": false,
+     "canDelete": false,
+     "paginate": false,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "dispatch_namespaces",
+   "title": {
+    "en": "Workers for Platforms",
+    "zh": "Workers for Platforms"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "layers_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/workers/dispatch/namespaces",
+   "idField": "namespace_name",
+   "titleFields": [
+    "namespace_name"
+   ],
+   "subtitleFields": [
+    "script_count",
+    "modified_on"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "dispatch namespace",
+    "wfp"
+   ],
+   "children": [
+    {
+     "id": "dispatch_scripts",
+     "title": {
+      "en": "Scripts",
+      "zh": "脚本"
+     },
+     "group": {
+      "en": "Compute & AI",
+      "zh": "计算与 AI"
+     },
+     "icon": "code",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/workers/dispatch/namespaces/{parent}/scripts",
+     "idField": "id",
+     "titleFields": [
+      "id",
+      "script_name"
+     ],
+     "subtitleFields": [
+      "modified_on"
+     ],
+     "canCreate": false,
+     "canDelete": true,
+     "paginate": false,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "containers",
+   "title": {
+    "en": "Containers",
+    "zh": "Containers 容器"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "inventory_2_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/containers/applications",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "id"
+   ],
+   "subtitleFields": [
+    "instances",
+    "version",
+    "created_at"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "pipelines",
+   "title": {
+    "en": "Pipelines",
+    "zh": "Pipelines 数据管道"
+   },
+   "group": {
+    "en": "Compute & AI",
+    "zh": "计算与 AI"
+   },
+   "icon": "linear_scale",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/pipelines/v1/pipelines",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "id"
+   ],
+   "subtitleFields": [
+    "status",
+    "created_at"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "hyperdrive",
+   "title": {
+    "en": "Hyperdrive",
+    "zh": "Hyperdrive 数据库加速"
+   },
+   "group": {
+    "en": "Storage",
+    "zh": "存储"
+   },
+   "icon": "speed",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/hyperdrive/configs",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "origin.host",
+    "origin.database",
+    "origin.scheme"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "postgres",
+    "mysql",
+    "database pool"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "vectorize",
+   "title": {
+    "en": "Vectorize",
+    "zh": "Vectorize 向量数据库"
+   },
+   "group": {
+    "en": "Storage",
+    "zh": "存储"
+   },
+   "icon": "scatter_plot_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/vectorize/v2/indexes",
+   "idField": "name",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "config.dimensions",
+    "config.metric",
+    "description"
+   ],
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "embeddings",
+    "vector"
+   ],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "Index info",
+      "zh": "索引信息"
+     },
+     "icon": "info_outline",
+     "method": "GET",
+     "path": "/accounts/{account_id}/vectorize/v2/indexes/{id}/info",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": false
+    },
+    {
+     "label": {
+      "en": "Query vectors",
+      "zh": "查询向量"
+     },
+     "icon": "search",
+     "method": "POST",
+     "path": "/accounts/{account_id}/vectorize/v2/indexes/{id}/query",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "secrets_store",
+   "title": {
+    "en": "Secrets Store",
+    "zh": "Secrets Store 密钥库"
+   },
+   "group": {
+    "en": "Storage",
+    "zh": "存储"
+   },
+   "icon": "enhanced_encryption_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/secrets_store/stores",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "created",
+    "modified"
+   ],
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [
+    {
+     "id": "secrets_store_secrets",
+     "title": {
+      "en": "Secrets",
+      "zh": "密钥"
+     },
+     "group": {
+      "en": "Storage",
+      "zh": "存储"
+     },
+     "icon": "password",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/secrets_store/stores/{parent}/secrets",
+     "idField": "id",
+     "titleFields": [
+      "name"
+     ],
+     "subtitleFields": [
+      "scopes",
+      "status",
+      "modified"
+     ],
+     "statusField": "status",
+     "canCreate": true,
+     "updateMethod": "PATCH",
+     "canDelete": true,
+     "paginate": true,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_apps",
+   "title": {
+    "en": "Applications",
+    "zh": "应用"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "apps",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/apps",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "domain",
+    "type",
+    "session_duration"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "self-hosted",
+    "saas",
+    "ssh",
+    "access app"
+   ],
+   "children": [
+    {
+     "id": "access_app_policies",
+     "title": {
+      "en": "Policies",
+      "zh": "策略"
+     },
+     "group": {
+      "en": "Access",
+      "zh": "Access 访问控制"
+     },
+     "icon": "policy",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/access/apps/{parent}/policies",
+     "idField": "id",
+     "titleFields": [
+      "name"
+     ],
+     "subtitleFields": [
+      "decision",
+      "precedence"
+     ],
+     "canCreate": true,
+     "updateMethod": "PUT",
+     "canDelete": true,
+     "paginate": true,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "en": "Revoke all tokens",
+      "zh": "吊销所有令牌"
+     },
+     "icon": "logout",
+     "method": "POST",
+     "path": "/accounts/{account_id}/access/apps/{id}/revoke_tokens",
+     "confirm": true,
+     "danger": true,
+     "showResult": true,
+     "withBody": false
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_policies",
+   "title": {
+    "en": "Policies",
+    "zh": "策略"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "policy_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/policies",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "decision",
+    "app_count"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "reusable policy",
+    "allow",
+    "deny"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_groups",
+   "title": {
+    "en": "Rule groups",
+    "zh": "规则组"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "groups_2_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/groups",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "updated_at"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_service_tokens",
+   "title": {
+    "en": "Service tokens",
+    "zh": "服务令牌"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "vpn_key",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/service_tokens",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "client_id",
+    "expires_at",
+    "last_seen_at"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "client id",
+    "client secret",
+    "machine"
+   ],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "Rotate secret",
+      "zh": "轮换密钥"
+     },
+     "icon": "autorenew",
+     "method": "POST",
+     "path": "/accounts/{account_id}/access/service_tokens/{id}/rotate",
+     "confirm": true,
+     "danger": false,
+     "showResult": true,
+     "withBody": false
+    },
+    {
+     "label": {
+      "en": "Extend expiry",
+      "zh": "延长有效期"
+     },
+     "icon": "update",
+     "method": "POST",
+     "path": "/accounts/{account_id}/access/service_tokens/{id}/refresh",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": false
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_idps",
+   "title": {
+    "en": "Identity providers",
+    "zh": "身份提供商"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "login",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/identity_providers",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "idp",
+    "sso",
+    "oidc",
+    "saml",
+    "github",
+    "google"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_certificates",
+   "title": {
+    "en": "mTLS certificates",
+    "zh": "mTLS 证书"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "workspace_premium_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/certificates",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "fingerprint",
+    "associated_hostnames"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_tags",
+   "title": {
+    "en": "Application tags",
+    "zh": "应用标签"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "sell_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/tags",
+   "idField": "name",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "app_count"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_custom_pages",
+   "title": {
+    "en": "Custom pages",
+    "zh": "自定义页面"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "web",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/custom_pages",
+   "idField": "uid",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "app_count"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_bookmarks",
+   "title": {
+    "en": "Bookmarks",
+    "zh": "书签应用"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "bookmark_border",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/bookmarks",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "domain"
+   ],
+   "canCreate": false,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_users",
+   "title": {
+    "en": "Users",
+    "zh": "用户"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "person_outline",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/users",
+   "idField": "id",
+   "titleFields": [
+    "email",
+    "name"
+   ],
+   "subtitleFields": [
+    "name",
+    "last_successful_login",
+    "seat_uid"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "access_logs",
+   "title": {
+    "en": "Access logs",
+    "zh": "访问日志"
+   },
+   "group": {
+    "en": "Access",
+    "zh": "Access 访问控制"
+   },
+   "icon": "receipt_long_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/access/logs/access_requests",
+   "idField": "ray_id",
+   "titleFields": [
+    "user_email",
+    "ray_id"
+   ],
+   "subtitleFields": [
+    "action",
+    "app_domain",
+    "created_at",
+    "ip_address"
+   ],
+   "statusField": "allowed",
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "listQuery": {
+    "limit": 200,
+    "direction": "desc"
+   },
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_rules",
+   "title": {
+    "en": "Firewall policies",
+    "zh": "防火墙策略"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "local_fire_department_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/rules",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "action",
+    "filters",
+    "precedence"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "dns policy",
+    "http policy",
+    "network policy",
+    "block"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_lists",
+   "title": {
+    "en": "Lists",
+    "zh": "列表"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "list",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/lists",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "count",
+    "description"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [
+    {
+     "id": "gateway_list_items",
+     "title": {
+      "en": "Items",
+      "zh": "条目"
+     },
+     "group": {
+      "en": "Gateway",
+      "zh": "Gateway 网关"
+     },
+     "icon": "list_alt",
+     "scope": "account",
+     "listPath": "/accounts/{account_id}/gateway/lists/{parent}/items",
+     "idField": "value",
+     "titleFields": [
+      "value"
+     ],
+     "subtitleFields": [
+      "description",
+      "created_at"
+     ],
+     "canCreate": false,
+     "canDelete": false,
+     "paginate": false,
+     "perPage": 50,
+     "keywords": [],
+     "children": [],
+     "actions": [],
+     "listActions": [],
+     "hiddenCreateFields": []
+    }
+   ],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_locations",
+   "title": {
+    "en": "DNS locations",
+    "zh": "DNS 位置"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "location_on_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/locations",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "doh_subdomain",
+    "ip",
+    "client_default"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "doh",
+    "dot",
+    "resolver"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_proxy_endpoints",
+   "title": {
+    "en": "Proxy endpoints",
+    "zh": "代理端点"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "swap_horiz",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/proxy_endpoints",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "subdomain",
+    "ips"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_certificates",
+   "title": {
+    "en": "Inspection certificates",
+    "zh": "检查证书"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "verified_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/certificates",
+   "idField": "id",
+   "titleFields": [
+    "id"
+   ],
+   "subtitleFields": [
+    "issuer_org",
+    "expires_on",
+    "binding_status"
+   ],
+   "statusField": "in_use",
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_pacfiles",
+   "title": {
+    "en": "PAC files",
+    "zh": "PAC 文件"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "description_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/pacfiles",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "url",
+    "description"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "gateway_categories",
+   "title": {
+    "en": "Categories",
+    "zh": "分类"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "category_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/gateway/categories",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "description",
+    "class"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "devices",
+   "title": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "laptop_mac",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/devices",
+   "itemPath": "/accounts/{account_id}/devices/{id}",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "device_type"
+   ],
+   "subtitleFields": [
+    "user.email",
+    "os_version",
+    "version",
+    "last_seen"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "warp clients",
+    "revoke"
+   ],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "Revoke",
+      "zh": "吊销"
+     },
+     "icon": "block",
+     "method": "POST",
+     "path": "/accounts/{account_id}/devices/revoke",
+     "confirm": true,
+     "danger": true,
+     "showResult": false,
+     "withBody": false,
+     "body": [
+      "__ID__"
+     ]
+    },
+    {
+     "label": {
+      "en": "Unrevoke",
+      "zh": "取消吊销"
+     },
+     "icon": "restore",
+     "method": "POST",
+     "path": "/accounts/{account_id}/devices/unrevoke",
+     "confirm": false,
+     "danger": false,
+     "showResult": false,
+     "withBody": false,
+     "body": [
+      "__ID__"
+     ]
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "device_profiles",
+   "title": {
+    "en": "Device profiles",
+    "zh": "设备配置文件"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "tune",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/devices/policies",
+   "itemPath": "/accounts/{account_id}/devices/policy/{id}",
+   "idField": "policy_id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "match",
+    "precedence",
+    "description"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "createPath": "/accounts/{account_id}/devices/policy",
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "device_posture",
+   "title": {
+    "en": "Posture checks",
+    "zh": "设备态势检查"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "health_and_safety_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/devices/posture",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "description"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "device_posture_integrations",
+   "title": {
+    "en": "Posture integrations",
+    "zh": "态势集成"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "extension_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/devices/posture/integration",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "interval"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "device_networks",
+   "title": {
+    "en": "Managed networks",
+    "zh": "受管网络"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "wifi",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/devices/networks",
+   "idField": "network_id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "config.tls_sockaddr"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "dex_tests",
+   "title": {
+    "en": "DEX tests",
+    "zh": "DEX 测试"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "network_check",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/dex/devices/dex_tests",
+   "idField": "test_id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "interval",
+    "data.kind",
+    "data.host"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "digital experience",
+    "monitoring"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "tunnel_routes",
+   "title": {
+    "en": "Private network routes",
+    "zh": "私有网络路由"
+   },
+   "group": {
+    "en": "Networks",
+    "zh": "网络"
+   },
+   "icon": "route",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/teamnet/routes",
+   "idField": "id",
+   "titleFields": [
+    "network"
+   ],
+   "subtitleFields": [
+    "tunnel_name",
+    "comment",
+    "virtual_network_id"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "listQuery": {
+    "is_deleted": false
+   },
+   "keywords": [
+    "cidr",
+    "teamnet",
+    "warp to tunnel"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "virtual_networks",
+   "title": {
+    "en": "Virtual networks",
+    "zh": "虚拟网络"
+   },
+   "group": {
+    "en": "Networks",
+    "zh": "网络"
+   },
+   "icon": "lan_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/teamnet/virtual_networks",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "comment",
+    "is_default_network"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "listQuery": {
+    "is_deleted": false
+   },
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "warp_connectors",
+   "title": {
+    "en": "WARP connectors",
+    "zh": "WARP 连接器"
+   },
+   "group": {
+    "en": "Networks",
+    "zh": "网络"
+   },
+   "icon": "cable",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/warp_connector",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "status",
+    "created_at"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "listQuery": {
+    "is_deleted": false
+   },
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "dlp_profiles",
+   "title": {
+    "en": "DLP profiles",
+    "zh": "DLP 配置"
+   },
+   "group": {
+    "en": "Zero Trust",
+    "zh": "Zero Trust"
+   },
+   "icon": "privacy_tip_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/dlp/profiles",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "type",
+    "description"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "data loss prevention"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "dlp_custom_profiles",
+   "title": {
+    "en": "Custom DLP profiles",
+    "zh": "自定义 DLP 配置"
+   },
+   "group": {
+    "en": "Zero Trust",
+    "zh": "Zero Trust"
+   },
+   "icon": "edit_note",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/dlp/profiles/custom",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "description",
+    "allowed_match_count"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "mtls_certificates",
+   "title": {
+    "en": "mTLS certificates (account)",
+    "zh": "mTLS 证书（账户）"
+   },
+   "group": {
+    "en": "Zero Trust",
+    "zh": "Zero Trust"
+   },
+   "icon": "workspace_premium",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/mtls_certificates",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "id"
+   ],
+   "subtitleFields": [
+    "issuer",
+    "expires_on",
+    "ca"
+   ],
+   "canCreate": true,
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "registrar_domains",
+   "title": {
+    "en": "Registered domains",
+    "zh": "已注册域名"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "storefront",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/registrar/domains",
+   "idField": "name",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "expires_at",
+    "auto_renew",
+    "locked",
+    "current_registrar"
+   ],
+   "canCreate": false,
+   "updateMethod": "PUT",
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "renew",
+    "lock",
+    "privacy",
+    "whois"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "alert_policies",
+   "title": {
+    "en": "Notification policies",
+    "zh": "通知策略"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "notifications_active_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/alerting/v3/policies",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "alert_type",
+    "description"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [
+    "alerts",
+    "notify"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "alert_webhooks",
+   "title": {
+    "en": "Webhook destinations",
+    "zh": "Webhook 目标"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "webhook",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/alerting/v3/destinations/webhooks",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "url",
+    "type",
+    "last_success"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "alert_history",
+   "title": {
+    "en": "Notification history",
+    "zh": "通知历史"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "history",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/alerting/v3/history",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "alert_type"
+   ],
+   "subtitleFields": [
+    "alert_type",
+    "sent",
+    "mechanism"
+   ],
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "turnstile",
+   "title": {
+    "en": "Turnstile widgets",
+    "zh": "Turnstile 人机验证"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "verified_user",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/challenges/widgets",
+   "idField": "sitekey",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "sitekey",
+    "mode",
+    "domains"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "captcha",
+    "challenge",
+    "sitekey"
+   ],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "Rotate secret",
+      "zh": "轮换密钥"
+     },
+     "icon": "autorenew",
+     "method": "POST",
+     "path": "/accounts/{account_id}/challenges/widgets/{id}/rotate_secret",
+     "confirm": true,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "lb_pools",
+   "title": {
+    "en": "Load balancer pools",
+    "zh": "负载均衡源站池"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "dns_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/load_balancers/pools",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "description",
+    "healthy",
+    "monitor"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [
+    {
+     "label": {
+      "en": "Health",
+      "zh": "健康状态"
+     },
+     "icon": "monitor_heart",
+     "method": "GET",
+     "path": "/accounts/{account_id}/load_balancers/pools/{id}/health",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": false
+    }
+   ],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "lb_monitors",
+   "title": {
+    "en": "Load balancer monitors",
+    "zh": "负载均衡监视器"
+   },
+   "group": {
+    "en": "Traffic",
+    "zh": "流量"
+   },
+   "icon": "monitor_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/load_balancers/monitors",
+   "idField": "id",
+   "titleFields": [
+    "description",
+    "id"
+   ],
+   "subtitleFields": [
+    "type",
+    "path",
+    "interval"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "account_logpush",
+   "title": {
+    "en": "Logpush jobs (account)",
+    "zh": "Logpush 任务（账户）"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "upload_file",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/logpush/jobs",
+   "idField": "id",
+   "titleFields": [
+    "name",
+    "dataset",
+    "id"
+   ],
+   "subtitleFields": [
+    "dataset",
+    "destination_conf"
+   ],
+   "statusField": "enabled",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "images",
+   "title": {
+    "en": "Images",
+    "zh": "Images 图片"
+   },
+   "group": {
+    "en": "Media",
+    "zh": "媒体"
+   },
+   "icon": "image_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/images/v1",
+   "idField": "id",
+   "titleFields": [
+    "filename",
+    "id"
+   ],
+   "subtitleFields": [
+    "uploaded",
+    "variants"
+   ],
+   "canCreate": false,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 100,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "stream_videos",
+   "title": {
+    "en": "Stream videos",
+    "zh": "Stream 视频"
+   },
+   "group": {
+    "en": "Media",
+    "zh": "媒体"
+   },
+   "icon": "movie_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/stream",
+   "itemPath": "/accounts/{account_id}/stream/{id}",
+   "idField": "uid",
+   "titleFields": [
+    "meta.name",
+    "uid"
+   ],
+   "subtitleFields": [
+    "status.state",
+    "duration",
+    "created"
+   ],
+   "canCreate": false,
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [
+    {
+     "label": {
+      "en": "Upload from URL",
+      "zh": "从 URL 上传"
+     },
+     "icon": "link",
+     "method": "POST",
+     "path": "/accounts/{account_id}/stream/copy",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    },
+    {
+     "label": {
+      "en": "Create direct upload URL",
+      "zh": "创建直传 URL"
+     },
+     "icon": "upload",
+     "method": "POST",
+     "path": "/accounts/{account_id}/stream/direct_upload",
+     "confirm": false,
+     "danger": false,
+     "showResult": true,
+     "withBody": true
+    }
+   ],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "stream_live_inputs",
+   "title": {
+    "en": "Stream live inputs",
+    "zh": "Stream 直播输入"
+   },
+   "group": {
+    "en": "Media",
+    "zh": "媒体"
+   },
+   "icon": "live_tv",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/stream/live_inputs",
+   "idField": "uid",
+   "titleFields": [
+    "meta.name",
+    "uid"
+   ],
+   "subtitleFields": [
+    "status",
+    "created"
+   ],
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "dns_firewall",
+   "title": {
+    "en": "DNS Firewall clusters",
+    "zh": "DNS 防火墙集群"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "security",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/dns_firewall",
+   "idField": "id",
+   "titleFields": [
+    "name"
+   ],
+   "subtitleFields": [
+    "upstream_ips",
+    "dns_firewall_ips"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "ip_prefixes",
+   "title": {
+    "en": "IP prefixes (BYOIP)",
+    "zh": "IP 前缀（BYOIP）"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "pin_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/addressing/prefixes",
+   "idField": "id",
+   "titleFields": [
+    "cidr"
+   ],
+   "subtitleFields": [
+    "description",
+    "asn",
+    "advertised"
+   ],
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "subscriptions",
+   "title": {
+    "en": "Subscriptions",
+    "zh": "订阅"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "receipt_outlined",
+   "scope": "account",
+   "listPath": "/accounts/{account_id}/subscriptions",
+   "idField": "id",
+   "titleFields": [
+    "rate_plan.public_name",
+    "id"
+   ],
+   "subtitleFields": [
+    "state",
+    "price",
+    "frequency",
+    "current_period_end"
+   ],
+   "statusField": "state",
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "user_invites",
+   "title": {
+    "en": "My invitations",
+    "zh": "我的邀请"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "mail_outline",
+   "scope": "user",
+   "listPath": "/user/invites",
+   "idField": "id",
+   "titleFields": [
+    "organization_name",
+    "id"
+   ],
+   "subtitleFields": [
+    "status",
+    "invited_by",
+    "expires_on"
+   ],
+   "statusField": "status",
+   "canCreate": false,
+   "canDelete": false,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "memberships",
+   "title": {
+    "en": "My memberships",
+    "zh": "我的成员身份"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "badge_outlined",
+   "scope": "user",
+   "listPath": "/memberships",
+   "idField": "id",
+   "titleFields": [
+    "account.name",
+    "id"
+   ],
+   "subtitleFields": [
+    "status",
+    "roles"
+   ],
+   "statusField": "status",
+   "canCreate": false,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "ip_access_rules",
+   "title": {
+    "en": "IP access rules",
+    "zh": "IP 访问规则"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "public_off",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/firewall/access_rules/rules",
+   "idField": "id",
+   "titleFields": [
+    "configuration.value"
+   ],
+   "subtitleFields": [
+    "configuration.target",
+    "notes",
+    "created_on"
+   ],
+   "statusField": "mode",
+   "canCreate": true,
+   "updateMethod": "PATCH",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [
+    "block ip",
+    "allow ip",
+    "whitelist",
+    "country block"
+   ],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "ua_rules",
+   "title": {
+    "en": "User agent blocking",
+    "zh": "User-Agent 拦截"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "person_off_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/firewall/ua_rules",
+   "idField": "id",
+   "titleFields": [
+    "configuration.value",
+    "description"
+   ],
+   "subtitleFields": [
+    "mode",
+    "description"
+   ],
+   "statusField": "paused",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "zone_lockdowns",
+   "title": {
+    "en": "Zone lockdown",
+    "zh": "区域锁定"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "lock_person_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/firewall/lockdowns",
+   "idField": "id",
+   "titleFields": [
+    "description",
+    "id"
+   ],
+   "subtitleFields": [
+    "urls"
+   ],
+   "statusField": "paused",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": true,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  },
+  {
+   "id": "page_rules",
+   "title": {
+    "en": "Page Rules (legacy)",
+    "zh": "页面规则（旧版）"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "description_outlined",
+   "scope": "zone",
+   "listPath": "/zones/{zone_id}/pagerules",
+   "idField": "id",
+   "titleFields": [
+    "targets.0.constraint.value",
+    "id"
+   ],
+   "subtitleFields": [
+    "priority",
+    "modified_on"
+   ],
+   "statusField": "status",
+   "canCreate": true,
+   "updateMethod": "PUT",
+   "canDelete": true,
+   "paginate": false,
+   "perPage": 50,
+   "keywords": [],
+   "children": [],
+   "actions": [],
+   "listActions": [],
+   "hiddenCreateFields": []
+  }
+ ],
+ "documents": [
+  {
+   "id": "access_organization",
+   "title": {
+    "en": "Zero Trust organization",
+    "zh": "Zero Trust 组织"
+   },
+   "group": {
+    "en": "Zero Trust",
+    "zh": "Zero Trust"
+   },
+   "icon": "corporate_fare",
+   "path": "/accounts/{account_id}/access/organizations",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": [
+    "team domain",
+    "auth domain",
+    "login page"
+   ]
+  },
+  {
+   "id": "gateway_configuration",
+   "title": {
+    "en": "Gateway settings",
+    "zh": "Gateway 设置"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "settings_suggest_outlined",
+   "path": "/accounts/{account_id}/gateway/configuration",
+   "scope": "account",
+   "method": "PATCH",
+   "keywords": [
+    "tls decrypt",
+    "block page",
+    "antivirus"
+   ]
+  },
+  {
+   "id": "gateway_logging",
+   "title": {
+    "en": "Gateway logging",
+    "zh": "Gateway 日志设置"
+   },
+   "group": {
+    "en": "Gateway",
+    "zh": "Gateway 网关"
+   },
+   "icon": "manage_history",
+   "path": "/accounts/{account_id}/gateway/logging",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "device_settings",
+   "title": {
+    "en": "Device settings",
+    "zh": "设备全局设置"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "settings_applications_outlined",
+   "path": "/accounts/{account_id}/devices/settings",
+   "scope": "account",
+   "method": "PATCH",
+   "keywords": [
+    "gateway proxy",
+    "udp",
+    "root certificate"
+   ]
+  },
+  {
+   "id": "device_default_profile",
+   "title": {
+    "en": "Default device profile",
+    "zh": "默认设备配置文件"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "phonelink_setup",
+   "path": "/accounts/{account_id}/devices/policy",
+   "scope": "account",
+   "method": "PATCH",
+   "keywords": []
+  },
+  {
+   "id": "split_tunnel_exclude",
+   "title": {
+    "en": "Split tunnels: exclude",
+    "zh": "拆分隧道：排除"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "call_split",
+   "path": "/accounts/{account_id}/devices/policy/exclude",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "split_tunnel_include",
+   "title": {
+    "en": "Split tunnels: include",
+    "zh": "拆分隧道：包含"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "merge_type",
+   "path": "/accounts/{account_id}/devices/policy/include",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "fallback_domains",
+   "title": {
+    "en": "Local domain fallback",
+    "zh": "本地域名回退"
+   },
+   "group": {
+    "en": "Devices",
+    "zh": "设备"
+   },
+   "icon": "dns",
+   "path": "/accounts/{account_id}/devices/policy/fallback_domains",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "account_details",
+   "title": {
+    "en": "Account settings",
+    "zh": "账户设置"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "manage_accounts_outlined",
+   "path": "/accounts/{account_id}",
+   "scope": "account",
+   "method": "PUT",
+   "keywords": [
+    "rename account",
+    "enforce 2fa"
+   ]
+  },
+  {
+   "id": "billing_profile",
+   "title": {
+    "en": "Billing profile",
+    "zh": "账单资料"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "credit_card",
+   "path": "/accounts/{account_id}/billing/profile",
+   "scope": "account",
+   "keywords": []
+  },
+  {
+   "id": "user_details",
+   "title": {
+    "en": "My user profile",
+    "zh": "我的用户资料"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "person",
+   "path": "/user",
+   "scope": "user",
+   "method": "PATCH",
+   "keywords": []
+  },
+  {
+   "id": "available_alerts",
+   "title": {
+    "en": "Available alert types",
+    "zh": "可用告警类型"
+   },
+   "group": {
+    "en": "Account",
+    "zh": "账户"
+   },
+   "icon": "notification_important_outlined",
+   "path": "/accounts/{account_id}/alerting/v3/available_alerts",
+   "scope": "account",
+   "keywords": []
+  },
+  {
+   "id": "bot_management",
+   "title": {
+    "en": "Bot management",
+    "zh": "机器人管理"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "smart_toy_outlined",
+   "path": "/zones/{zone_id}/bot_management",
+   "scope": "zone",
+   "method": "PUT",
+   "keywords": [
+    "bot fight mode",
+    "ai bots",
+    "crawlers"
+   ]
+  },
+  {
+   "id": "tiered_caching",
+   "title": {
+    "en": "Argo tiered caching",
+    "zh": "Argo 分层缓存"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "layers",
+   "path": "/zones/{zone_id}/argo/tiered_caching",
+   "scope": "zone",
+   "method": "PATCH",
+   "keywords": []
+  },
+  {
+   "id": "smart_routing",
+   "title": {
+    "en": "Argo smart routing",
+    "zh": "Argo 智能路由"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "alt_route",
+   "path": "/zones/{zone_id}/argo/smart_routing",
+   "scope": "zone",
+   "method": "PATCH",
+   "keywords": []
+  },
+  {
+   "id": "url_normalization",
+   "title": {
+    "en": "URL normalization",
+    "zh": "URL 标准化"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "link",
+   "path": "/zones/{zone_id}/url_normalization",
+   "scope": "zone",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "managed_headers",
+   "title": {
+    "en": "Managed transforms",
+    "zh": "托管转换"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "transform",
+   "path": "/zones/{zone_id}/managed_headers",
+   "scope": "zone",
+   "method": "PATCH",
+   "keywords": [
+    "managed headers",
+    "true client ip",
+    "visitor location"
+   ]
+  },
+  {
+   "id": "snippet_rules",
+   "title": {
+    "en": "Snippet rules",
+    "zh": "Snippets 规则"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "rule_folder_outlined",
+   "path": "/zones/{zone_id}/snippets/snippet_rules",
+   "scope": "zone",
+   "method": "PUT",
+   "keywords": []
+  },
+  {
+   "id": "zone_hold",
+   "title": {
+    "en": "Zone hold",
+    "zh": "域名保留锁"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "lock_clock",
+   "path": "/zones/{zone_id}/hold",
+   "scope": "zone",
+   "keywords": [
+    "hold",
+    "prevent takeover"
+   ]
+  },
+  {
+   "id": "aop_hostnames",
+   "title": {
+    "en": "Per-hostname origin pulls",
+    "zh": "按主机名的源站认证拉取"
+   },
+   "group": {
+    "en": "Zone",
+    "zh": "域名"
+   },
+   "icon": "dns_outlined",
+   "path": "/zones/{zone_id}/origin_tls_client_auth/hostnames",
+   "scope": "zone",
+   "method": "PUT",
+   "keywords": []
+  }
+ ]
+}

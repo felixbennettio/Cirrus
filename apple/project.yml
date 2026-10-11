@@ -35,6 +35,9 @@ targetTemplates:
     type: application
     sources:
       - path: Cirrus
+      # The API catalog shared with the Flutter app.
+      - path: ../assets/api/catalog.json.gz
+        buildPhase: resources
     dependencies:
       - package: CirrusKit
         product: CirrusKit
