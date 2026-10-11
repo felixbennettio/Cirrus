@@ -233,3 +233,38 @@ import Testing
         #expect(StatusTone.of("whatever") == .neutral)
     }
 }
+
+@Suite struct JSONParserTests {
+    @Test func matchesJSONDecoder() throws {
+        let samples = [
+            #"{"a":[1,-2,3.5,1e3,-0.25E-2,true,false,null],"b":{"c":"d\"e\\f\/g\n\t","é":"ü"},"empty":{},"list":[]}"#,
+            #"  [ "x" , { "k" : [ [ ] ] } ]  "#,
+            #""é中😀""#,
+            "12345678901234567890",
+            "-9223372036854775808",
+        ]
+        for s in samples {
+            let fast = try JSON.parse(s)
+            let slow = try JSONDecoder().decode(JSON.self, from: Data(s.utf8))
+            #expect(fast.prettyString == slow.prettyString, "\(s)")
+        }
+        #expect(try JSON.parse(#""😀""#).string == "😀")
+        #expect(try JSON.parse("1.5") == .double(1.5))
+        #expect(try JSON.parse("-7") == .int(-7))
+    }
+
+    @Test func rejectsInvalid() {
+        for s in ["", "{", "[1,]", #"{"a" 1}"#, "tru", "01x", #""unterminated"#, "{} {}", "\"a\u{01}\""] {
+            #expect(throws: (any Error).self, "\(s)") { try JSON.parse(s) }
+        }
+    }
+
+    @Test func roundTripsLargeDocument() throws {
+        var items: [JSON] = []
+        for i in 0..<2000 {
+            items.append(["id": .int(i), "name": .string("item \(i) “quoted”"), "score": .double(Double(i) + 0.25), "tags": ["a", "b"]])
+        }
+        let doc: JSON = ["items": .array(items)]
+        #expect(try JSON.parse(doc.encoded()) == doc)
+    }
+}

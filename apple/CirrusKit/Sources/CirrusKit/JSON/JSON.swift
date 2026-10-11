@@ -202,7 +202,7 @@ extension JSON: Codable {
 public extension JSON {
     /// Parses JSON text. Throws for invalid input.
     static func parse(_ data: Data) throws -> JSON {
-        try JSONDecoder().decode(JSON.self, from: data)
+        try JSONParser.parse(data)
     }
 
     static func parse(_ text: String) throws -> JSON {
