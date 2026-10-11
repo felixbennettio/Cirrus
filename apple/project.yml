@@ -52,10 +52,11 @@ targets:
   Cirrus-macOS:
     templates: [App]
     platform: macOS
-    entitlements:
-      path: Support/Cirrus-macOS.entitlements
     settings:
       base:
+        # Set here rather than with XcodeGen's `entitlements:`, which rewrites
+        # the file from its `properties` (empty without them).
+        CODE_SIGN_ENTITLEMENTS: Support/Cirrus-macOS.entitlements
         ENABLE_HARDENED_RUNTIME: YES
         COMBINE_HIDPI_IMAGES: YES
 schemes:
