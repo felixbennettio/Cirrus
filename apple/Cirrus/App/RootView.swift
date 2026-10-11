@@ -82,6 +82,14 @@ struct Sidebar: View {
                     ForEach(Screen.zoneScreens) { row($0) }
                 }
             }
+            if model.accountId != nil {
+                Section(L("Compute & AI", "计算与 AI")) {
+                    ForEach(Screen.computeScreens) { row($0) }
+                }
+                Section(L("Storage & Databases", "存储与数据库")) {
+                    ForEach(Screen.storageScreens) { row($0) }
+                }
+            }
             Section(L("Tools", "工具")) {
                 row(.settings)
             }
@@ -93,7 +101,13 @@ struct Sidebar: View {
 
     private func row(_ s: Screen) -> some View {
         NavigationLink(value: s) {
-            Label(s.title, systemImage: s.symbol)
+            HStack {
+                Label(s.title, systemImage: s.symbol)
+                if s.proFeature != nil && !model.pro.hasPro {
+                    Spacer()
+                    ProBadge()
+                }
+            }
         }
     }
 }
@@ -101,11 +115,12 @@ struct Sidebar: View {
 #if os(iOS)
     /// iPhone: Home, the current zone, domains and settings as tabs.
     struct PhoneTabs: View {
-        enum TabID: Hashable { case home, zone, domains, settings }
+        enum TabID: Hashable { case home, zone, services, domains, settings }
 
         @State private var tab: TabID = .home
         @State private var homePath = NavigationPath()
         @State private var zonePath = NavigationPath()
+        @State private var servicesPath = NavigationPath()
         @State private var domainsPath = NavigationPath()
         @State private var settingsPath = NavigationPath()
 
@@ -116,6 +131,9 @@ struct Sidebar: View {
                 }
                 Tab(L("Zone", "域名"), systemImage: "globe", value: TabID.zone) {
                     NavigationStack(path: $zonePath) { ZoneHubView().destinations() }
+                }
+                Tab(L("Services", "服务"), systemImage: "square.stack.3d.up", value: TabID.services) {
+                    NavigationStack(path: $servicesPath) { ServicesHubView().destinations() }
                 }
                 Tab(L("Domains", "全部域名"), systemImage: "list.bullet", value: TabID.domains) {
                     NavigationStack(path: $domainsPath) { DomainsView().destinations() }
@@ -133,6 +151,13 @@ struct Sidebar: View {
             case .home: tab = .home
             case .domains: tab = .domains
             case .settings: tab = .settings
+            case .workers, .pages, .ai, .kv, .r2, .d1:
+                if tab == .services {
+                    servicesPath.append(s)
+                } else {
+                    tab = .services
+                    servicesPath = NavigationPath([s])
+                }
             default:
                 if tab == .zone {
                     zonePath.append(s)
@@ -189,5 +214,46 @@ struct ZoneHubView: View {
         .navigationTitle(L("Zone", "域名"))
         .refreshable { await model.loadZones(force: true) }
         .sheet(isPresented: $picking) { ZonePicker() }
+    }
+}
+
+/// Account services (the Services tab on iPhone).
+struct ServicesHubView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        List {
+            Section(L("Compute & AI", "计算与 AI")) {
+                ForEach(Screen.computeScreens) { link($0) }
+            }
+            Section(L("Storage & Databases", "存储与数据库")) {
+                ForEach(Screen.storageScreens) { link($0) }
+            }
+        }
+        .navigationTitle(L("Services", "服务"))
+    }
+
+    private func link(_ s: Screen) -> some View {
+        NavigationLink(value: s) {
+            HStack {
+                Label(s.title, systemImage: s.symbol)
+                if s.proFeature != nil && !model.pro.hasPro {
+                    Spacer()
+                    ProBadge()
+                }
+            }
+        }
+    }
+}
+
+/// A small "PRO" tag on Pro-only entries.
+struct ProBadge: View {
+    var body: some View {
+        Text("PRO")
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(.tint)
+            .background(Color.accentColor.opacity(0.15), in: .capsule)
     }
 }

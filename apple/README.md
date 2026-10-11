@@ -34,4 +34,6 @@ The first stage covers sign-in (Cloudflare OAuth, API tokens, Global API
 Key), accounts and zones, the home screen, domains, zone overview, DNS
 (including BIND import/export, DNSSEC and DNS settings), SSL/TLS (Origin CA
 keys are generated on the device), caching, zone settings, analytics,
-settings, app lock and Cirrus Pro. The other areas of the Flutter app follow.
+settings, app lock and Cirrus Pro. The second adds Workers (code editor, bindings,
+secrets, triggers, deployments, live logs), Pages, Workers AI, KV, R2 and D1.
+The other areas of the Flutter app follow.
