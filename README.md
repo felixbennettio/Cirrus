@@ -17,8 +17,11 @@
 > Cirrus is an **unofficial** client and is not affiliated with Cloudflare, Inc.
 
 <p align="center">
-  <img src="docs/screenshots/desktop-home.png" width="66%" alt="Desktop">
-  <img src="docs/screenshots/mobile-dns-dark.png" width="23%" alt="Mobile">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="server/internal/app/static/shots/zh-Hans/home-dark.webp">
+    <img src="server/internal/app/static/shots/zh-Hans/home.webp" width="68%" alt="桌面版 / Desktop">
+  </picture>
+  <img src="server/internal/app/static/shots/en/i-home.webp" width="19%" alt="iPhone 原生版 / iPhone app">
 </p>
 
 ---
@@ -51,10 +54,90 @@
 | **账户** | 成员与角色；API Token（带权限选择的创建向导、轮换）；审计日志；列表与批量重定向；通知；域名注册；Turnstile；负载均衡；Images、Stream；Logpush 等 |
 | **工具** | **API 控制台**（可调用全部接口，支持 cURL 导出、收藏和历史记录）；GraphQL 查询器（带模板）；请求日志 |
 
-<p align="center">
-  <img src="docs/screenshots/desktop-console.png" width="49%" alt="API console">
-  <img src="docs/screenshots/desktop-overview.png" width="49%" alt="Zone overview">
-</p>
+### 应用截图
+
+截图使用演示数据，与[官网](https://cirrus.routeforge.zone)相同。「iPhone 原生版」是 `apple/` 里用 SwiftUI 重写的 iOS/macOS 版（正在 TestFlight 测试），其余是 Flutter 版。
+
+<details open>
+<summary><b>总览</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/home-t.webp" width="100%" alt="账户首页与快捷入口"><br><sub>账户首页与快捷入口</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/home-dark-t.webp" width="100%" alt="深色模式"><br><sub>深色模式</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/domains-t.webp" width="100%" alt="全部域名一览"><br><sub>全部域名一览</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>域名：DNS、SSL 与规则</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/dns-t.webp" width="100%" alt="DNS 记录"><br><sub>DNS 记录</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/ssl-t.webp" width="100%" alt="SSL/TLS 与证书"><br><sub>SSL/TLS 与证书</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/security-t.webp" width="100%" alt="安全与 WAF"><br><sub>安全与 WAF</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Workers、Pages 与 AI</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/worker-t.webp" width="100%" alt="Worker 详情与代码"><br><sub>Worker 详情与代码</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/pages-project-t.webp" width="100%" alt="Pages 部署记录"><br><sub>Pages 部署记录</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/ai-t.webp" width="100%" alt="Workers AI"><br><sub>Workers AI</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>存储</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/kv-keys-t.webp" width="100%" alt="KV 键值"><br><sub>KV 键值</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/r2-bucket-t.webp" width="100%" alt="浏览 R2 存储桶"><br><sub>浏览 R2 存储桶</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/d1-db-t.webp" width="100%" alt="查询 D1 数据库"><br><sub>查询 D1 数据库</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Zero Trust</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/tunnel-t.webp" width="100%" alt="隧道详情"><br><sub>隧道详情</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/access-t.webp" width="100%" alt="Access 应用"><br><sub>Access 应用</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/devices-t.webp" width="100%" alt="WARP 设备"><br><sub>WARP 设备</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>账户管理</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/members-t.webp" width="100%" alt="成员"><br><sub>成员</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/tokens-t.webp" width="100%" alt="API Token"><br><sub>API Token</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/audit-t.webp" width="100%" alt="审计日志"><br><sub>审计日志</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>开发者工具</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/console-t.webp" width="100%" alt="包含 3600 多个接口的 API 控制台"><br><sub>包含 3600 多个接口的 API 控制台</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/graphql-t.webp" width="100%" alt="GraphQL 查询"><br><sub>GraphQL 查询</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/palette-t.webp" width="100%" alt="命令面板（Ctrl/⌘ + K）"><br><sub>命令面板（Ctrl/⌘ + K）</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>iPhone 原生版</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-home-t.webp" width="200" alt="Liquid Glass 风格的首页"><br><sub>Liquid Glass 风格的首页</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-zone-t.webp" width="200" alt="域名的全部功能"><br><sub>域名的全部功能</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-ai-t.webp" width="200" alt="Workers AI 模型"><br><sub>Workers AI 模型</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>手机版</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/m-home-t.webp" width="200" alt="手机上的首页"><br><sub>手机上的首页</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/m-dns-t.webp" width="200" alt="手机上的 DNS"><br><sub>手机上的 DNS</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/m-drawer-t.webp" width="200" alt="导航菜单"><br><sub>导航菜单</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>登录与设置</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/welcome-t.webp" width="100%" alt="使用 Cloudflare 账户或 API Token 登录"><br><sub>使用 Cloudflare 账户或 API Token 登录</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/profile-t.webp" width="100%" alt="添加凭据"><br><sub>添加凭据</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/zh-Hans/settings-t.webp" width="100%" alt="设置、主题与动态取色"><br><sub>设置、主题与动态取色</sub></td>
+</tr></table>
+</details>
 
 ### 下载与安装
 
@@ -184,6 +267,89 @@ Cirrus is a fast, native client for the Cloudflare API on **Linux, Windows, macO
 - **Instant**: accounts and zones are cached locally and shown at once, then refreshed in the background. `Ctrl/⌘ + K` jumps to any page, zone, account or API endpoint.
 - **The whole API**: polished screens for DNS, SSL/TLS, WAF and rules, caching, zone settings, analytics, Workers (editor, deploy, bindings, secrets, triggers, versions, **live tail**), Pages, KV, R2, D1, Queues, Hyperdrive, Vectorize, Tunnels (ingress editor), Access, Gateway, WARP devices, Workers AI, members, API tokens, audit logs, lists and more. Every remaining endpoint (**3,647 in total**) is available in the built-in **API console**, with forms and body templates generated from the official OpenAPI schema.
 - **Native**: sidebar on desktop, drawer on phones, dark mode, English and Simplified Chinese, credentials in the system keychain, and an optional biometric app lock.
+
+**Screenshots** (demo data, the same as on the [website](https://cirrus.routeforge.zone)). "iPhone app" is the SwiftUI rewrite for iOS and macOS in `apple/`, now in TestFlight; the rest is the Flutter app.
+
+<details open>
+<summary><b>Overview</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/home-t.webp" width="100%" alt="Account home with quick actions"><br><sub>Account home with quick actions</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/home-dark-t.webp" width="100%" alt="Dark mode"><br><sub>Dark mode</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/domains-t.webp" width="100%" alt="All your zones at a glance"><br><sub>All your zones at a glance</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Zones: DNS, SSL and rules</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/dns-t.webp" width="100%" alt="DNS records"><br><sub>DNS records</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/ssl-t.webp" width="100%" alt="SSL/TLS and certificates"><br><sub>SSL/TLS and certificates</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/security-t.webp" width="100%" alt="Security and WAF"><br><sub>Security and WAF</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Workers, Pages and AI</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/worker-t.webp" width="100%" alt="Worker details and code"><br><sub>Worker details and code</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/pages-project-t.webp" width="100%" alt="Pages deployments"><br><sub>Pages deployments</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/ai-t.webp" width="100%" alt="Workers AI"><br><sub>Workers AI</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Storage</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/kv-keys-t.webp" width="100%" alt="KV keys and values"><br><sub>KV keys and values</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/r2-bucket-t.webp" width="100%" alt="Browsing an R2 bucket"><br><sub>Browsing an R2 bucket</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/d1-db-t.webp" width="100%" alt="Querying a D1 database"><br><sub>Querying a D1 database</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Zero Trust</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/tunnel-t.webp" width="100%" alt="Tunnel details"><br><sub>Tunnel details</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/access-t.webp" width="100%" alt="Access applications"><br><sub>Access applications</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/devices-t.webp" width="100%" alt="WARP devices"><br><sub>WARP devices</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Account</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/members-t.webp" width="100%" alt="Members"><br><sub>Members</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/tokens-t.webp" width="100%" alt="API tokens"><br><sub>API tokens</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/audit-t.webp" width="100%" alt="Audit log"><br><sub>Audit log</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Developer tools</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/console-t.webp" width="100%" alt="API console with 3,600+ endpoints"><br><sub>API console with 3,600+ endpoints</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/graphql-t.webp" width="100%" alt="GraphQL explorer"><br><sub>GraphQL explorer</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/palette-t.webp" width="100%" alt="Command palette (Ctrl/⌘ + K)"><br><sub>Command palette (Ctrl/⌘ + K)</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>iPhone app</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-home-t.webp" width="200" alt="Home with Liquid Glass"><br><sub>Home with Liquid Glass</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-zone-t.webp" width="200" alt="Everything for a zone"><br><sub>Everything for a zone</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/i-ai-t.webp" width="200" alt="Workers AI models"><br><sub>Workers AI models</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>On your phone</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/m-home-t.webp" width="200" alt="Home on a phone"><br><sub>Home on a phone</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/m-dns-t.webp" width="200" alt="DNS on a phone"><br><sub>DNS on a phone</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/m-drawer-t.webp" width="200" alt="Navigation menu"><br><sub>Navigation menu</sub></td>
+</tr></table>
+</details>
+<details>
+<summary><b>Sign-in and settings</b></summary>
+<table><tr>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/welcome-t.webp" width="100%" alt="Sign in with Cloudflare or an API token"><br><sub>Sign in with Cloudflare or an API token</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/profile-t.webp" width="100%" alt="Adding a credential"><br><sub>Adding a credential</sub></td>
+<td width="33%" align="center"><img src="server/internal/app/static/shots/en/settings-t.webp" width="100%" alt="Settings, themes and dynamic colour"><br><sub>Settings, themes and dynamic colour</sub></td>
+</tr></table>
+</details>
 
 **Install:** grab a build from [Releases](../../releases). Desktop and iOS builds are unsigned; see the table in the Chinese section above for per-platform notes. Android release signing uses the `ANDROID_*` repository secrets described above.
 
