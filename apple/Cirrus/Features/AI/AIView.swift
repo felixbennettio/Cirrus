@@ -256,7 +256,7 @@ private struct AIModels: View {
             let name = m["name"].string ?? ""
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(.callout.weight(.medium))
+                    Text(name).font(.callout.monospaced())
                     Text("\(WorkersAI.task(m)) · \(m["description"].string ?? "")").font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 Spacer()
