@@ -94,9 +94,13 @@ struct ZoneSettingRow: View {
         let onOff = value.string == "on" || value.string == "off"
         Group {
             if let options = meta?.options ?? (value.string != nil && !onOff ? [value.string!] : nil) {
-                Picker(selection: Binding(get: { value.string ?? "" }, set: { v in Task { await set(.string(v)) } })) {
-                    ForEach(options, id: \.self) { o in Text(ZoneSettingsCatalog.valueLabel(id, .string(o))).tag(o) }
-                    if let v = value.string, !options.contains(v) { Text(v).tag(v) }
+                LabeledContent {
+                    Picker(title, selection: Binding(get: { value.string ?? "" }, set: { v in Task { await set(.string(v)) } })) {
+                        ForEach(options, id: \.self) { o in Text(ZoneSettingsCatalog.valueLabel(id, .string(o))).tag(o) }
+                        if let v = value.string, !options.contains(v) { Text(v).tag(v) }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
                 } label: {
                     label(title)
                 }
@@ -106,10 +110,14 @@ struct ZoneSettingRow: View {
                 }
             } else if let n = value.int {
                 if let opts = meta?.numberOptions {
-                    Picker(selection: Binding(get: { n }, set: { v in Task { await set(.int(v)) } })) {
-                        ForEach(Array(Set(opts + [n])).sorted(), id: \.self) { o in
-                            Text(ZoneSettingsCatalog.valueLabel(id, .int(o))).tag(o)
+                    LabeledContent {
+                        Picker(title, selection: Binding(get: { n }, set: { v in Task { await set(.int(v)) } })) {
+                            ForEach(Array(Set(opts + [n])).sorted(), id: \.self) { o in
+                                Text(ZoneSettingsCatalog.valueLabel(id, .int(o))).tag(o)
+                            }
                         }
+                        .labelsHidden()
+                        .fixedSize()
                     } label: {
                         label(title)
                     }
@@ -122,16 +130,31 @@ struct ZoneSettingRow: View {
                     }
                     .buttonStyle(.plain)
                 }
+            } else if id == "security_header" {
+                NavigationLink {
+                    Form { HSTSSection(zoneId: zoneId, setting: setting, changed: changed) }
+                        .formStyle(.grouped)
+                        .navigationTitle("HSTS")
+                } label: {
+                    LabeledContent { Text(HSTSSection.summary(value)) } label: { label(title) }
+                }
             } else {
+                let summary = Self.summary(value)
                 Button {
                     text = value.prettyString
                     editingJSON = true
                 } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        label(title)
-                        Text(value.compactString).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(2)
+                    Group {
+                        if summary.count <= 24 {
+                            LabeledContent { Text(summary) } label: { label(title) }
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                label(title)
+                                Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(3)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -156,6 +179,22 @@ struct ZoneSettingRow: View {
                 return await set(parsed)
             }
         }
+    }
+
+    /// A readable form of a list or object value: an empty list means
+    /// Cloudflare's default (cipher suites), objects become "key: value".
+    static func summary(_ value: JSON) -> String {
+        func short(_ v: JSON) -> String {
+            switch v {
+            case .bool(let b): return b ? L("On", "开启") : L("Off", "关闭")
+            case .string("on"): return L("On", "开启")
+            case .string("off"): return L("Off", "关闭")
+            case .array(let a): return a.isEmpty ? L("Default", "默认") : a.map { $0.text ?? "" }.joined(separator: ", ")
+            case .object(let o): return o.keys.sorted().map { "\($0): \(short(o[$0]!))" }.joined(separator: ", ")
+            default: return v.text ?? "—"
+            }
+        }
+        return short(value)
     }
 
     private func label(_ title: String) -> some View {

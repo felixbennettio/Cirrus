@@ -185,14 +185,11 @@ private struct WorkerCode: View {
         Group {
             if let content {
                 VStack(spacing: 10) {
-                    HStack {
-                        Picker(L("Module", "模块"), selection: Binding(get: { current ?? "" }, set: { current = $0 })) {
-                            ForEach(content.modules) { m in
-                                Text(m.name + (m.name == content.mainModule ? " ★" : "")).tag(m.name)
-                            }
-                        }
-                        .labelsHidden()
-                        Spacer()
+                    HStack(spacing: 16) {
+                        InlinePicker(
+                            L("Module", "模块"), options: content.modules.map(\.name), selection: current,
+                            display: { $0 + ($0 == content.mainModule ? " ★" : "") }
+                        ) { current = $0 }
                         Button(L("Reload", "重新加载"), systemImage: "arrow.clockwise") { Task { await load() } }
                             .labelStyle(.iconOnly)
                         Button {

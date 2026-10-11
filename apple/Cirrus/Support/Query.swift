@@ -110,20 +110,53 @@ struct QueryView<T, Content: View>: View {
     }
 }
 
-/// A full-screen error with a retry button.
+/// A full-screen error with a retry button. Features the plan does not
+/// include and missing token permissions get their own wording.
 struct ErrorState: View {
     let error: Error
     var retry: (() -> Void)?
 
     var body: some View {
-        ContentUnavailableView {
-            Label(L("Something went wrong", "出错了"), systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(describe(error)).textSelection(.enabled)
-        } actions: {
-            if let retry {
-                Button(L("Try again", "重试"), action: retry).buttonStyle(.glass)
+        let api = error as? CFAPIError
+        if api?.isPlanRestricted == true {
+            ContentUnavailableView {
+                Label(L("Not available on this plan", "当前套餐不可用"), systemImage: "lock")
+            } description: {
+                detail(
+                    L(
+                        "Cloudflare doesn't include this feature in the domain's or account's current plan.",
+                        "域名或账户的当前 Cloudflare 套餐不包含此功能。"))
             }
+        } else if api?.isAuthError == true || api?.isForbidden == true {
+            ContentUnavailableView {
+                Label(L("No access", "没有权限"), systemImage: "key.slash")
+            } description: {
+                detail(
+                    L(
+                        "The current credential can't access this. Add the permission to the API token, or sign in with Cloudflare.",
+                        "当前凭据无权访问此内容。请给 API Token 添加相应权限，或改用 Cloudflare 登录。"))
+            } actions: {
+                if let retry {
+                    Button(L("Try again", "重试"), action: retry).buttonStyle(.glass)
+                }
+            }
+        } else {
+            ContentUnavailableView {
+                Label(L("Something went wrong", "出错了"), systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(describe(error)).textSelection(.enabled)
+            } actions: {
+                if let retry {
+                    Button(L("Try again", "重试"), action: retry).buttonStyle(.glass)
+                }
+            }
+        }
+    }
+
+    private func detail(_ explanation: String) -> some View {
+        VStack(spacing: 8) {
+            Text(explanation)
+            Text(describe(error)).font(.caption).textSelection(.enabled)
         }
     }
 }

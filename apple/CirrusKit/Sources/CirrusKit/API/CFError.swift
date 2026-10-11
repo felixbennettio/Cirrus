@@ -61,6 +61,19 @@ public struct CFAPIError: Error, Sendable, CustomStringConvertible, LocalizedErr
     public var isRateLimited: Bool { statusCode == 429 }
     public var isNetworkError: Bool { statusCode == nil && cause != nil }
 
+    /// The zone's plan or the account's subscription does not include the
+    /// feature (for example custom certificates on the Free plan). Cloudflare
+    /// has no common code for this, so the messages are matched.
+    public var isPlanRestricted: Bool {
+        let texts = errors.flatMap { [$0] + $0.chain }.map { $0.message.lowercased() }
+        return texts.contains { t in
+            if t.contains("entitle") || t.contains("upgrade your") { return true }
+            guard t.contains("plan") || t.contains("subscription") else { return false }
+            return ["not allow", "does not", "doesn't", "not available", "not supported", "not included", "requires", "upgrade"]
+                .contains { t.contains($0) }
+        }
+    }
+
     /// What went wrong, for display.
     public var summary: String {
         if !errors.isEmpty { return errors.map(\.description).joined(separator: "\n") }

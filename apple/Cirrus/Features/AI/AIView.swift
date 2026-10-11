@@ -42,6 +42,7 @@ private func modelNames(_ models: [JSON], task: String) -> [String] {
     models.filter { WorkersAI.task($0) == task }.compactMap { $0["name"].string }.sorted()
 }
 
+
 private struct AIChat: View {
     let accountId: String
     let models: [JSON]
@@ -63,18 +64,15 @@ private struct AIChat: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker(L("Model", "模型"), selection: Binding(get: { current ?? "" }, set: { selected = $0 })) {
-                    ForEach(names, id: \.self) { Text($0).tag($0) }
-                }
-                .labelsHidden()
-                Spacer()
+            HStack(spacing: 16) {
+                InlinePicker(L("Model", "模型"), options: names, selection: current, placeholder: L("No models", "没有可用模型")) { selected = $0 }
                 Button(L("System prompt", "系统提示词"), systemImage: "slider.horizontal.3") { editingSystem = true }
                     .labelStyle(.iconOnly)
                 Button(L("New chat", "新对话"), systemImage: "square.and.pencil") { messages = [] }
                     .labelStyle(.iconOnly)
             }
             .padding(.horizontal)
+            .padding(.vertical, 4)
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 10) {
@@ -179,9 +177,7 @@ private struct AIImage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Picker(L("Model", "模型"), selection: Binding(get: { current ?? "" }, set: { selected = $0 })) {
-                    ForEach(names, id: \.self) { Text($0).tag($0) }
-                }
+                InlinePicker(L("Model", "模型"), options: names, selection: current, placeholder: L("No models", "没有可用模型")) { selected = $0 }
                 TextField(L("Prompt", "提示词"), text: $prompt, axis: .vertical)
                     .lineLimit(2...6)
                     .padding(12)
@@ -260,7 +256,7 @@ private struct AIModels: View {
             let name = m["name"].string ?? ""
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(.callout.monospaced())
+                    Text(name).font(.callout.weight(.medium))
                     Text("\(WorkersAI.task(m)) · \(m["description"].string ?? "")").font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 Spacer()

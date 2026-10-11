@@ -42,7 +42,8 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AmbientBackground())
-        .navigationTitle(model.currentAccount?["name"].string ?? "Cirrus")
+        .navigationTitle(Screen.home.title)
+        .navigationSubtitle(model.currentAccount?["name"].string ?? "")
         .refreshable { await model.refresh() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

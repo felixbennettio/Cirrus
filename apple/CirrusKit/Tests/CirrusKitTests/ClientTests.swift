@@ -26,6 +26,19 @@ private func tokenProfile(_ token: String = "tok-1234567890") -> Profile {
         }
     }
 
+    @Test func planRestrictions() {
+        func error(_ message: String, code: Int = 1011) -> CFAPIError {
+            CFAPIError(method: "GET", path: "/zones/z/custom_certificates", statusCode: 400, errors: [CFMessage(code: code, message: message)])
+        }
+        #expect(error("Plan level does not allow custom certificates with type ").isPlanRestricted)
+        #expect(error("This zone is not entitled to use this feature").isPlanRestricted)
+        #expect(error("Your plan doesn't include Load Balancing").isPlanRestricted)
+        #expect(error("Please upgrade your account to use this feature").isPlanRestricted)
+        #expect(!error("Authentication error", code: 10000).isPlanRestricted)
+        #expect(!error("Invalid plan identifier").isPlanRestricted)
+        #expect(!error("Record already exists").isPlanRestricted)
+    }
+
     @Test func errorChainIsKept() {
         let m = CFMessage(json: ["code": 1004, "message": "DNS Validation Error",
                                  "error_chain": [["code": 9005, "message": "Content for A record is invalid."]]])

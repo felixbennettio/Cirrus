@@ -130,6 +130,49 @@ func platformImage(_ data: Data) -> Image? {
     #endif
 }
 
+/// A menu picker whose current value stays on one line and takes the free
+/// width of its row (a plain `Picker` next to a `Spacer` wraps long values
+/// into a narrow column).
+struct InlinePicker: View {
+    let title: String
+    let options: [String]
+    let selection: String?
+    var placeholder = "—"
+    var display: (String) -> String = { $0 }
+    let select: (String) -> Void
+
+    init(
+        _ title: String, options: [String], selection: String?, placeholder: String = "—",
+        display: @escaping (String) -> String = { $0 }, select: @escaping (String) -> Void
+    ) {
+        self.title = title
+        self.options = options
+        self.selection = selection
+        self.placeholder = placeholder
+        self.display = display
+        self.select = select
+    }
+
+    var body: some View {
+        Menu {
+            Picker(title, selection: Binding(get: { selection ?? "" }, set: select)) {
+                ForEach(options, id: \.self) { Text(display($0)).tag($0) }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(selection.map(display) ?? placeholder)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Image(systemName: "chevron.up.chevron.down").font(.caption.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
+        }
+        .accessibilityLabel(title)
+        .disabled(options.isEmpty)
+    }
+}
+
 /// Sub-pages of a screen as a scrolling row of glass capsules.
 struct SectionTabs<Tab: Hashable & Identifiable>: View {
     let tabs: [Tab]

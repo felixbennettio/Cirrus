@@ -46,14 +46,8 @@ struct SSLView: View {
                     empty: L("No client certificates", "没有客户端证书"))
             }
         }
-        .safeAreaInset(edge: .top) {
-            Picker("", selection: $part) {
-                ForEach(Part.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            SectionTabs(tabs: Part.allCases, selection: $part) { $0.title }
         }
         .navigationTitle("SSL/TLS")
         .toolbar { ZoneToolbar() }
@@ -134,7 +128,8 @@ private struct SSLOverview: View {
     }
 }
 
-private struct HSTSSection: View {
+/// HSTS from the `security_header` zone setting.
+struct HSTSSection: View {
     let zoneId: String
     let setting: JSON
     let changed: (JSON) -> Void
@@ -143,6 +138,21 @@ private struct HSTSSection: View {
     @State private var saving = false
 
     static let ages = [0, 2_592_000, 5_184_000, 7_776_000, 10_368_000, 12_960_000, 15_552_000, 31_536_000, 63_072_000]
+
+    static func ageLabel(_ a: Int) -> String {
+        a == 0 ? L("0 (disable)", "0（关闭）") : a % 2_592_000 == 0 ? L("\(a / 2_592_000) months", "\(a / 2_592_000) 个月") : "\(a) s"
+    }
+
+    /// One line for the setting's value, e.g. "On · 6 months · subdomains".
+    static func summary(_ value: JSON) -> String {
+        let h = value["strict_transport_security"]
+        guard h["enabled"].isTrue else { return L("Off", "关闭") }
+        var parts = [L("On", "开启")]
+        if let a = h["max_age"].int, a > 0 { parts.append(ageLabel(a)) }
+        if h["include_subdomains"].isTrue { parts.append(L("subdomains", "含子域名")) }
+        if h["preload"].isTrue { parts.append("preload") }
+        return parts.joined(separator: " · ")
+    }
 
     init(zoneId: String, setting: JSON, changed: @escaping (JSON) -> Void) {
         self.zoneId = zoneId
@@ -161,8 +171,7 @@ private struct HSTSSection: View {
             Toggle(L("Enable HSTS", "启用 HSTS"), isOn: flag("enabled"))
             Picker("Max-Age", selection: Binding(get: { maxAge }, set: { hsts = hsts.setting("max_age", to: .int($0)) })) {
                 ForEach(Array(Set(Self.ages + [maxAge])).sorted(), id: \.self) { a in
-                    Text(a == 0 ? L("0 (disable)", "0（关闭）") : a % 2_592_000 == 0 ? L("\(a / 2_592_000) months", "\(a / 2_592_000) 个月") : "\(a) s")
-                        .tag(a)
+                    Text(Self.ageLabel(a)).tag(a)
                 }
             }
             Toggle(L("Include subdomains", "包含子域名"), isOn: flag("include_subdomains"))
