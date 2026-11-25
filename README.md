@@ -201,6 +201,14 @@
 <td width="33%" align="center"><a href="server/internal/app/static/shots/en/i-zone.webp"><img src="server/internal/app/static/shots/en/i-zone-t.webp" width="200" alt="域名的全部功能"></a><br><sub>域名的全部功能</sub></td>
 <td width="33%" align="center"><a href="server/internal/app/static/shots/en/i-ai.webp"><img src="server/internal/app/static/shots/en/i-ai-t.webp" width="200" alt="Workers AI 模型"></a><br><sub>Workers AI 模型</sub></td>
 </tr>
+<tr>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/p-home.webp"><img src="server/internal/app/static/shots/en/p-home-t.webp" width="300" alt="iPad 首页"></a><br><sub>iPad 首页</sub></td>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/p-zone.webp"><img src="server/internal/app/static/shots/en/p-zone-t.webp" width="300" alt="iPad 域名概览"></a><br><sub>iPad 域名概览</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/mac-home.webp"><img src="server/internal/app/static/shots/en/mac-home-t.webp" width="420" alt="Mac 首页"></a><br><sub>Mac 首页</sub></td>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/mac-zone.webp"><img src="server/internal/app/static/shots/en/mac-zone-t.webp" width="420" alt="Mac 域名概览"></a><br><sub>Mac 域名概览</sub></td>
+</tr>
 </table>
 </details>
 
@@ -488,6 +496,14 @@ Select a thumbnail to view the full-size image.
 <td width="33%" align="center"><a href="server/internal/app/static/shots/en/i-home.webp"><img src="server/internal/app/static/shots/en/i-home-t.webp" width="200" alt="Home with Liquid Glass"></a><br><sub>Home with Liquid Glass</sub></td>
 <td width="33%" align="center"><a href="server/internal/app/static/shots/en/i-zone.webp"><img src="server/internal/app/static/shots/en/i-zone-t.webp" width="200" alt="Everything for a zone"></a><br><sub>Everything for a zone</sub></td>
 <td width="33%" align="center"><a href="server/internal/app/static/shots/en/i-ai.webp"><img src="server/internal/app/static/shots/en/i-ai-t.webp" width="200" alt="Workers AI models"></a><br><sub>Workers AI models</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/p-home.webp"><img src="server/internal/app/static/shots/en/p-home-t.webp" width="300" alt="iPad home"></a><br><sub>iPad home</sub></td>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/p-zone.webp"><img src="server/internal/app/static/shots/en/p-zone-t.webp" width="300" alt="iPad zone overview"></a><br><sub>iPad zone overview</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/mac-home.webp"><img src="server/internal/app/static/shots/en/mac-home-t.webp" width="420" alt="Mac home"></a><br><sub>Mac home</sub></td>
+<td width="50%" align="center"><a href="server/internal/app/static/shots/en/mac-zone.webp"><img src="server/internal/app/static/shots/en/mac-zone-t.webp" width="420" alt="Mac zone overview"></a><br><sub>Mac zone overview</sub></td>
 </tr>
 </table>
 </details>
